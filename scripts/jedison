@@ -18,6 +18,7 @@ IFNAME = 'wlan0'
 WPAPSK_REGEX=re.compile(r'WPA[2]?-PSK-.+')
 WPAEAP_REGEX=re.compile(r'WPA[2]?-EAP-.+')
 WEP_REGEX=re.compile(r'\[WEP.*\]')
+HOSTAPD_PASSWORD = 'go2fabmo'
 
 WPA_SUPPLICANT_CONF_TEMPLATE = '''
 ctrl_interface=/var/run/wpa_supplicant
@@ -251,6 +252,9 @@ def scan_wifi():
     if result.split('\n')[1].strip() != 'OK':
         raise Exception('Unexpected response from wpa_cli: %s' % result)
 
+def change_hostapd_password(newPass):
+  subprocess.call(["sed", "-i", "s/^wpa_passphrase=.*/wpa_passphrase=" + newPass + "/", "/etc/hostapd/hostapd.conf"])
+
 def set_ap_boot_flag():
     retval = subprocess.call("mkdir -p /update", shell=True)
     if retval != 0:
@@ -308,6 +312,7 @@ def set_network(network_conf):
     subprocess.call("udhcpc -i " + ifarray[len(ifarray)-1] + " -n &> /dev/null", shell=True)
 
 def init():
+    change_hostapd_password(HOSTAPD_PASSWORD)
     os.popen("systemctl stop hostapd && sleep 2 && systemctl start wpa_supplicant && sleep 2")
 
 def init_handler(args):
