@@ -12,6 +12,7 @@ var hooks = require('./hooks');
 var network = require('./network');
 var fs = require('fs');
 var GenericNetworkManager = require('./network/manager').NetworkManager;
+var doshell = require('./util').doshell;
 
 //var argv = require('minimist')(process.argv);
 
@@ -65,7 +66,12 @@ function UpdaterConfigFirstTime(callback) {
                     log.info('Intel Edison platform detected.');
                     config.updater.set('platform', 'edison');
                 }
-                callback();
+		doshell('cat /sys/class/net/wlan0/address', function(address) {
+			var hostname = 'FabMo-' + address.trim().replace(/:/g,"");
+			log.info("Setting factory hostname: " + hostname);
+			config.updater.set('name', hostname);
+			callback();
+		});
             });
         break;
 
