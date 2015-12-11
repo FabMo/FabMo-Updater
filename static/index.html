@@ -46,8 +46,8 @@
     $('#log-content').text('');
   });
   
-  $("#update-go").click( function() { 
-
+  $("#update-go").click( function(evt) { 
+    evt.preventDefault();
     $.post('/update/engine', {'version' : $('#update-version').val()}, function(response) {
         // Do something with the response
     }, 'json');
@@ -57,6 +57,18 @@
   var base_url = url.replace(/\/$/,'');
   var versions = [];
 
+  function prettify(line) {
+    var line_re = /^(\w*)\:(.*)/i;
+    var match = line_re.exec(line);
+    
+    if(match) {
+      var level = match[1];
+      var msg = match[2];
+      return '<span class="loglevel-' + level + '">' + level + ':</span>' + msg + '\n'
+    } else {
+      return line;
+    }
+  }
   try {
     var socket = io(base_url);
   } catch(e) {
@@ -67,7 +79,7 @@
   if(socket) {
     socket.on('log', function(msg) {
       var log = $('#log-content');
-      log.append(msg + '\n');
+      log.append(prettify(msg));
       log[0].scrollTop = log[0].scrollHeight;
     }.bind(this));
 
