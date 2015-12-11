@@ -3,6 +3,9 @@ var async = require('async');
 var process = require('process');
 var PLATFORM = process.platform;
 var log = require('./log').logger('updater');
+var config = require('./config');
+var util = require('./util');
+var socketio = require('socket.io')
 //var argv = require('minimist')(process.argv);
 
 var Updater = function() {
@@ -16,6 +19,10 @@ Updater.prototype.stop = function(callback) {
 Updater.prototype.start = function(callback) {
 
     async.series([
+        function configure(callback) {
+            log.info("Loading configuration...");
+            config.configureUpdater(callback);
+        },
 
         function start_server(callback) {
             log.info("Setting up the webserver...");
@@ -42,15 +49,16 @@ Updater.prototype.start = function(callback) {
             });
 
             // Configure local directory for uploading files
-            //log.info("Cofiguring upload directory...");
-            //server.use(restify.bodyParser({'uploadDir':config.engine.get('upload_dir') || '/tmp'}));
-            //server.pre(restify.pre.sanitizePath());
+            log.info("Cofiguring upload directory...");
+            server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
+            server.pre(restify.pre.sanitizePath());
 
             log.info("Enabling gzip for transport...");
             server.use(restify.gzipResponse());
             
             // Import the routes module and apply the routes to the server
             log.info("Loading routes...");
+            server.io = socketio.listen(server.server);
             var routes = require('./routes')(server);
 
             // Kick off the server listening for connections

@@ -1,0 +1,53 @@
+body {
+	margin: 20px;
+}
+
+.button-success,
+.button-error,
+.button-warning,
+.button-secondary {
+    color: white;
+    border-radius: 4px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.button-success {
+    background: rgb(28, 184, 65); /* this is a green */
+}
+
+.button-error {
+    background: rgb(202, 60, 60); /* this is a maroon */
+}
+
+.button-warning {
+    background: rgb(223, 117, 20); /* this is an orange */
+}
+
+.button-secondary {
+    background: rgb(66, 184, 221); /* this is a light blue */
+}
+
+.log-console {
+	width: 100%;
+	height: 500px;
+	border-radius: 10px;
+	border: 1px solid black;
+	background-color: #2F3032;
+	color: #ebebeb;
+	font-family: "Lucida Console", Monaco, monospace;
+	font-weight: 100;
+	white-space: pre;
+	font-size: x-small;
+}
+
+#log-content {
+	overflow: scroll;
+	overflow-x:hidden;
+	overflow-y:scroll;
+	margin: 10px;
+	height: 460px;
+}
+.header {
+	line-height: 3em;
+	font-weight: bold;
+}

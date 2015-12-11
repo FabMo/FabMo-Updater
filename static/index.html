@@ -1,0 +1,101 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Command console for performing updates to the FabMo engine and dashboard">
+    <title>FabMo Engine Update Console</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/libs/jquery.min.js"></script>
+</head>
+<body>
+<div class="header">System Operations</div>
+<button id="system-reboot" class="pure-button button-warning">Reboot</button>
+<button id="system-shutdown" class="pure-button button-error">Shutdown</button>
+
+<div class="header">Engine Operations</div>
+<button id="engine-start" class="pure-button button-success">Start Engine</button>
+<button id="engine-stop" class="pure-button button-error">Stop Engine</button>
+<button id="engine-restart" class="pure-button button-success">Restart Engine</button>
+
+<div class="header">Update Operations</div>
+<form class="pure-form">
+  <button id="update-go" class="pure-button button-success">Update Engine</button>
+  <select id="update-version">
+  </select>
+</form>
+
+<div class="header">
+  Log Output 
+  <button class="pure-button button-secondary" id="log-clear" style="float: right;">Clear Log</button>
+</div>
+
+<div class="log-console"><div id="log-content"></div></div>
+
+<script type="text/javascript">
+  $("#system-reboot").click( function() { $.post('/system/reboot')});
+  $("#system-shutdown").click( function() { $.post('/system/shutdown')});
+  $("#engine-start").click( function() { $.post('/engine/start')});
+  $("#engine-stop").click( function() { $.post('/engine/stop')});
+  $("#engine-restart").click( function() { $.post('/engine/restart')});
+  $("#log-clear").click( function() { 
+    $('#log-content').text('');
+  });
+  
+  $("#update-go").click( function() { 
+
+    $.post('/update/engine', {'version' : $('#update-version').val()}, function(response) {
+        // Do something with the response
+    }, 'json');
+  });
+
+  var url = window.location.origin;
+  var base_url = url.replace(/\/$/,'');
+  var versions = [];
+
+  try {
+    var socket = io(base_url);
+  } catch(e) {
+    socket = null;
+    console.error('connection to the updater via websocket failed : '+ e.message);   
+  }
+
+  if(socket) {
+    socket.on('log', function(msg) {
+      var log = $('#log-content');
+      log.append(msg + '\n');
+      log[0].scrollTop = log[0].scrollHeight;
+    }.bind(this));
+
+    socket.on('connect', function() {
+      console.log("Websocket connected");
+    });
+
+    socket.on('disconnect', function() {
+      console.info("Websocket disconnected");
+    });
+  } else {
+    console.error("No websocket connection!");
+  }
+  $.getJSON('/update/versions', function(response) {
+    //console.log
+    versions = response.data.versions;
+
+    versions.forEach(function(entry) {
+      $("#update-version").append('<option value="' + entry.version + '">' + entry.version + '</option>');
+    });
+  });
+
+  $(window).resize(function() {
+    vpw = $(window).width();
+    vph = $(window).height();
+    console.log(vpw);
+    console.log(vph);
+  });
+</script>
+</body>
+</html>

@@ -29,6 +29,4 @@ module.exports = function(server) {
 		default: 'index.html'
 	}));
 
-
-
 };

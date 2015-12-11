@@ -1,0 +1,7 @@
+{
+	"upload_dir" : "/tmp",
+	"log_level" : "debug",
+	"engine_dir" : "/fabmo",
+	"engine_git_repos" : "https://github.com/FabMo/FabMo-Engine.git",
+	"platform" : "generic"
+}

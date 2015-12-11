@@ -7,28 +7,18 @@ try { var colors = require('colors'); } catch(e) {var colors = false;}
 var _suppress = false;
 var log_buffer = [];
 var LOG_BUFFER_SIZE = 5000;
+var listeners = {'any':[]};
 
 // String versions of the allowable log levels
 LEVELS = {
-	'g2' : 0,
-	'debug' : 1,
-	'info' : 2,
-	'warn' : 3,
-	'error' : 4,
+	'debug' : 0,
+	'info' : 1,
+	'warn' : 2,
+	'error' : 3,
 };
 
 // Default log levels for loggers with specific names.
 LOG_LEVELS = {
-	'g2' : 'debug',
-	'gcode' : 'debug',
-	'sbp' : 'debug',
-	'machine' : 'debug',
-	'manual' : 'debug',
-	'api' : 'debug',
-	'detection' :'debug',
-	'config_loader' : 'debug',
-	'settings' : 'debug',
-	'log':'debug'
 };
 
 function setGlobalLevel(lvl){
@@ -98,6 +88,9 @@ Logger.prototype.write = function(level, msg) {
 			console.log(level + ': ' + msg+' ['+this.name+']');
 		}
 		log_buffer.push(buffer_msg);
+		for(var i=0; i<listeners['any'].length; i++) {
+			listeners['any'][i](buffer_msg)
+		}
 		while(log_buffer.length > LOG_BUFFER_SIZE) {
 			log_buffer.shift();
 		}
@@ -116,7 +109,6 @@ Logger.prototype.error = function(msg) {
 	}
 };
 
-Logger.prototype.g2 = function(msg) {this.write('g2', msg);};
 Logger.prototype.uncaught = function(err) {
 	if(colors) {
 		console.log("UNCAUGHT EXCEPTION".red.underline);
@@ -151,8 +143,16 @@ var clearLogBuffer = function() {
 	log_buffer = [];
 }
 
+var on = function(evt, handler) {
+	if(evt in listeners) {
+		listeners[evt].push(handler);
+	}
+}
+
 exports.suppress = suppress;
+exports.unsuppress = unsuppress;
 exports.logger = logger;
 exports.setGlobalLevel = setGlobalLevel;
 exports.getLogBuffer = getLogBuffer; 
-exports.clearLogBuffer = clearLogBuffer();
+exports.clearLogBuffer = clearLogBuffer;
+exports.on = on;

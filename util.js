@@ -12,12 +12,6 @@ var mime = require('mime');
 var restify = require('restify');
 var errors = restify.errors;
 
-ALLOWED_EXTENSIONS = ['.nc','.g','.sbp','.gc','.gcode'];
-ALLOWED_APP_EXTENSIONS = ['.zip', '.fma'];
-
-GCODE_EXTENSIONS = ['.nc','.g','.gc','.gcode'];
-OPENSBP_EXTENSIONS = ['.sbp', '.sbc'];
-
 var MethodNotAllowedError = errors.MethodNotAllowedError;
 var NotAuthorizedError = errors.NotAuthorizedError;
 var ResourceNotFoundError = errors.ResourceNotFoundError;
@@ -123,31 +117,10 @@ function Queue(){
 	};
 }
 
-function allowed_file(filename){
-    return isGCodeFile(filename) || isOpenSBPFile(filename);
-}
-
-function allowedAppFile(filename) {
-  if (ALLOWED_APP_EXTENSIONS.indexOf(path.extname(filename).toLowerCase()) !== -1) {
-    return true;
-  }
-  else {
-    return false;
-  }
-}
-
-function isGCodeFile(pathname) {
-    return (GCODE_EXTENSIONS.indexOf(path.extname(pathname).toLowerCase()) !== -1)
-}
-
-function isOpenSBPFile(pathname) {
-    return (OPENSBP_EXTENSIONS.indexOf(path.extname(pathname).toLowerCase()) !== -1)
-}
-
 /**
  * Move a file from src to dest, avoiding cross-device rename failures.
  * This method will first try fs.rename and call the supplied callback if it succeeds. Otherwise
- * it will pump the conent of src into dest and unlink src upon completion.
+ * it will pump the content of src into dest and unlink src upon completion.
  *
  * This might take a little more time than a single fs.rename, but it avoids error when
  * trying to rename files from one device to the other.
@@ -362,46 +335,14 @@ function fixJSON(json) {
     }
     return retval;
 }
+var getClientAddress = function (req) {
+        return (req.headers['x-forwarded-for'] || '').split(',')[0] 
+        || req.connection.remoteAddress;
+};
 
-function Watchdog(timeout,exit_code){
-    var watchdog_flag;
-    var watchdog_timeout=timeout||1000;
-    var watchdog_exit_code=exit_code||20;
-    
-    watchdog_exit = function(){
-        throw new Error("G2 is not responding");
-        //process.exit(this.watchdog_exit_code);
-    };
-
-    this.start = function(){
-        if(this.watchdog_flag===undefined){
-            this.watchdog_flag=setTimeout(watchdog_exit,watchdog_timeout);
-        }
-        else{
-            this.reset();
-        }
-    };
-
-    this.stop= function(){
-        if(this.watchdog_flag){
-            clearTimeout(this.watchdog_flag);
-            this.watchdog_flag=undefined;
-        }
-    };
-
-    this.reset = function(){
-        if(this.watchdog_flag){
-            clearTimeout(this.watchdog_flag);
-            this.watchdog_flag=setTimeout(watchdog_exit,watchdog_timeout);
-        }   
-    };
-}
-
+exports.getClientAddress = getClientAddress;
 exports.serveStatic = serveStatic;
 exports.Queue = Queue;
-exports.Watchdog = Watchdog;
-exports.allowed_file = allowed_file;
-exports.allowedAppFile = allowedAppFile;
 exports.move = move;
 exports.walkDir = walkDir;
 exports.createUniqueFilename = createUniqueFilename;
