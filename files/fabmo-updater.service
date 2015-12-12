@@ -1,0 +1,14 @@
+[Unit]
+Description=FabMo Updater
+
+[Service]
+ExecStart=/usr/bin/node /fabmo/updater/server.js &
+Type=simple
+User=root
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+WorkingDirectory = /fabmo/updater/
+
+[Install]
+WantedBy=multi-user.target
