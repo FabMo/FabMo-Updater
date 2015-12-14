@@ -5,6 +5,7 @@ body {
 .button-success,
 .button-error,
 .button-warning,
+.button-github,
 .button-secondary {
     color: white;
     border-radius: 4px;
@@ -23,8 +24,16 @@ body {
     background: rgb(223, 117, 20); /* this is an orange */
 }
 
+.button-github {
+	 background: #542D92;
+}
+
+.gh-icon {
+	color: #ffffff;
+}
+
 .button-secondary {
-    background: rgb(66, 184, 221); /* this is a light blue */
+	background: #034080;
 }
 
 .log-console {

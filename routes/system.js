@@ -22,7 +22,7 @@ var shutdown = function(req, res, next) {
       data : {}
     };
     res.json(answer);
-    hooks.reboot(function(err, data) {
+    hooks.shutdown(function(err, data) {
       if(err) {
         log.error(err);
       } else {
@@ -33,4 +33,5 @@ var shutdown = function(req, res, next) {
 
 module.exports = function(server) {
   server.post('/system/reboot', reboot);
+  server.post('/system/shutdown', shutdown);
 };

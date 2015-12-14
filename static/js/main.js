@@ -34,11 +34,15 @@ $(document).ready(function() {
   updater.on('status', function(status) {
     $('#updater-status').text(status.state);
     $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + status.state);
+    $('button').removeClass('pure-button-disabled');
+    $('select').show();
   });
 
   updater.on('disconnect', function(status) {
     $('#updater-status').text('disconnected');
     $('#updater-status').removeClass('status-idle status-updating').addClass('status-disconnected');
+    $('button').addClass('pure-button-disabled');
+    $('select').hide();
   });
 
   // Buttons for engine management
@@ -59,13 +63,18 @@ $(document).ready(function() {
     updater.updateEngine($("#update-version").val());
   });
 
+  $("#update-to-latest").click( function(evt) { 
+    evt.preventDefault();
+    updater.updateEngine('master');
+  });
+
   // The update version menu
   updater.getVersions(function(err, versions) {
     menu = $("#update-version");
     versions.forEach(function(entry) {
       menu.append('<option value="' + entry.version + '">' + entry.version + '</option>');
     });
-    menu.append('<option value="master">master</option>');
+    /*menu.append('<option value="master">master</option>');*/
 
   });
 });
