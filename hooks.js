@@ -92,7 +92,7 @@ exports.updateEngine = function(version, callback) {
 	});
 
 	stderr.on('data', function(chunk) {
-		log.error(chunk);
+		log.debug(chunk);
 	});
 
 }

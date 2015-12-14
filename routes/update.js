@@ -17,7 +17,9 @@ var getVersions = function(req, res, next) {
 };
 
 var updateEngine = function(req, res, next) {
+	console.log(req.params.version)
     hooks.updateEngine(req.params.version, function(err, data) {
+
 	  if(err) {
 	  	res.json({status : 'error', message : err});
 		} else {
