@@ -6,11 +6,24 @@ var log = require('./log').logger('updater');
 var config = require('./config');
 var util = require('./util');
 var socketio = require('socket.io')
+var events = require('events');
+var util = require('util');
 //var argv = require('minimist')(process.argv);
 
 var Updater = function() {
     this.version = null;
+    this.status = {
+        'state' : 'idle'
+    }
+    // Handle Inheritance
+    events.EventEmitter.call(this);
 };
+util.inherits(Updater, events.EventEmitter);
+
+Updater.prototype.setState = function(state) {
+    this.status.state = state;
+    this.emit('status',this.status);
+}
 
 Updater.prototype.stop = function(callback) {
     callback(null);
@@ -80,5 +93,7 @@ Updater.prototype.start = function(callback) {
         }.bind(this)
     );
 };
+
+
 
 module.exports = new Updater();

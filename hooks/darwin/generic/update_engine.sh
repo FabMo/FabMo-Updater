@@ -1,8 +1,7 @@
-#!/bin/bash -x
+#!/bin/bash -v
 
-cd /Users/ryansturmer/projects/fering/shopbot/FabMo-Engine
+cd /fabmo/engine
 git fetch origin
-echo "UPDATING TO VERSION: $1"
 git checkout $1
 npm install
 rm -rf /opt/fabmo/approot

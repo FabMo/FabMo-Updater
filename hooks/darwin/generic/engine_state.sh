@@ -1,3 +1,3 @@
 #!/bin/sh
 
-systemctl $1 fabmo
+#systemctl $1 fabmo

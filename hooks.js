@@ -5,6 +5,7 @@ var exec = require('child_process').exec;
 var byline = require('byline');
 var OS = config.platform;
 var PLATFORM = config.updater.get('platform');
+var updater = require('./updater');
 
 var execute = function(name, args, callback) {
 
@@ -76,7 +77,13 @@ exports.restartEngine = function(callback) {
 }
 
 exports.updateEngine = function(version, callback) {
-	var cp = execute('update_engine', version, callback);
+	if(updater.status.state != 'idle') {
+		callback(new Error("Cannot update the engine when in the " + updater.status.state + " state."));
+	}
+	updater.setState('updating');
+	var cp = execute('update_engine', version, function(err,stdout) {
+		updater.setState('idle');
+	});
 	var stdout = byline(cp.stdout);
 	var stderr = byline(cp.stderr);
 

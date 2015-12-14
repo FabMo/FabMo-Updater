@@ -17,12 +17,17 @@ var getVersions = function(req, res, next) {
 };
 
 var updateEngine = function(req, res, next) {
-    hooks.updateEngine(req.params.version);
-	var answer = {
-	    status : "success",
-	      data : {}
-	    };
-	res.json(answer);
+    hooks.updateEngine(req.params.version, function(err, data) {
+	  if(err) {
+	  	res.json({status : 'error', message : err});
+		} else {
+			var answer = {
+			    status : "success",
+			   	  data : {}
+			};
+		}
+		res.json(answer);			
+    });
 };
 
 module.exports = function(server) {

@@ -67,3 +67,19 @@ body {
 	color: #E6D369;
 }
 
+.loglevel-websocket {
+	color: #E85377;
+}
+
+.status-idle {
+	color: red;
+}
+
+.status-idle {
+	color: green;
+}
+
+.status-disconnected {
+	color: gray;
+}
+
