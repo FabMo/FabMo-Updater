@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 systemctl stop fabmo
 mount /dev/mmcblk0p1 /mnt
