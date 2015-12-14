@@ -1,9 +1,10 @@
 {
 	"upload_dir" : "/tmp",
-	"log_level" : "debug",
+	"log_level" : "shell",
 	"engine_dir" : "/fabmo/engine",
 	"engine_git_repos" : "https://github.com/FabMo/FabMo-Engine.git",
 	"updater_git_repos" : "https://github.com/FabMo/FabMo-Updater.git",
 	"platform" : "generic",
-	"server_port" : 9877
+	"server_port" : 9877,
+	"engine_server_port" : 9876
 }

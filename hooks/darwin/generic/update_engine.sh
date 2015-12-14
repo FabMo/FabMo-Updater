@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 cd /fabmo/engine
 echo "Fetching updates..."
@@ -9,3 +9,4 @@ echo "Installing dependencies..."
 npm install --loglevel error
 echo "Clearing approot..."
 rm -rvf /opt/fabmo/approot
+echo "Update completed successfully."

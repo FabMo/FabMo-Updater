@@ -1,8 +1,8 @@
 var log = require('../log').logger('routes');
-var hooks = require('../hooks');
+var updater = require('../updater');
 
 var getVersions = function(req, res, next) {
-    hooks.getVersions(function(err, versions) {
+    updater.getVersions(function(err, versions) {
 	  if(err) {
 	  	res.json({status : 'error', message : err})
 	  }
@@ -17,9 +17,7 @@ var getVersions = function(req, res, next) {
 };
 
 var updateEngine = function(req, res, next) {
-	console.log(req.params.version)
-    hooks.updateEngine(req.params.version, function(err, data) {
-
+    updater.updateEngine(req.params.version, function(err, data) {
 	  if(err) {
 	  	res.json({status : 'error', message : err});
 		} else {

@@ -29,7 +29,7 @@ UpdaterAPI.prototype._initializeWebsocket = function() {
 		}.bind(this));
 
 		this.socket.on('connect', function() {
-			console.log("Websocket connected");
+			console.info("Websocket connected");
 			this.emit('connect');
 		}.bind(this));
 
@@ -89,7 +89,6 @@ UpdaterAPI.prototype._setStatus = function(status) {
 UpdaterAPI.prototype.getStatus = function(callback) {
 	this._get('/status', callback, callback, 'status');
 }
-
 UpdaterAPI.prototype.requestStatus = function() {
 	this.socket.emit('status');
 }
@@ -98,9 +97,8 @@ UpdaterAPI.prototype.requestStatus = function() {
 UpdaterAPI.prototype.getVersions = function(callback) {
 	this._get('/update/versions', callback, callback, 'versions');
 }
-
-UpdaterAPI.prototype.updateEngine = function(callback) {
-	this._post('/update/engine', {}, callback, callback);
+UpdaterAPI.prototype.updateEngine = function(version, callback) {
+	this._post('/update/engine', {'version' : version}, callback, callback);
 }
 
 // Engine management
@@ -114,6 +112,12 @@ UpdaterAPI.prototype.restartEngine = function(callback) {
 	this._post('/engine/restart', {}, callback, callback);
 }
 
+UpdaterAPI.prototype.shutdown = function(callback) {
+	this._post('/system/shutdown', {}, callback, callback);
+}
+UpdaterAPI.prototype.reboot = function(callback) {
+	this._post('/system/reboot', {}, callback, callback);
+}
 
 
 

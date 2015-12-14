@@ -8,6 +8,7 @@ var util = require('./util');
 var socketio = require('socket.io')
 var events = require('events');
 var util = require('util');
+var hooks = require('./hooks')
 //var argv = require('minimist')(process.argv);
 
 var Updater = function() {
@@ -28,6 +29,18 @@ Updater.prototype.setState = function(state) {
 Updater.prototype.stop = function(callback) {
     callback(null);
 };
+
+Updater.prototype.updateEngine = function(version, callback) {
+    if(this.status.state != 'idle') {
+        callback(new Error("Cannot update the engine when in the " + updater.status.state + " state."));
+    } else {
+        hooks.updateEngine(version, callback);
+    }
+}
+
+Updater.prototype.getVersions = function(callback) {
+    hooks.getVersions(callback);
+}
 
 Updater.prototype.start = function(callback) {
 

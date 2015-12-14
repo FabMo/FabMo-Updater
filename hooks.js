@@ -3,11 +3,11 @@ var config = require('./config');
 var log = require('./log').logger('hooks');
 var exec = require('child_process').exec;
 var byline = require('byline');
-var OS = config.platform;
-var PLATFORM = config.updater.get('platform');
-var updater = require('./updater');
+//var updater = require('./updater');
 
 var execute = function(name, args, callback) {
+	var OS = config.platform;
+	var PLATFORM = config.updater.get('platform');
 
 	callback = callback || function() {};
 
@@ -77,22 +77,31 @@ exports.restartEngine = function(callback) {
 }
 
 exports.updateEngine = function(version, callback) {
-	if(updater.status.state != 'idle') {
-		callback(new Error("Cannot update the engine when in the " + updater.status.state + " state."));
-	}
+	var updater = require('./updater');
+
+	callback = callback || function() {};
 	updater.setState('updating');
+	callback(null);
 	var cp = execute('update_engine', version, function(err,stdout) {
+		if(err) {
+			log.error("Did not update to " + version + " successfully.");
+		} else {
+			log.info("Updated to " + version + " successfully.");
+		}
+
 		updater.setState('idle');
+
 	});
+
 	var stdout = byline(cp.stdout);
 	var stderr = byline(cp.stderr);
 
-	stdout.on('data', function(chunk) {
-		log.debug(chunk);
+	stdout.on('data', function(line) {
+		log.shell(line);
 	});
 
-	stderr.on('data', function(chunk) {
-		log.debug(chunk);
+	stderr.on('data', function(line) {
+		log.shell(line);
 	});
 
 }

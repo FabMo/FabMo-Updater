@@ -32,7 +32,6 @@ $(document).ready(function() {
   });
 
   updater.on('status', function(status) {
-    console.log(status);
     $('#updater-status').text(status.state);
     $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + status.state);
   });
@@ -43,11 +42,11 @@ $(document).ready(function() {
   });
 
   // Buttons for engine management
-  $("#system-reboot").click(updater.reboot);
-  $("#system-shutdown").click(updater.shutdown);
-  $("#engine-start").click(updater.startEngine);
-  $("#engine-stop").click(updater.stopEngine);
-  $("#engine-restart").click(updater.restartEngine);
+  $("#system-reboot").click(function() {updater.reboot()});
+  $("#system-shutdown").click(function() {updater.shutdown()});
+  $("#engine-start").click(function() {updater.startEngine()});
+  $("#engine-stop").click(function() {updater.startEngine()});
+  $("#engine-restart").click(function() {updater.startEngine()});
 
   // Button to clear the log
   $("#log-clear").click( function() { 
@@ -57,12 +56,11 @@ $(document).ready(function() {
   // The update button
   $("#update-go").click( function(evt) { 
     evt.preventDefault();
-    updater.updateEngine();
+    updater.updateEngine($("#update-version").val());
   });
 
   // The update version menu
   updater.getVersions(function(err, versions) {
-    console.log(versions);
     menu = $("#update-version");
     versions.forEach(function(entry) {
       menu.append('<option value="' + entry.version + '">' + entry.version + '</option>');
@@ -73,14 +71,11 @@ $(document).ready(function() {
 });
 
 $(window).resize(function() {
-  //vpw = $(window).width();
   var c = $('#log-console');
   var vph = $(window).height();
   var r = c.position();
   var margin = parseInt($(document.body).css('margin'), 10)
   var new_height = vph-r.top-margin;
-
   c.height(new_height);
-  console.log(new_height)
-  console.log("resising")
+  $('#log-content').height(new_height-20);
 }).resize();

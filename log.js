@@ -11,10 +11,11 @@ var listeners = {'any':[]};
 
 // String versions of the allowable log levels
 LEVELS = {
-	'debug' : 0,
-	'info' : 1,
-	'warn' : 2,
-	'error' : 3,
+	'shell' : 0,
+	'debug' : 1,
+	'info' : 2,
+	'warn' : 3,
+	'error' : 4,
 };
 
 // Default log levels for loggers with specific names.
@@ -24,7 +25,7 @@ LOG_LEVELS = {
 function setGlobalLevel(lvl){
 	if (lvl)
 	{
-		if (lvl >= 0 && lvl <= 3)
+		if (lvl >= 0 && lvl <= 4)
 		{
 			// assign the log level to the string equivalent of the integer 
 			Object.keys(LOG_LEVELS).forEach(function(key) {
@@ -63,12 +64,16 @@ Logger.prototype.write = function(level, msg) {
 		return;
 	}
 
-	my_level = LOG_LEVELS[this.name] || 'debug';
+	my_level = LOG_LEVELS[this.name];
+	if(my_level == undefined) {
+		my_level = LOG_LEVELS['info'];
+	}
+	
 	if((LEVELS[level] || 0) >= (LEVELS[my_level] || 0)) {
 		buffer_msg = level + ': ' + msg + ' ['+this.name+']';
 		if(colors) {
 			switch(level) {
-				case 'g2':
+				case 'shell':
 					console.log((level + ': ').magenta + msg + ' ['+this.name+']');
 					break;
 				case 'debug':
@@ -98,9 +103,11 @@ Logger.prototype.write = function(level, msg) {
 };
 
 // These functions provide a shorthand alternative to specifying the log level every time
+Logger.prototype.shell = function(msg) { this.write('shell', msg);};
 Logger.prototype.debug = function(msg) { this.write('debug', msg);};
 Logger.prototype.info = function(msg) { this.write('info', msg);};
 Logger.prototype.warn = function(msg) { this.write('warn', msg);};
+
 Logger.prototype.error = function(msg) {
 	if(msg && msg.stack) {
 		this.write('error', msg.stack);

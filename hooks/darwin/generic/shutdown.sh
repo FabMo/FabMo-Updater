@@ -1,4 +1,5 @@
 #!/bin/sh
 
-# Shut the system down for good
-shutdown now
+#shutdown now
+echo "No shutdown support for the darwin platform."
+exit 1

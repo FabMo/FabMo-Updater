@@ -1,3 +1,5 @@
 #!/bin/sh
 
-reboot
+#reboot
+echo "No reboot support for the darwin platform"
+exit 1

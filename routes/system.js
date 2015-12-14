@@ -6,13 +6,27 @@ var reboot = function(req, res, next) {
       status : "success",
       data : {}
     };
-    log.warn("System is going down for reboot");
     res.json(answer);
     hooks.reboot(function(err, data) {
       if(err) {
         log.error(err);
       } else {
         log.info("Reboot hook was run successfully.")
+      }
+    });
+};
+
+var shutdown = function(req, res, next) {
+  var answer = {
+      status : "success",
+      data : {}
+    };
+    res.json(answer);
+    hooks.reboot(function(err, data) {
+      if(err) {
+        log.error(err);
+      } else {
+        log.info("Shutdown hook was run successfully.")
       }
     });
 };

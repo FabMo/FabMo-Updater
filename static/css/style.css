@@ -45,8 +45,8 @@ body {
 	overflow-x:hidden;
 	overflow-y:scroll;
 	margin: 10px;
-	height: 100%;
 }
+
 .header {
 	line-height: 3em;
 	font-weight: bold;
@@ -71,6 +71,9 @@ body {
 	color: #E85377;
 }
 
+.loglevel-shell {
+	color: #A491FD;
+}
 .status-updating {
 	color: red;
 }

@@ -2,6 +2,7 @@ var log = require('../log').logger('routes');
 var hooks = require('../hooks');
 
 var startEngine = function(req, res, next) {
+	log.debug("starting engine")
     hooks.startEngine(function(err, data) {
 	  if(err) {
 	  	log.error(err);
