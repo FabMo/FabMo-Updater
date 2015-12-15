@@ -25,8 +25,8 @@ var updateEngine = function(req, res, next) {
 			    status : "success",
 			   	  data : {}
 			};
-		}
 		res.json(answer);			
+		}
     });
 };
 

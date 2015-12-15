@@ -1,8 +1,11 @@
-#!/bin/bash -x
+#!/bin/bash
 
-cd /Users/ryansturmer/projects/fering/shopbot/FabMo-Engine
-git fetch origin
-echo "UPDATING TO VERSION: $1"
+systemctl stop fabmo
+cd /fabmo/engine
+git fetch origin --tags
+git checkout master
+git pull
 git checkout $1
-npm install
+npm install --production
 rm -rf /opt/fabmo/approot
+systemctl start fabmo
