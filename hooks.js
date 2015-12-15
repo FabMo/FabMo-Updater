@@ -46,6 +46,7 @@ var execute = function(name, args, callback) {
 
 		default:
 			setImmediate(callback, new Error("More than one hook defined for " + name + " on " + PLATFORM + "???"));
+			log.error(new Error("More than one hook defined for " + name + " on " + PLATFORM + "???"));
 			break;
 	}
 }
