@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash -e 
 
 echo "Stopping the engine..."
 systemctl stop fabmo
