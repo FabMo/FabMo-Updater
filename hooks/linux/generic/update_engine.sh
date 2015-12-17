@@ -5,6 +5,7 @@ systemctl stop fabmo
 
 echo "Fetching new versions..."
 cd /fabmo/engine
+git reset --hard HEAD
 git fetch origin --tags
 git checkout master
 git pull
