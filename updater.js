@@ -38,6 +38,14 @@ Updater.prototype.updateEngine = function(version, callback) {
     }
 }
 
+Updater.prototype.installEngine = function(version, callback) {
+    if(this.status.state != 'idle') {
+        callback(new Error("Cannot install the engine when in the " + updater.status.state + " state."));
+    } else {
+        hooks.installEngine(version, callback);
+    }
+}
+
 Updater.prototype.getVersions = function(callback) {
     hooks.getVersions(callback);
 }

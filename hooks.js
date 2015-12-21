@@ -77,6 +77,33 @@ exports.restartEngine = function(callback) {
 	execute('engine_state', 'restart', callback);
 }
 
+exports.installEngine = function(version, callback) {
+	var updater = require('./updater');
+
+	callback = callback || function() {};
+	updater.setState('updating');
+	callback(null);
+	var cp = execute('install_engine', config.updater.get('engine_git_repos') + ' ' + version, function(err,stdout) {
+		if(err) {
+			log.error("Did not update to " + version + " successfully.");
+		} else {
+			log.info("Updated to " + version + " successfully.");
+		}
+		updater.setState('idle');
+	});
+
+	var stdout = byline(cp.stdout);
+	var stderr = byline(cp.stderr);
+
+	stdout.on('data', function(line) {
+		log.shell(line);
+	});
+
+	stderr.on('data', function(line) {
+		log.shell(line);
+	});
+}
+
 exports.updateEngine = function(version, callback) {
 	var updater = require('./updater');
 

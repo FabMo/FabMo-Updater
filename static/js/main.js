@@ -63,18 +63,31 @@ $(document).ready(function() {
     updater.updateEngine($("#update-version").val());
   });
 
+  // The install button
+  $("#install-go").click( function(evt) { 
+    evt.preventDefault();
+    updater.installEngine('master');
+  });
+
   $("#update-to-latest").click( function(evt) { 
     evt.preventDefault();
     updater.updateEngine('master');
   });
 
+  $("#install-to-latest").click( function(evt) { 
+    evt.preventDefault();
+    updater.installEngine('master');
+  });
+
   // The update version menu
   updater.getVersions(function(err, versions) {
-    menu = $("#update-version");
+    menu1 = $("#update-version");
+    menu2 = $("#install-version");
+
     versions.forEach(function(entry) {
-      menu.append('<option value="' + entry.version + '">' + entry.version + '</option>');
+      menu1.append('<option value="' + entry.version + '">' + entry.version + '</option>');
+      menu2.append('<option value="' + entry.version + '">' + entry.version + '</option>');    
     });
-    /*menu.append('<option value="master">master</option>');*/
 
   });
 });

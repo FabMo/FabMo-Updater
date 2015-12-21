@@ -100,6 +100,10 @@ UpdaterAPI.prototype.getVersions = function(callback) {
 UpdaterAPI.prototype.updateEngine = function(version, callback) {
 	this._post('/update/engine', {'version' : version}, callback, callback);
 }
+UpdaterAPI.prototype.installEngine = function(version, callback) {
+	this._post('/install/engine', {'version' : version}, callback, callback);
+}
+
 
 // Engine management
 UpdaterAPI.prototype.startEngine = function(callback) {
