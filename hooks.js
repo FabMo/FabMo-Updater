@@ -67,12 +67,10 @@ exports.getVersions = function(callback) {
 }
 
 exports.startEngine = function(callback) {
-	log.debug("Starting Engine");
 	execute('engine_state', 'start', callback);
 }
 
 exports.stopEngine = function(callback) {
-	log.debug("Stopping Engine");
 	execute('engine_state', 'stop', callback);
 }
 
