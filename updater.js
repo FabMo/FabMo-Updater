@@ -9,6 +9,7 @@ var socketio = require('socket.io')
 var events = require('events');
 var util = require('util');
 var hooks = require('./hooks')
+var network = require('./network')
 //var argv = require('minimist')(process.argv);
 
 var Updater = function() {
@@ -57,6 +58,23 @@ Updater.prototype.start = function(callback) {
             log.info("Loading configuration...");
             config.configureUpdater(callback);
         },
+
+	function setup_network(callback) {
+	if(config.updater.get('network_manager')) {
+			log.info("Setting up the network...");
+            try {
+                network.init();
+            } catch(e) {
+                log.error('Problem starting network manager:')
+                log.error(e);
+            }
+			callback(null);
+		} else {
+			log.warn("Skipping network setup because wifi manager is disabled.");
+			callback(null);
+		}
+	},
+
 
         function start_server(callback) {
             log.info("Setting up the webserver...");

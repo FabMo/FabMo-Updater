@@ -6,5 +6,6 @@
 	"updater_git_repos" : "https://github.com/FabMo/FabMo-Updater.git",
 	"platform" : "generic",
 	"server_port" : 9877,
-	"engine_server_port" : 9876
+	"engine_server_port" : 9876,
+	"network_manager": false
 }
