@@ -49,8 +49,8 @@ $(document).ready(function() {
   $("#system-reboot").click(function() {updater.reboot()});
   $("#system-shutdown").click(function() {updater.shutdown()});
   $("#engine-start").click(function() {updater.startEngine()});
-  $("#engine-stop").click(function() {updater.startEngine()});
-  $("#engine-restart").click(function() {updater.startEngine()});
+  $("#engine-stop").click(function() {updater.stopEngine()});
+  $("#engine-restart").click(function() {updater.restartEngine()});
 
   // Button to clear the log
   $("#log-clear").click( function() { 

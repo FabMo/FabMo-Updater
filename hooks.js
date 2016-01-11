@@ -40,6 +40,7 @@ var execute = function(name, args, callback) {
 			var match = matches[0];
 			log.info("Running hook " + match);
 			return exec(match + ' ' + (args || ''), function(err, stdout, stderr) {
+				log.shell(stdout);	
 				hook_func(err, stdout, stderr, callback);
 			});
 		break;
@@ -66,10 +67,12 @@ exports.getVersions = function(callback) {
 }
 
 exports.startEngine = function(callback) {
+	log.debug("Starting Engine");
 	execute('engine_state', 'start', callback);
 }
 
 exports.stopEngine = function(callback) {
+	log.debug("Stopping Engine");
 	execute('engine_state', 'stop', callback);
 }
 
