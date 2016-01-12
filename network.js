@@ -118,7 +118,7 @@ EdisonNetworkManager.prototype.runStation = function() {
     case 'done_scanning':
       this.getNetworks(function(err, data) {
         if(!err) {
-          log.debug('Scanned and found ' + data.length + ' networks.')
+	//log.debug('Scanned and found ' + data.length + ' networks.')
           for(var i in data) {
               var ssid = data[i].ssid;
               var found = false;
@@ -148,7 +148,7 @@ EdisonNetworkManager.prototype.runStation = function() {
       break;
 
     case 'check_network':
-      log.debug('Checking network health...');
+      //log.debug('Checking network health...');
       this.getInfo(function(err, data) {
         var networkOK = true;
         if(!err) {
@@ -166,7 +166,7 @@ EdisonNetworkManager.prototype.runStation = function() {
           networkOK = false;
         }
         if(networkOK) {
-          log.debug("Network health OK");
+          //log.debug("Network health OK");
           this.state = 'idle';          
           setImmediate(this.run.bind(this));
         } else {

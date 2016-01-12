@@ -242,7 +242,7 @@ def join_wifi_network(ssid, password):
  
         if selected_network: 
             network_conf = make_network_configuration(selected_network, password)
-            set_network(network_conf, ssid)
+            set_network(network_conf)
         else:
             raise Exception("No such SSID in the site survey: %s" % ssid)
    
@@ -276,6 +276,7 @@ def join_ap_mode():
     if info['mode'] == 'master':
         raise Exception("System already in AP mode")
     os.popen("systemctl stop wpa_supplicant && sleep 2 && systemctl start hostapd && sleep 2")# && systemctl restart fabmo")
+    clear_network()
     set_ap_boot_flag();
 
 def unjoin_ap_mode():
@@ -284,11 +285,17 @@ def unjoin_ap_mode():
         raise Exception("System not in AP mode")
     os.popen("systemctl stop hostapd && sleep 2 && systemctl start wpa_supplicant && sleep 2")
 
-
-def set_network(network_conf, ssid):
+def clear_network():
     with open('/etc/wpa_supplicant/wpa_supplicant.conf', 'w') as fp:
         fp.write(WPA_SUPPLICANT_CONF_TEMPLATE)
-        fp.write(network_conf)
+	fp.flush()
+	os.fsync(fp.fileno())
+
+def set_network(network_conf):
+    with open('/etc/wpa_supplicant/wpa_supplicant.conf', 'w') as fp:
+        fp.write(WPA_SUPPLICANT_CONF_TEMPLATE)
+        if(network_conf): 
+            fp.write(network_conf)
 	fp.flush()
 	os.fsync(fp.fileno())
     subprocess.call("wpa_cli reconfigure &> /dev/null && sleep 2", shell=True)
