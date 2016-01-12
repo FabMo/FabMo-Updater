@@ -237,7 +237,7 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
 
 exports.init = function() {
 	log.debug("Collapsing from AP state to scan (first boot)");
-	jedison('unjoin', function(err, data) {
+	jedison('init', function(err, data) {
   		wifi = new EdisonNetworkManager();
   		wifi.run();
 	});

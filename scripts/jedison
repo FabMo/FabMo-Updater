@@ -300,6 +300,9 @@ def set_network(network_conf, ssid):
     ifarray = subprocess.check_output("wpa_cli ifname", shell=True).split()
     subprocess.call("udhcpc -i " + ifarray[len(ifarray)-1] + " -n &> /dev/null", shell=True)
 
+def init():
+    os.popen("systemctl stop hostapd && sleep 2 && systemctl start wpa_supplicant && sleep 2")
+
 def get_handler(args):
     if args.target == 'networks':
         return get_wifi_networks()
@@ -350,6 +353,9 @@ if __name__ == "__main__":
     scan_parser = subparsers.add_parser('scan')
     scan_parser.set_defaults(func=scan_handler)
 
+    scan_parser = subparsers.add_parser('init')
+    scan_parser.set_defaults(func=init)
+    
     unjoin_parser = subparsers.add_parser('unjoin')
     unjoin_parser.set_defaults(func=unjoin_handler)
     try:
