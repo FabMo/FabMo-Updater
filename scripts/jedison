@@ -303,6 +303,9 @@ def set_network(network_conf, ssid):
 def init():
     os.popen("systemctl stop hostapd && sleep 2 && systemctl start wpa_supplicant && sleep 2")
 
+def init_handler(args):
+    init()
+
 def get_handler(args):
     if args.target == 'networks':
         return get_wifi_networks()
@@ -354,7 +357,7 @@ if __name__ == "__main__":
     scan_parser.set_defaults(func=scan_handler)
 
     scan_parser = subparsers.add_parser('init')
-    scan_parser.set_defaults(func=init)
+    scan_parser.set_defaults(func=init_handler)
     
     unjoin_parser = subparsers.add_parser('unjoin')
     unjoin_parser.set_defaults(func=unjoin_handler)

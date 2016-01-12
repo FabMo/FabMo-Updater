@@ -82,8 +82,8 @@ EdisonNetworkManager.prototype.run = function() {
       this.getInfo(function(err, data) {
         if(!err) {
           var old_mode = this.mode;
-		if(data.mode == 'managed') { this.mode = 'station'; }
-          else if(data.mode == 'master') { this.mode = 'ap'; }
+		if(data.mode == 'managed') { this.mode = 'station'; log.debug("Going into station mode");}
+          else if(data.mode == 'master') { this.mode = 'ap'; log.debug("Going into AP mode."); }
           else { log.warn('Unknown network mode: ' + data.mode)}
         	if(this.mode != old_mode) {
 
