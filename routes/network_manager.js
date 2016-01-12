@@ -16,6 +16,8 @@ scan = function(req, res, next) {
 connectWifi = function(req, res, next) {
     ssid = req.params.ssid
     key = req.params.key
+	log.debug('ssid: ' + ssid);
+    	log.debug('key: ' + key);
     if(ssid) {
         /*network.createProfileForAvailableWirelessNetwork(ssid, key, function(err, data) {
             if(err) {
