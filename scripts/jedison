@@ -12,7 +12,7 @@ import time
 WSREGEX = re.compile(r"\s+")
 DESTINATION_PATH = "/tmp/"
 STATE_DIR = '/var/lib/edison_config_tools'
-HOST_AP_MODE_FILE = "/.start-in-host-ap-mode"
+HOST_AP_MODE_FILE = "/update/.start-in-host-ap-mode"
 CURR_PACKAGE_PATH = ""
 IFNAME = 'wlan0'
 WPAPSK_REGEX=re.compile(r'WPA[2]?-PSK-.+')
@@ -251,11 +251,32 @@ def scan_wifi():
     if result.split('\n')[1].strip() != 'OK':
         raise Exception('Unexpected response from wpa_cli: %s' % result)
 
+def set_ap_boot_flag():
+    retval = subprocess.call("mkdir -p /update", shell=True)
+    if retval != 0:
+        raise Exception("Could not create mountpoint for AP mode boot flag.")
+
+    retval = subprocess.call("losetup -o 8192 /dev/loop0 /dev/disk/by-partlabel/update", shell=True)
+    if retval != 0:
+        raise Exception("Could not setup loopback device for AP mode boot flag.")
+
+    retval = subprocess.call("mount /dev/loop0 /update", shell=True)
+    if retval != 0:
+        raise Exception("Could not mount partition for AP mode boot flag.")
+
+    with open(HOST_AP_MODE_FILE, 'w') as fp:
+        fp.write('Indicates that the edison will start in host AP mode next boot\n')
+
+    retval = subprocess.call("umount /update", shell=True)
+    if retval != 0:
+        raise Exception("Could not unmount the partition for AP mode boot flag.");
+
 def join_ap_mode():
     info = get_wifi_info()
     if info['mode'] == 'master':
         raise Exception("System already in AP mode")
     os.popen("systemctl stop wpa_supplicant && sleep 2 && systemctl start hostapd && sleep 2")# && systemctl restart fabmo")
+    set_ap_boot_flag();
 
 def unjoin_ap_mode():
     info = get_wifi_info()
@@ -339,6 +360,6 @@ if __name__ == "__main__":
             retval['data'] = data
         print json.dumps(retval)
     except Exception, e:
-       	raise e 
+       	#raise e 
 	retval = {"status":"error", "message":str(e)}
         print json.dumps(retval)
