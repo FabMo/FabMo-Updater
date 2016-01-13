@@ -17,6 +17,7 @@ var Updater = function() {
     this.status = {
         'state' : 'idle'
     }
+    this.networkManager = 'butts';
     // Handle Inheritance
     events.EventEmitter.call(this);
 };
@@ -59,22 +60,23 @@ Updater.prototype.start = function(callback) {
             config.configureUpdater(callback);
         },
 
-	function setup_network(callback) {
-	if(config.updater.get('network_manager')) {
-			log.info("Setting up the network...");
+        function setup_network(callback) {
             try {
-                network.init();
+                this.networkManager = network.createNetworkManager();
             } catch(e) {
-                log.error('Problem starting network manager:')
-                log.error(e);
+                this.networkManager = null;
+                log.warn(e);
+                return callback(null);
             }
-			callback(null);
-		} else {
-			log.warn("Skipping network setup because wifi manager is disabled.");
-			callback(null);
-		}
-	},
-
+            log.info("Setting up the network...");
+            try {
+                this.networkManager.init();
+                log.info("Network manager started.")
+            } catch(e) {
+                log.error('Problem starting network manager:' + e);
+            }
+            callback(null);
+        }.bind(this),
 
         function start_server(callback) {
             log.info("Setting up the webserver...");
