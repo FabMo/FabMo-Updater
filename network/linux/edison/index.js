@@ -240,9 +240,9 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
  */
 
 EdisonNetworkManager.prototype.init = function() {
-	jedison('init', function(err, data) {
-      this.run();
-	});
+  jedison('init', function(err, data) {
+    this.run();
+  }.bind(this));
 }
 
 EdisonNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
