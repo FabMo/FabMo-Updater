@@ -117,7 +117,7 @@ Updater.prototype.start = function(callback) {
             var routes = require('./routes')(server);
 
             // Kick off the server listening for connections
-            server.listen(9877, function(), "0.0.0.0", {
+            server.listen(9877, "0.0.0.0", function() {
                 log.info(server.name+ ' listening at '+ server.url);
                 callback(null, server);
             });
