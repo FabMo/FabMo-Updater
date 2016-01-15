@@ -82,6 +82,15 @@ $(document).ready(function() {
     updater.installEngine('master');
   });
 
+  $("#network-join").click(function(evt) {
+	evt.preventDefault();
+	var ssid = $('#network-ssid').val();
+	var key = $('#network-key').val();
+	console.log(ssid)
+	console.log(key)
+	updater.connectToWifi(ssid, key);
+  });
+
   // The update version menu
   updater.getVersions(function(err, versions) {
     menu1 = $("#update-version");

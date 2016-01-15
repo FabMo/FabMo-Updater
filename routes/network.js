@@ -14,10 +14,9 @@ scan = function(req, res, next) {
 };
 
 connectWifi = function(req, res, next) {
-    ssid = req.params.ssid
+ssid = req.params.ssid
     key = req.params.key
         var network = require('../updater').networkManager;
-
     if(ssid) {
         network.connectToAWifiNetwork(ssid,key,function(err, data){
             if(err) {
@@ -27,6 +26,7 @@ connectWifi = function(req, res, next) {
             }
         });
     } else {
+	log.error('Not joining a network because no SSID provided.');
         res.json({'status':'error', 'message':'No SSID provided'});
     }
 }

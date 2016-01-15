@@ -159,7 +159,6 @@ EdisonNetworkManager.prototype.runStation = function() {
       break;
 
     case 'check_network':
-      //log.debug('Checking network health...');
       this.getInfo(function(err, data) {
         var networkOK = true;
         if(!err) {
@@ -240,7 +239,6 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
     if(err) {
         log.error(err);
     }
-    log.debug(result);
     callback(err, result);
   });
 }
@@ -260,7 +258,7 @@ EdisonNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
 }
 
 EdisonNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback) {
-  this.joinWifi(ssid, key, callback);
+	this.joinWifi(ssid, key, callback);
 }
 
 EdisonNetworkManager.prototype.turnWifiOn=function(callback){
