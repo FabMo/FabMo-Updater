@@ -8,7 +8,10 @@ exports.createNetworkManager = function() {
 
 	try {
 		NetworkManager = require('./network/' + OS + '/' + PLATFORM).NetworkManager;
-		return new NetworkManager();
+		var nm = new NetworkManager();
+		nm.os = OS;
+		nm.platform = PLATFORM;
+		return nm;
 	} catch(e) {
 		throw new Error("Cannot load network manager for " + OS + "/" + PLATFORM + ": " + e.message);
 	}

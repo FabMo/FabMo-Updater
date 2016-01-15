@@ -102,6 +102,18 @@ def get_hostname():
     hostname = subprocess.check_output('hostname', shell=True)
     return {'hostname' : hostname.strip()}
 
+def set_hostapd_ssid(name):
+  subprocess.call(["sed", "-i", "s/^ssid=.*/ssid=" + name + "/", "/etc/hostapd/hostapd.conf"])
+
+def set_hostapd_password(password):
+  subprocess.call(["sed", "-i", "s/^wpa_passphrase=.*/wpa_passphrase=" + password + "/", "/etc/hostapd/hostapd.conf"])
+
+def set_root_password(password):
+  echoSub = subprocess.Popen(["echo", "root:" + password], stdout=subprocess.PIPE)
+  chpasswdSub = subprocess.Popen(["chpasswd"], stdin=echoSub.stdout, stdout=subprocess.PIPE)
+  echoSub.stdout.close()  # Allow echoSub to receive a SIGPIPE if chpasswdSub exits.
+  chpasswdSub.communicate()[0]
+
 def get_wifi_info():
     iwconfig = ''
     ifconfig = ''
@@ -252,8 +264,6 @@ def scan_wifi():
     if result.split('\n')[1].strip() != 'OK':
         raise Exception('Unexpected response from wpa_cli: %s' % result)
 
-def change_hostapd_password(newPass):
-  subprocess.call(["sed", "-i", "s/^wpa_passphrase=.*/wpa_passphrase=" + newPass + "/", "/etc/hostapd/hostapd.conf"])
 
 def set_ap_boot_flag():
     retval = subprocess.call("mkdir -p /update", shell=True)
@@ -279,7 +289,7 @@ def join_ap_mode():
     info = get_wifi_info()
     if info['mode'] == 'master':
         raise Exception("System already in AP mode")
-    os.popen("systemctl stop wpa_supplicant && sleep 2 && systemctl start hostapd && sleep 2")# && systemctl restart fabmo")
+    os.popen("systemctl stop wpa_supplicant && sleep 2 && systemctl restart hostapd && sleep 2")
     clear_network()
     set_ap_boot_flag();
 
@@ -329,12 +339,19 @@ def get_handler(args):
 def set_handler(args):
     if args.target == 'hostname':
         set_hostname(args.value)
+    elif args.target == 'name':
+        set_hostname(args.value)
+        set_hostapd_ssid(args.value)
+    elif args.target == 'password':
+        set_root_password(args.value)
+        set_hostapd_password(args.value)
 
 def join_handler(args):
     if args.target == 'wifi':
         join_wifi_network(args.ssid, args.password)
     elif args.target == 'ap':
         join_ap_mode()
+
 def unjoin_handler(args):
     unjoin_ap_mode()
 

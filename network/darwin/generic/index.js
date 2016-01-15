@@ -4,6 +4,9 @@ var parseString = require('xml2js').parseString;
 
 var AIRPORT = '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport'
 
+var util = require('util');
+var NetworkManager = require('../../manager').NetworkManager;
+
 var wifi;
 var WIFI_SCAN_INTERVAL = 5000;
 var WIFI_SCAN_RETRIES = 3;
@@ -11,6 +14,7 @@ var WIFI_SCAN_RETRIES = 3;
 var DarwinNetworkManager = function() {
   this.networks = [];
 }
+util.inherits(DarwinNetworkManager, NetworkManager);
 
 DarwinNetworkManager.prototype._scan = function(callback) {
   doshell(AIRPORT + ' -s -x', function(result) {
@@ -53,26 +57,5 @@ DarwinNetworkManager.prototype.init = function() {
 DarwinNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
   callback(null, this.networks);
 }
-
-DarwinNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback) {
-  callback(new Error('Function not available on the darwin wifi manager.'));
-}
-
-DarwinNetworkManager.prototype.turnWifiOn=function(callback){
-  callback(new Error('Function not available on the darwin wifi manager.'));
-}
-
-DarwinNetworkManager.prototype.turnWifiOff=function(callback){
-  callback(new Error('Function not available on the darwin wifi manager.'));
-}
-
-DarwinNetworkManager.prototype.turnWifiHotspotOn=function(callback){
-  callback(new Error('Function not available on the darwin wifi manager.'));
-}
-
-DarwinNetworkManager.prototype.turnWifiHotspotOff=function(callback){
-  callback(new Error('Function not available on the darwin wifi manager.'));
-}
-
 
 exports.NetworkManager = DarwinNetworkManager;

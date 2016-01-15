@@ -73,6 +73,7 @@ Updater.prototype.start = function(callback) {
                 this.networkManager.init();
                 log.info("Network manager started.")
             } catch(e) {
+                log.error(e);
                 log.error('Problem starting network manager:' + e);
             }
             callback(null);

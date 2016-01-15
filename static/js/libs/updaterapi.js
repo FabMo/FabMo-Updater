@@ -116,6 +116,7 @@ UpdaterAPI.prototype.restartEngine = function(callback) {
 	this._post('/engine/restart', {}, callback, callback);
 }
 
+// System management
 UpdaterAPI.prototype.shutdown = function(callback) {
 	this._post('/system/shutdown', {}, callback, callback);
 }
@@ -123,7 +124,35 @@ UpdaterAPI.prototype.reboot = function(callback) {
 	this._post('/system/reboot', {}, callback, callback);
 }
 
+// Network management
+UpdaterAPI.prototype.connectToWifi = function(ssid, key, callback) {
+	var data = {'ssid' : ssid, 'key' : key};
+	this._post('/network/wifi/connect', data, callback, callback);
+}
 
+UpdaterAPI.prototype.disconnectFromWifi = function(callback) {
+	this._post('/network/wifi/disconnect', {}, callback, callback);
+}
+
+UpdaterAPI.prototype.enableWifi = function(callback) {
+	var data = {'enabled' : true};
+	this._post('/network/wifi/state', data, callback, callback);
+}
+
+UpdaterAPI.prototype.disableWifi = function(callback) {
+	var data = {'enabled' : false};
+	this._post('/network/wifi/state', data, callback, callback);
+}
+
+UpdaterAPI.prototype.enableHotspot = function(callback) {
+	var data = {'enabled' : true};
+	this._post('/network/hotspot/state', data, callback, callback);
+}
+
+UpdaterAPI.prototype.disableHotspot = function(callback) {
+	var data = {'enabled' : false};
+	this._post('/network/hotspot/state', data, callback, callback);
+}
 
 function makeFormData(obj, default_name, default_type) {
 	if (obj instanceof jQuery){ //if it's a form
