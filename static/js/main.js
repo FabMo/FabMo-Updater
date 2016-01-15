@@ -52,6 +52,9 @@ $(document).ready(function() {
   $("#engine-stop").click(function() {updater.stopEngine()});
   $("#engine-restart").click(function() {updater.restartEngine()});
 
+  // Buttons for network management
+  $("#network-ap").click(function() {updater.enableHotspot()});
+
   // Button to clear the log
   $("#log-clear").click( function() { 
     $('#log-content').text('');

@@ -157,12 +157,12 @@ EdisonNetworkManager.prototype.runStation = function() {
         var networkOK = true;
         if(!err) {
           if(data.ipaddress === '?') {
-           	log.info("Ip address == ?"); 
-		        networkOK = false;
+           	log.warn("Ip address == ?"); 
+		networkOK = false;
           }
           if(data.mode === 'master') {
              log.info("In master mode..."); 
-	           this.mode = 'ap';
+	     this.mode = 'ap';
              this.state = 'idle';
              setImmediate(this.run.bind(this));
           }
@@ -176,8 +176,8 @@ EdisonNetworkManager.prototype.runStation = function() {
         } else {
           log.warn("Network health in question...");
           if(this.network_health_retries == 0) {
-              this.network_health_retries = 5;
               log.error("Network is down.  Going to AP mode.");
+              this.network_health_retries = 5;
        	      this.joinAP();
               setImmediate(this.run.bind(this)); 
 	  } else {
@@ -213,6 +213,7 @@ EdisonNetworkManager.prototype.joinAP = function() {
 }
 
 EdisonNetworkManager.prototype._joinAP = function(callback) {
+  log.info("Attempting to enter AP mode"); 
   jedison('join ap', function(err, result) {
     if(!err) {
       log.info("Entered AP mode.");
