@@ -86,9 +86,10 @@ EdisonNetworkManager.prototype.run = function() {
       this.getInfo(function(err, data) {
         if(!err) {
           var old_mode = this.mode;
-		if(data.mode == 'managed') { this.mode = 'station'; log.debug("Going into station mode");}
-          else if(data.mode == 'master') { this.mode = 'ap'; log.debug("Going into AP mode."); }
-          else { log.warn('Unknown network mode: ' + data.mode)}
+	 log.info("Wireless mode is '" + data.mode + "'"); 
+         if(data.mode == 'managed') {this.mode = 'station';}
+         else if(data.mode == 'master') { this.mode = 'ap';}
+         else { log.warn('Unknown network mode: ' + data.mode)}
         	if(this.mode != old_mode) {
 
         setImmediate(this.run.bind(this));
@@ -115,14 +116,15 @@ EdisonNetworkManager.prototype.runStation = function() {
     case 'scan':  
       this.scan(function(err, data) {
         this.state = 'done_scanning';
-        setTimeout(this.run.bind(this), WIFI_SCAN_INTERVAL);        
+	setTimeout(this.run.bind(this), WIFI_SCAN_INTERVAL);        
       }.bind(this));
       break;
 
     case 'done_scanning':
       this.getNetworks(function(err, data) {
         if(!err) {
-	        //log.debug('Scanned and found ' + data.length + ' networks.')
+          var new_networks = 0;
+	  var new_network_names = [];
           for(var i in data) {
               var ssid = data[i].ssid;
               var found = false;
@@ -133,9 +135,14 @@ EdisonNetworkManager.prototype.runStation = function() {
                   }
               }
              if(!found) {
+		 new_networks += 1;
+		 new_network_names.push(ssid);
                  this.networks.push(data[i]);
              }
           }
+	  if(new_networks > 0) {
+	      log.info('Found ' + new_networks + ' new networks. (' + new_network_names.join(',') + ')')
+	  }
         } else {
           console.warn(err);
         }
@@ -157,7 +164,6 @@ EdisonNetworkManager.prototype.runStation = function() {
         var networkOK = true;
         if(!err) {
           if(data.ipaddress === '?') {
-           	log.warn("Ip address == ?"); 
 		networkOK = false;
           }
           if(data.mode === 'master') {
@@ -170,7 +176,6 @@ EdisonNetworkManager.prototype.runStation = function() {
           networkOK = false;
         }
         if(networkOK) {
-          //log.debug("Network health OK");
           this.state = 'idle';          
           setImmediate(this.run.bind(this));
         } else {
@@ -213,7 +218,7 @@ EdisonNetworkManager.prototype.joinAP = function() {
 }
 
 EdisonNetworkManager.prototype._joinAP = function(callback) {
-  log.info("Attempting to enter AP mode"); 
+  log.info("Entering AP mode..."); 
   jedison('join ap', function(err, result) {
     if(!err) {
       log.info("Entered AP mode.");

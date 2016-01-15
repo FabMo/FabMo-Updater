@@ -322,7 +322,7 @@ def set_network(network_conf):
     subprocess.call("udhcpc -i " + ifarray[len(ifarray)-1] + " -n &> /dev/null", shell=True)
 
 def init():
-    os.popen("systemctl stop hostapd && systemctl stop wpa_supplicant && ifconfig wlan0 down && sleep 2")
+    os.popen("systemctl stop hostapd && systemctl stop wpa_supplicant && sleep 1 && systemctl start wpa_supplicant && sleep 2")
 
 def init_handler(args):
     init()
