@@ -87,7 +87,8 @@ EdisonNetworkManager.prototype.run = function() {
         if(!err) {
           var old_mode = this.mode;
 	 log.info("Wireless mode is '" + data.mode + "'"); 
-         if(data.mode == 'managed') {this.mode = 'station';}
+         log.debug(JSON.stringify(data)); 
+	 if(data.mode == 'managed') {this.mode = 'station';}
          else if(data.mode == 'master') { this.mode = 'ap';}
          else { log.warn('Unknown network mode: ' + data.mode)}
         	if(this.mode != old_mode) {

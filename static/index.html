@@ -48,14 +48,14 @@
     <div class="pure-u-1-2">
       <div class="header">Network Operations</div>
       <button id="network-ap" class="pure-button button-fabmo">AP Mode</button>
-      <div class="header">Updater Status: <span id="updater-status"></span></div>
       <form class="pure-form">
-        <button id="network-join" class="pure-button button-success">Join Wireless Network</button>
-	<div>SSID: <input id="network-ssid" /></div>
-	<div>Password: <input id="network-key" /></div>
-        </select>
+	      <fieldset>
+	<input id="network-ssid" type="text" placeholder="SSID" />
+	<input id="network-key" type="text" placeholder="password" />
+        <button id="network-join" class="pure-button button-success">Join Wifi</button>
+	      </fieldset>
       </form>
-
+      <div class="header">Updater Status: <span id="updater-status"></span></div>
 
 
     </div>
