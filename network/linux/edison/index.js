@@ -272,7 +272,7 @@ EdisonNetworkManager.prototype.turnWifiHotspotOn=function(callback){
 }
 
 EdisonNetworkManager.prototype.setName=function(name, callback){
-  jedison("set name '" + config.updater.get('name') "'", function(err, data) {
+  jedison("set name '" + config.updater.get('name') + "'", function(err, data) {
     if(this.mode === 'ap') {
       this.joinAP(callback)
     }
@@ -280,7 +280,7 @@ EdisonNetworkManager.prototype.setName=function(name, callback){
 }
 
 EdisonNetworkManager.prototype.setPassword=function(name, callback){
-  jedison("set password '" + config.updater.get('password') "'", callback);
+  jedison("set password '" + config.updater.get('password') + "'", callback);
 }
 
 exports.NetworkManager = EdisonNetworkManager;
