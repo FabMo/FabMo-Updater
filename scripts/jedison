@@ -321,11 +321,19 @@ def set_network(network_conf):
     ifarray = subprocess.check_output("wpa_cli ifname", shell=True).split()
     subprocess.call("udhcpc -i " + ifarray[len(ifarray)-1] + " -n &> /dev/null", shell=True)
 
-def init():
+def init(name=None, password=None):
+    from collections import namedtuple
+    SetNamespace = namedtuple('SetNamespace', ['target', 'value'])
+    if(name):
+        set_handler(SetNamespace('name', name))
+    if(password):
+        set_handler(SetNamespace('password', password))
+
+    subprocess.call("sed -i 's/^BindToDevice=/# BindToDevice=/g' /lib/systemd/system/sshd.socket ; sync ; systemctl daemon-reload; systemctl restart sshd.socket", shell=True)
     os.popen("systemctl stop hostapd && systemctl stop wpa_supplicant && sleep 1 && systemctl start wpa_supplicant && sleep 2")
 
 def init_handler(args):
-    init()
+    init(args.name, args.password)
 
 def get_handler(args):
     if args.target == 'networks':
@@ -384,8 +392,10 @@ if __name__ == "__main__":
     scan_parser = subparsers.add_parser('scan')
     scan_parser.set_defaults(func=scan_handler)
 
-    scan_parser = subparsers.add_parser('init')
-    scan_parser.set_defaults(func=init_handler)
+    init_parser = subparsers.add_parser('init')
+    init_parser.set_defaults(func=init_handler)
+    init_parser.add_argument('--name', action='store')
+    init_parser.add_argument('--password', action='store')
     
     unjoin_parser = subparsers.add_parser('unjoin')
     unjoin_parser.set_defaults(func=unjoin_handler)

@@ -1,5 +1,5 @@
 var log = require('../../../log').logger('network');
-var config = require('../../../config').Update
+var config = require('../../../config')
 var async = require('async');
 var fs = require('fs');
 var doshell = require('../../../util').doshell;
@@ -21,7 +21,8 @@ function jedison(cmdline, callback) {
                 callback(j.message)
             }
         } catch(e) {
-            callback(e);
+            log.error('jedison ' + cmdline);
+	    callback(e);
         }
     });
 }
@@ -249,7 +250,7 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
  */
 
 EdisonNetworkManager.prototype.init = function() {
-  jedison('init', function(err, data) {
+  jedison("init --name='" + config.updater.get('name') + "' --password='" + config.updater.get('password') + "'", function(err, data) {
     this.run();
   }.bind(this));
 }
