@@ -69,8 +69,7 @@ forgetWifi  = function(req,res,next){
 wifiState = function(req,res,next){
     state = req.params.enabled;
 
-        var network = require('../updater').networkManager;
-
+    var network = require('../updater').networkManager;
     if(state===true){
         network.turnWifiOn(function(err){
             if(err) {
@@ -118,9 +117,31 @@ hotspotState = function(req,res,next){
     }
 }
 
+setNetworkIdentity = function(req,res,next){
+    var name = req.params.name;
+    var password = req.params.password;
+
+    var network = require('../updater').networkManager;
+
+    network.setIdentity({'name' : name, 'password' : password}, function(err, data) {
+        if(err) {
+            return res.json({'status':'error', 'message' : err.message});                            
+        }
+        res.json({'status':'success'});                    
+    });
+}
+
+getNetworkIdentity = function(req, res, next) {
+    res.json({
+        status : 'success',
+        data : {name : config.updater.get('name')}
+    });
+}
+
+
 networkGateKeeper = function(req,res,next){
     var updater = require('../updater');
-        var network = require('../updater').networkManager;
+    var network = require('../updater').networkManager;
 
 
     if(updater.networkManager) {
@@ -142,4 +163,7 @@ module.exports = function(server) {
     server.post('/network/wifi/connect', connectWifi) // OK
     server.post('/network/wifi/disconnect',disconnectWifi); //OK
     server.post('/network/wifi/forget',forgetWifi); //OK
+    server.get('/network/identity',getNetworkIdentity); //OK
+    server.post('/network/identity',setNetworkIdentity); //OK
+
 };

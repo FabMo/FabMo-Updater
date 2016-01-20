@@ -91,6 +91,28 @@ $(document).ready(function() {
 	updater.connectToWifi(ssid, key);
   });
 
+    $("#network-id").click(function(evt) {
+  evt.preventDefault();
+  var name = $('#network-name').val();
+  var password = $('#network-password').val();
+  var options = {};
+  if(name) {
+    options['name'] = name;
+  }
+  if(password) {
+    options['password'] = password;
+  }
+
+  updater.setNetworkIdentity(options, function(err, data) {
+    if(err) {
+      console.error(err);
+    } else {
+      console.info(data);
+    }
+  });
+});
+
+
   // The update version menu
   updater.getVersions(function(err, versions) {
     menu1 = $("#update-version");

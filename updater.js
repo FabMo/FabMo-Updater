@@ -8,8 +8,10 @@ var util = require('./util');
 var socketio = require('socket.io')
 var events = require('events');
 var util = require('util');
-var hooks = require('./hooks')
-var network = require('./network')
+var hooks = require('./hooks');
+var network = require('./network');
+var GenericNetworkManager = require('./network/manager').NetworkManager;
+
 //var argv = require('minimist')(process.argv);
 
 var Updater = function() {
@@ -17,7 +19,7 @@ var Updater = function() {
     this.status = {
         'state' : 'idle'
     }
-    this.networkManager = 'butts';
+    this.networkManager = network.Generic;
     // Handle Inheritance
     events.EventEmitter.call(this);
 };
@@ -64,8 +66,8 @@ Updater.prototype.start = function(callback) {
             try {
                 this.networkManager = network.createNetworkManager();
             } catch(e) {
-                this.networkManager = null;
                 log.warn(e);
+                this.networkManager = new GenericNetworkManager();
                 return callback(null);
             }
             log.info("Setting up the network...");

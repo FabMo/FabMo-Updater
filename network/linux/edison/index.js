@@ -5,6 +5,7 @@ var fs = require('fs');
 var doshell = require('../../../util').doshell;
 var util = require('util');
 var NetworkManager = require('../../manager').NetworkManager;
+var async = require('async');
 
 var wifi;
 var WIFI_SCAN_INTERVAL = 5000;
@@ -276,16 +277,52 @@ EdisonNetworkManager.prototype.turnWifiHotspotOn=function(callback){
   callback(null);
 }
 
-EdisonNetworkManager.prototype.setName=function(name, callback){
-  jedison("set name '" + config.updater.get('name') + "'", function(err, data) {
-    if(this.mode === 'ap') {
-      this.joinAP(callback)
-    }
-  }.bind(this));
-}
 
-EdisonNetworkManager.prototype.setPassword=function(name, callback){
-  jedison("set password '" + config.updater.get('password') + "'", callback);
+EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
+      async.series([
+        function set_name(callback) {
+          if(identity.name) {
+            jedison("set name '" + name + "'", callback);
+          } else {
+            callback(null);
+          }
+        }.bind(this),
+
+        function set_name_config(callback) {
+          if(identity.name) {
+            config.updater.set('name', name, callback);
+          } else {
+            callback(null);
+          }
+        }.bind(this),
+
+        function set_password(callback) {
+          if(identity.password) {
+            jedison("set password '" + password + "'", callback);
+          } else {
+            callback(null);
+          }
+        }.bind(this),
+
+        function set_password_config(callback) {
+          if(identity.name) {
+            config.updater.set('password', password, callback);
+          } else {
+            callback(null);
+          }
+        }.bind(this)
+
+        ],
+
+        function(err, results) {
+            if(err) {
+                log.error(err);
+                typeof callback === 'function' && callback(err);
+            } else {
+                typeof callback === 'function' && callback(null, this);
+            }
+        }.bind(this)
+    );
 }
 
 exports.NetworkManager = EdisonNetworkManager;
