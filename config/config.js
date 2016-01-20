@@ -73,7 +73,6 @@ Config.prototype.save = function(callback) {
 								log.error(err);
 							}
 							fs.closeSync(fd);
-							log.debug('fsync()ed ' + this.config_file);
 							callback(err);
 						}.bind(this));
 					}

@@ -283,7 +283,8 @@ EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
       async.series([
         function set_name(callback) {
           if(identity.name) {
-            jedison("set name '" + name + "'", callback);
+	     log.info("Setting network name to " + identity.name);
+   		  jedison("set name '" + identity.name + "'", callback);
           } else {
             callback(null);
           }
@@ -291,7 +292,7 @@ EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
 
         function set_name_config(callback) {
           if(identity.name) {
-            config.updater.set('name', name, callback);
+            config.updater.set('name', identity.name, callback);
           } else {
             callback(null);
           }
@@ -299,15 +300,16 @@ EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
 
         function set_password(callback) {
           if(identity.password) {
-            jedison("set password '" + password + "'", callback);
+	    log.info("Setting network password to " + identity.password);
+            jedison("set password '" + identity.password + "'", callback);
           } else {
             callback(null);
           }
         }.bind(this),
 
         function set_password_config(callback) {
-          if(identity.name) {
-            config.updater.set('password', password, callback);
+          if(identity.password) {
+            config.updater.set('password', identity.password, callback);
           } else {
             callback(null);
           }
