@@ -52,6 +52,9 @@ $(document).ready(function() {
   $("#engine-stop").click(function() {updater.stopEngine()});
   $("#engine-restart").click(function() {updater.restartEngine()});
 
+  // Buttons for network management
+  $("#network-ap").click(function() {updater.enableHotspot()});
+
   // Button to clear the log
   $("#log-clear").click( function() { 
     $('#log-content').text('');
@@ -78,6 +81,37 @@ $(document).ready(function() {
     evt.preventDefault();
     updater.installEngine('master');
   });
+
+  $("#network-join").click(function(evt) {
+	evt.preventDefault();
+	var ssid = $('#network-ssid').val();
+	var key = $('#network-key').val();
+	console.log(ssid)
+	console.log(key)
+	updater.connectToWifi(ssid, key);
+  });
+
+    $("#network-id").click(function(evt) {
+  evt.preventDefault();
+  var name = $('#network-name').val();
+  var password = $('#network-password').val();
+  var options = {};
+  if(name) {
+    options['name'] = name;
+  }
+  if(password) {
+    options['password'] = password;
+  }
+
+  updater.setNetworkIdentity(options, function(err, data) {
+    if(err) {
+      console.error(err);
+    } else {
+      console.info(data);
+    }
+  });
+});
+
 
   // The update version menu
   updater.getVersions(function(err, versions) {

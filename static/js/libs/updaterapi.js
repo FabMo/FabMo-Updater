@@ -154,6 +154,10 @@ UpdaterAPI.prototype.disableHotspot = function(callback) {
 	this._post('/network/hotspot/state', data, callback, callback);
 }
 
+UpdaterAPI.prototype.setNetworkIdentity = function(id, callback) {
+	this._post('/network/identity', id, callback, callback);
+}
+
 function makeFormData(obj, default_name, default_type) {
 	if (obj instanceof jQuery){ //if it's a form
 		var file = (obj.find('input:file'))[0].files[0];

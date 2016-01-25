@@ -3,6 +3,8 @@ var util = require('util');
 // The EngineConfig object keeps track of engine-specific settings
 UpdaterConfig = function() {
 	Config.call(this, 'updater');
+	this.name_changed = false;
+	this.password_changed = false;
 };
 util.inherits(UpdaterConfig, Config);
 

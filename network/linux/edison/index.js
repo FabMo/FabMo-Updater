@@ -1,10 +1,11 @@
 var log = require('../../../log').logger('network');
-var config = require('../../../config').Update
+var config = require('../../../config')
 var async = require('async');
 var fs = require('fs');
 var doshell = require('../../../util').doshell;
 var util = require('util');
 var NetworkManager = require('../../manager').NetworkManager;
+var async = require('async');
 
 var wifi;
 var WIFI_SCAN_INTERVAL = 5000;
@@ -21,7 +22,8 @@ function jedison(cmdline, callback) {
                 callback(j.message)
             }
         } catch(e) {
-            callback(e);
+            log.error('jedison ' + cmdline);
+	    callback(e);
         }
     });
 }
@@ -86,9 +88,11 @@ EdisonNetworkManager.prototype.run = function() {
       this.getInfo(function(err, data) {
         if(!err) {
           var old_mode = this.mode;
-		if(data.mode == 'managed') { this.mode = 'station'; log.debug("Going into station mode");}
-          else if(data.mode == 'master') { this.mode = 'ap'; log.debug("Going into AP mode."); }
-          else { log.warn('Unknown network mode: ' + data.mode)}
+	 log.info("Wireless mode is '" + data.mode + "'"); 
+         log.debug(JSON.stringify(data)); 
+	 if(data.mode == 'managed') {this.mode = 'station';}
+         else if(data.mode == 'master') { this.mode = 'ap';}
+         else { log.warn('Unknown network mode: ' + data.mode)}
         	if(this.mode != old_mode) {
 
         setImmediate(this.run.bind(this));
@@ -115,14 +119,15 @@ EdisonNetworkManager.prototype.runStation = function() {
     case 'scan':  
       this.scan(function(err, data) {
         this.state = 'done_scanning';
-        setTimeout(this.run.bind(this), WIFI_SCAN_INTERVAL);        
+	setTimeout(this.run.bind(this), WIFI_SCAN_INTERVAL);        
       }.bind(this));
       break;
 
     case 'done_scanning':
       this.getNetworks(function(err, data) {
         if(!err) {
-	        //log.debug('Scanned and found ' + data.length + ' networks.')
+          var new_networks = 0;
+	  var new_network_names = [];
           for(var i in data) {
               var ssid = data[i].ssid;
               var found = false;
@@ -133,9 +138,14 @@ EdisonNetworkManager.prototype.runStation = function() {
                   }
               }
              if(!found) {
+		 new_networks += 1;
+		 new_network_names.push(ssid);
                  this.networks.push(data[i]);
              }
           }
+	  if(new_networks > 0) {
+	      log.info('Found ' + new_networks + ' new networks. (' + new_network_names.join(',') + ')')
+	  }
         } else {
           console.warn(err);
         }
@@ -152,17 +162,15 @@ EdisonNetworkManager.prototype.runStation = function() {
       break;
 
     case 'check_network':
-      //log.debug('Checking network health...');
       this.getInfo(function(err, data) {
         var networkOK = true;
         if(!err) {
           if(data.ipaddress === '?') {
-           	log.info("Ip address == ?"); 
-		        networkOK = false;
+		networkOK = false;
           }
           if(data.mode === 'master') {
              log.info("In master mode..."); 
-	           this.mode = 'ap';
+	     this.mode = 'ap';
              this.state = 'idle';
              setImmediate(this.run.bind(this));
           }
@@ -170,14 +178,13 @@ EdisonNetworkManager.prototype.runStation = function() {
           networkOK = false;
         }
         if(networkOK) {
-          //log.debug("Network health OK");
           this.state = 'idle';          
           setImmediate(this.run.bind(this));
         } else {
           log.warn("Network health in question...");
           if(this.network_health_retries == 0) {
-              this.network_health_retries = 5;
               log.error("Network is down.  Going to AP mode.");
+              this.network_health_retries = 5;
        	      this.joinAP();
               setImmediate(this.run.bind(this)); 
 	  } else {
@@ -213,6 +220,7 @@ EdisonNetworkManager.prototype.joinAP = function() {
 }
 
 EdisonNetworkManager.prototype._joinAP = function(callback) {
+  log.info("Entering AP mode..."); 
   jedison('join ap', function(err, result) {
     if(!err) {
       log.info("Entered AP mode.");
@@ -234,7 +242,6 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
     if(err) {
         log.error(err);
     }
-    log.debug(result);
     callback(err, result);
   });
 }
@@ -244,7 +251,7 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
  */
 
 EdisonNetworkManager.prototype.init = function() {
-  jedison('init', function(err, data) {
+  jedison("init --name='" + config.updater.get('name') + "' --password='" + config.updater.get('password') + "'", function(err, data) {
     this.run();
   }.bind(this));
 }
@@ -254,7 +261,7 @@ EdisonNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
 }
 
 EdisonNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback) {
-  this.joinWifi(ssid, key, callback);
+	this.joinWifi(ssid, key, callback);
 }
 
 EdisonNetworkManager.prototype.turnWifiOn=function(callback){
@@ -271,16 +278,54 @@ EdisonNetworkManager.prototype.turnWifiHotspotOn=function(callback){
   callback(null);
 }
 
-EdisonNetworkManager.prototype.setName=function(name, callback){
-  jedison("set name '" + config.updater.get('name') "'", function(err, data) {
-    if(this.mode === 'ap') {
-      this.joinAP(callback)
-    }
-  }.bind(this));
-}
 
-EdisonNetworkManager.prototype.setPassword=function(name, callback){
-  jedison("set password '" + config.updater.get('password') "'", callback);
+EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
+      async.series([
+        function set_name(callback) {
+          if(identity.name) {
+	     log.info("Setting network name to " + identity.name);
+   		  jedison("set name '" + identity.name + "'", callback);
+          } else {
+            callback(null);
+          }
+        }.bind(this),
+
+        function set_name_config(callback) {
+          if(identity.name) {
+            config.updater.set('name', identity.name, callback);
+          } else {
+            callback(null);
+          }
+        }.bind(this),
+
+        function set_password(callback) {
+          if(identity.password) {
+	    log.info("Setting network password to " + identity.password);
+            jedison("set password '" + identity.password + "'", callback);
+          } else {
+            callback(null);
+          }
+        }.bind(this),
+
+        function set_password_config(callback) {
+          if(identity.password) {
+            config.updater.set('password', identity.password, callback);
+          } else {
+            callback(null);
+          }
+        }.bind(this)
+
+        ],
+
+        function(err, results) {
+            if(err) {
+                log.error(err);
+                typeof callback === 'function' && callback(err);
+            } else {
+                typeof callback === 'function' && callback(null, this);
+            }
+        }.bind(this)
+    );
 }
 
 exports.NetworkManager = EdisonNetworkManager;
