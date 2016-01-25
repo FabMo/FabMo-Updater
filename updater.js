@@ -52,12 +52,43 @@ Updater.prototype.getVersions = function(callback) {
     hooks.getVersions(callback);
 }
 
+
+function UpdaterConfigFirstTime(callback) {
+    log.info('Configuring for the first time...');
+    switch(config.platform) {
+        case 'linux':
+            fs.stat('/usr/bin/configure_edison', function(err, stat) {
+                if(!err) {
+                    log.info('Intel Edison platform detected.');
+                    config.updater.set('platform', 'edison');
+                }
+                callback();
+            });
+        break;
+
+        case 'darwin':
+            log.info('OSX Detected.');
+            callback();
+        break;
+        default:
+            callback();
+        break;
+    }
+};
 Updater.prototype.start = function(callback) {
 
     async.series([
         function configure(callback) {
             log.info("Loading configuration...");
             config.configureUpdater(callback);
+        },
+
+        function first_time_configure(callback) {
+            if(!config.updater.userConfigLoaded) {
+                UpdaterConfigFirstTime(callback);
+            } else {
+                callback();
+            }
         },
 
         function setup_network(callback) {
