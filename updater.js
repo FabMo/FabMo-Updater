@@ -157,7 +157,14 @@ Updater.prototype.start = function(callback) {
             });
 
         }.bind(this),
-        ],
+        
+	function test(callback) {
+		hooks.getEngineState(function(err, data) {
+	console.log(err);
+	console.log(data);
+});
+	}.bind(this)	
+	],
 
         function(err, results) {
             if(err) {

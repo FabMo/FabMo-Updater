@@ -1,3 +1,3 @@
 #!/bin/sh
 
-systemctl status fabmo
+systemctl status sshd

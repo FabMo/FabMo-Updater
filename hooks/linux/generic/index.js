@@ -25,7 +25,7 @@ exports.get_engine_state = function(err, stdout, stderr, callback) {
 	var state_re = /^\s*Active:\s+(\w+)\s+\((\w+)\)/im
 	var match = state_re.exec(stdout);
 	if(match) {
-		callback(null, match[0]);
+		callback(null, match[1]);
 	} else {
 		callback(new Error('Cannot determine engine state'));
 	}
