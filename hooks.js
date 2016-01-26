@@ -67,15 +67,19 @@ exports.getVersions = function(callback) {
 }
 
 exports.startEngine = function(callback) {
-	execute('engine_state', 'start', callback);
+	execute('set_engine_state', 'start', callback);
 }
 
 exports.stopEngine = function(callback) {
-	execute('engine_state', 'stop', callback);
+	execute('set_engine_state', 'stop', callback);
 }
 
 exports.restartEngine = function(callback) {
-	execute('engine_state', 'restart', callback);
+	execute('set_engine_state', 'restart', callback);
+}
+
+exports.getEngineState = function(callback) {
+	execute('get_engine_state', null, callback);
 }
 
 exports.installEngine = function(version, callback) {
