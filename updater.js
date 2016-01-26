@@ -10,6 +10,7 @@ var events = require('events');
 var util = require('util');
 var hooks = require('./hooks');
 var network = require('./network');
+var fs = require('fs');
 var GenericNetworkManager = require('./network/manager').NetworkManager;
 
 //var argv = require('minimist')(process.argv);
