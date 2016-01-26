@@ -94,7 +94,7 @@ wifiState = function(req,res,next){
 
 hotspotState = function(req,res,next){
     state = req.params.enabled;
-        var network = require('../updater').networkManager;
+    var network = require('../updater').networkManager;
 
     if(state===true || state === 'true'){
         network.turnWifiHotspotOn(function(err){
@@ -138,32 +138,26 @@ getNetworkIdentity = function(req, res, next) {
     });
 }
 
-
-networkGateKeeper = function(req,res,next){
-    var updater = require('../updater');
+isOnline = function(req, res, next) {
     var network = require('../updater').networkManager;
 
-
-    if(updater.networkManager) {
-        return next();
-    }
-    res.json({'status' : 'error', 'message' : 'Network manager is not supported.'});
+    network.isOnline(function(err, online) {
+        if(err) {
+            return res.json({'status':'error', 'message' : err.message });
+        } else {
+            return res.json({'status':'success', 'data':{'online' : online}});
+        }
+    });
 }
 
-
 module.exports = function(server) {
-    //server.get(/network\/.*/, networkGateKeeper);
-    //server.post(/network\/.*/, networkGateKeeper);
-    //server.put(/network\/.*/, networkGateKeeper);
-    //server.del(/network\/.*/, networkGateKeeper);
-
-    server.post('/network/wifi/state',wifiState); //OK
-    server.post('/network/hotspot/state',hotspotState); //OK
-    server.get('/network/wifi/scan',scan); //OK
-    server.post('/network/wifi/connect', connectWifi) // OK
-    server.post('/network/wifi/disconnect',disconnectWifi); //OK
-    server.post('/network/wifi/forget',forgetWifi); //OK
-    server.get('/network/identity',getNetworkIdentity); //OK
-    server.post('/network/identity',setNetworkIdentity); //OK
-
+    server.post('/network/wifi/state',wifiState);
+    server.post('/network/hotspot/state',hotspotState);
+    server.get('/network/wifi/scan',scan);
+    server.post('/network/wifi/connect', connectWifi);
+    server.post('/network/wifi/disconnect',disconnectWifi);
+    server.post('/network/wifi/forget',forgetWifi);
+    server.get('/network/identity',getNetworkIdentity);
+    server.post('/network/identity',setNetworkIdentity);
+    server.get('/network/online', isOnline);
 };

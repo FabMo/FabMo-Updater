@@ -1,4 +1,5 @@
 var log = require('../log').logger('manager');
+var isOnline = require('is-online');
 
 var GenericNetworkManager = function() {
 	this.platform = '???';
@@ -40,6 +41,10 @@ GenericNetworkManager.prototype.turnWifiHotspotOff=function(callback){
 GenericNetworkManager.prototype.setIdentity=function(identity, callback){
   log.warn('Unimplemented: setIdentity(' + JSON.stringify(identity) + ')');
   callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+}
+
+GenericNetworkManager.prototype.isOnline=function(callback) {
+  isOnline(callback);
 }
 
 exports.NetworkManager = GenericNetworkManager;
