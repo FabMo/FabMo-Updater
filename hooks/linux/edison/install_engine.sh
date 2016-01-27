@@ -6,6 +6,11 @@ systemctl stop fabmo
 echo "Clearing settings..."
 rm -rf /opt/fabmo/engine
 
+echo "Remounting the root partition as read-write"
+mount -w -o remount /
+
+# DANGER ZONE
+
 echo "Uninstalling engine..."
 rm -rf /fabmo/engine
 
@@ -22,9 +27,11 @@ sync
 echo "Installing dependencies..."
 npm install --production
 
-echo "Enabling network manager for new installation..."
-echo '{"wifi_manager":true}' > /opt/fabmo/config/engine.json
+echo "Synchronizing filesystem..."
 sync
+
+echo "Remounting the root partition as read only"
+mount -r -o remount /
 
 echo "Restarting the engine..."
 systemctl start fabmo

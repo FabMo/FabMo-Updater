@@ -3,6 +3,11 @@
 echo "Stopping the engine..."
 systemctl stop fabmo
 
+echo "Remounting root partition read-write"
+mount -w -o remount /
+
+# DANGER ZONE
+
 echo "Fetching new versions..."
 cd /fabmo/engine
 git reset --hard HEAD
@@ -17,6 +22,9 @@ sync
 echo "Installing dependencies..."
 npm install --production
 sync
+
+echo "Remounting root partition read only"
+mount -r -o remount /
 
 echo "Clearing the approot..."
 rm -rf /opt/fabmo/approot
