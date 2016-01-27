@@ -13,7 +13,7 @@ module.exports = function(server) {
 		try{
 			routes = require(filePath);
 			routes(server);
-			log.debug('  Loaded routes from "' + filePath + '"');
+			log.info('  Loaded routes from "' + filePath + '"');
 		} catch(e) {
 			log.warn('Could not load routes from "' + filePath + '": ' + e);
 		}

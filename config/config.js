@@ -175,7 +175,7 @@ Config.createDataDirectories = function(callback) {
 			}
 		});
 	}.bind(this);
-	dirs = [null, 'updater', path.join('updater', 'config')];
+	dirs = [null, 'config'];
 	async.eachSeries(dirs, create_directory, callback);
 };
 

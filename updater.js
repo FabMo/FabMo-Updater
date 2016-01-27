@@ -81,6 +81,10 @@ function UpdaterConfigFirstTime(callback) {
 Updater.prototype.start = function(callback) {
 
     async.series([
+       function setup_application(callback) {
+            log.info('Checking updater data directory tree...');
+            config.createDataDirectories(callback);
+        },
         function configure(callback) {
             log.info("Loading configuration...");
             config.configureUpdater(callback);
