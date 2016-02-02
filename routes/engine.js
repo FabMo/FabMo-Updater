@@ -51,6 +51,15 @@ var restartEngine = function(req, res, next) {
     });
 };
 
+var engineState = function(req, res, next) {
+	hooks.getEngineState(function(err, data) {
+		if(err) {
+			return res.json({status : 'error', message : err.message});
+		}
+		res.json({status : 'success', data : {'state' : data}});
+	});
+}
+
 module.exports = function(server) {
   server.post('/engine/start', startEngine);
   server.post('/engine/stop', stopEngine);
