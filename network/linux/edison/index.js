@@ -221,6 +221,9 @@ EdisonNetworkManager.prototype.joinAP = function() {
 
 EdisonNetworkManager.prototype._joinAP = function(callback) {
   log.info("Entering AP mode..."); 
+  var network_config = config.updater.get('network');
+  network_config.mode = 'ap';
+  config.updater.set('network', network_config);
   jedison('join ap', function(err, result) {
     if(!err) {
       log.info("Entered AP mode.");
@@ -238,6 +241,10 @@ EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
 }
 EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   log.info("Attempting to join wifi network: " + ssid + " with password: " + password); 
+  var network_config = config.updater.get('network');
+  network_config.mode = 'station';
+  network_config.wifi_networks = [{'ssid' : ssid, 'password' : password}];
+  config.updater.set('network', network_config);
   jedison('join wifi --ssid=' + ssid + ' --password=' + password , function(err, result) {
     if(err) {
         log.error(err);
@@ -246,13 +253,31 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   });
 }
 
+EdisonNetworkManager.prototype.applyNetworkConfig = function() {
+	var network_config = config.updater.get('network');
+	switch(network_config.mode) {
+		case 'ap':
+			this.joinAP();
+			break;
+		case 'station':
+			if(network_config.wifi_networks.length > 0) {
+				var network = network_config.wifi_networks[0];
+				this.joinWifi(network.ssid, network.password);
+			} else {
+				log.warn("No wifi networks defined.");
+			}
+			break;
+	}
+}
+
 /*
  * PUBLIC API BELOW HERE
  */
 
 EdisonNetworkManager.prototype.init = function() {
   jedison("init --name='" + config.updater.get('name') + "' --password='" + config.updater.get('password') + "'", function(err, data) {
-    this.run();
+	  this.applyNetworkConfig();
+      	  this.run();
   }.bind(this));
 }
 

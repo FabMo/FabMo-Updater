@@ -7,5 +7,9 @@
 	"server_port" : 9877,
 	"engine_server_port" : 9876,
 	"name" : "FabMo",
-	"password" : "go2fabmo"
+	"password" : "go2fabmo",
+	"network" : {
+		"mode" : "ap",
+		"wifi_networks" : []
+	}
 }
