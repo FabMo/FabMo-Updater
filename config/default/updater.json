@@ -4,8 +4,8 @@
 	"engine_git_repos" : "https://github.com/FabMo/FabMo-Engine.git",
 	"updater_git_repos" : "https://github.com/FabMo/FabMo-Updater.git",
 	"platform" : "generic",
-	"server_port" : 9877,
-	"engine_server_port" : 9876,
+	"server_port" : 81,
+	"engine_server_port" : 80,
 	"name" : "FabMo",
 	"password" : "go2fabmo",
 	"network" : {

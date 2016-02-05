@@ -77,9 +77,13 @@ function UpdaterConfigFirstTime(callback) {
 
         case 'darwin':
             log.info('OSX Detected.');
+            config.updater.set('server_port' : 9877);
+            config.updater.set('engine_server_port' : 9876);
             callback();
         break;
         default:
+            config.updater.set('server_port' : 9877);
+            config.updater.set('engine_server_port' : 9876);
             callback();
         break;
     }
@@ -161,7 +165,7 @@ Updater.prototype.start = function(callback) {
             var routes = require('./routes')(server);
 
             // Kick off the server listening for connections
-            server.listen(9877, "0.0.0.0", function() {
+            server.listen(config.updater.get('server_port'), "0.0.0.0", function() {
                 log.info(server.name+ ' listening at '+ server.url);
                 callback(null, server);
             });
