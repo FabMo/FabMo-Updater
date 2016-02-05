@@ -61,18 +61,22 @@ function UpdaterConfigFirstTime(callback) {
     log.info('Configuring for the first time...');
     switch(config.platform) {
         case 'linux':
-            fs.stat('/usr/bin/configure_edison', function(err, stat) {
-                if(!err) {
-                    log.info('Intel Edison platform detected.');
-                    config.updater.set('platform', 'edison');
-                }
-		doshell('cat /sys/class/net/wlan0/address', function(address) {
-			var hostname = 'FabMo-' + address.trim().replace(/:/g,"");
-			log.info("Setting factory hostname: " + hostname);
-			config.updater.set('name', hostname);
-			callback();
-		});
-            });
+		var confFile = '/etc/wpa_supplicant/wpa_supplicant.conf';
+		try {
+			var text = fs.readFileSync(confFile, 'utf8');
+			if(text.match(/device_name=Edison/)) {
+				log.info("Intel Edison Platform Detected");
+				var id = '';
+				for(var i=0; i<8; i++) {
+					id += (Math.floor(Math.random()*15)).toString(16);
+				}
+				log.info("Random ID Generated: " + id);
+				var hostname = 'FabMo-' + id;
+				config.updater.set('platform', 'edison');
+				config.updater.set('name', hostname);
+				callback();
+			}
+		} catch(e) {}
         break;
 
         case 'darwin':
