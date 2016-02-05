@@ -191,73 +191,60 @@ function makeFormData(obj, default_name, default_type) {
 
 UpdaterAPI.prototype._url = function(path) { return this.base_url + '/' + path.replace(/^\//,''); }
 
-UpdaterAPI.prototype._get = function(url, errback, callback, key) {
-	var url = this._url(url);
-	var callback = callback || function() {}
-	var errback = errback || function() {}
-
-	$.ajax({
-		url: url,
-		type: "GET",
-		dataType : 'json', 
-		success: function(result){
-			if(result.status === "success") {
-				if(key) {
-					callback(null, result.data[key]);					
-				} else {
-					callback(null, result.data);										
-				}
-			} else if(result.status==="fail") {
-				errback(result.data);
-			}	else {
-				errback(result.message);
-			}
-		},
-		error: function( data, err ){
-			 errback(err);
-		}
-	});
-}
 
 UpdaterAPI.prototype._post = function(url, data, errback, callback, key) {
 	var url = this._url(url);
 	var callback = callback || function() {};
 	var errback = errback || function() {};
-	var processData = true;
-	var contentType = true;
 
-	if(data instanceof FormData) {
-		processData = false;
-		contentType = false;
-	} else {
-		contentType = 'application/x-www-form-urlencoded; charset=UTF-8'
-		processData = true;
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', url);
+
+	if(!(data instanceof FormData)) {
+		xhr.setRequestHeader('Content-Type', 'application/json');
+		data = JSON.stringify(data);
 	}
 
-	$.ajax({
-		url: url,
-		type: "POST",
-		processData : processData,
-		contentType : contentType,
-		dataType : 'json',
-		'data' : data, 
-		success: function(result){
-			if(data.status === "success") {
-				if(key) {
-					callback(null,result.data[key]);					
-				} else {
-					callback(null,result.data);										
+	xhr.onload = function() {
+		switch(xhr.status) {
+			case 200:
+				var response = JSON.parse(xhr.responseText);
+				switch(response.status) {
+					case 'success':
+						if(key) {
+							callback(null, response.data[key]);
+						} else {
+							callback(null, response.data);
+						}
+						break;
+
+					case 'fail':
+						if(key) {
+							errback(response.data[key]);
+						} else {
+							errback(response.data);
+						}
+						break;
+					default:
+						errback(response.message);
+						break;
 				}
-			} else if(data.status==="fail") {
-				errback(result.data);
-			}	else {
-				errback(result.message);
-			}
-		},
-		error: function( data, err ){
-			 errback(err);
+			break;
+
+			case 301:
+			case 302:
+			case 307:
+				console.log("GOT REDIRECTED FOR A POST");
+				console.log(xhr.status);
+				break;
+
+			default:
+				console.error("Got a bad response from server: " + xhr.status);
+				break;
 		}
-	});
+    }
+	xhr.send(data);
+	return xhr;
 }
 
 UpdaterAPI.prototype._del = function(url, data, errback, callback, key) {
@@ -287,3 +274,34 @@ UpdaterAPI.prototype._del = function(url, data, errback, callback, key) {
 		}
 	});
 }
+
+
+UpdaterAPI.prototype._get = function(url, errback, callback, key) {
+	var url = this._url(url);
+	var callback = callback || function() {}
+	var errback = errback || function() {}
+
+	$.ajax({
+		url: url,
+		type: "GET",
+		dataType : 'json', 
+		success: function(result){
+			if(result.status === "success") {
+				if(key) {
+					callback(null, result.data[key]);					
+				} else {
+					callback(null, result.data);										
+				}
+			} else if(result.status==="fail") {
+				errback(result.data);
+			}	else {
+				errback(result.message);
+			}
+		},
+		error: function( data, err ){
+			 errback(err);
+		}
+	});
+}
+
+
