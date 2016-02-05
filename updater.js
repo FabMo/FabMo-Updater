@@ -78,7 +78,7 @@ function UpdaterConfigFirstTime(callback) {
         case 'darwin':
             log.info('OSX Detected.');
             config.updater.set('server_port',9877);
-            config.updater.set('engine_server_port' : 9876);
+            config.updater.set('engine_server_port',9876);
             callback();
         break;
         default:
