@@ -44,8 +44,24 @@ var installEngine = function(req, res, next) {
     });
 };
 
+var updateFirmware = function(req, res, next) {
+    updater.updateFirmware(function(err, data) {
+	  if(err) {
+	  	res.json({status : 'error', message : err});
+		} else {
+			var answer = {
+			    status : "success",
+			   	  data : {}
+			};
+		res.json(answer);			
+		}
+    });
+};
+
+
 module.exports = function(server) {
   server.get('/update/versions', getVersions);
   server.post('/update/engine', updateEngine);
+  server.post('/update/firmware', updateFirmware);
   server.post('/install/engine', installEngine);
 };

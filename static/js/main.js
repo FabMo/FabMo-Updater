@@ -82,6 +82,12 @@ $(document).ready(function() {
     updater.installEngine('master');
   });
 
+  $("#update-firmware").click( function(evt) { 
+    evt.preventDefault();
+    updater.updateFirmware();
+  });
+
+
   $("#network-join").click(function(evt) {
 	evt.preventDefault();
 	var ssid = $('#network-ssid').val();

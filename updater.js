@@ -14,15 +14,12 @@ var fs = require('fs');
 var GenericNetworkManager = require('./network/manager').NetworkManager;
 var doshell = require('./util').doshell;
 
-//var argv = require('minimist')(process.argv);
-
 var Updater = function() {
     this.version = null;
     this.status = {
         'state' : 'idle'
     }
     this.networkManager = network.Generic;
-    // Handle Inheritance
     events.EventEmitter.call(this);
 };
 util.inherits(Updater, events.EventEmitter);
@@ -56,6 +53,19 @@ Updater.prototype.getVersions = function(callback) {
     hooks.getVersions(callback);
 }
 
+Updater.prototype.updateFirmware = function(callback) {
+    if(this.status.state != 'idle') {
+        callback(new Error("Cannot update the firmware when in the " + updater.status.state + " state."));
+    } else {
+	hooks.stopEngine(function(err, result) {
+		if(err) {
+			callback(err);
+		} else {
+        		hooks.updateFirmware(config.updater.get('firmware_file', callback));
+		}
+	});
+    }
+}
 
 function UpdaterConfigFirstTime(callback) {
     log.info('Configuring for the first time...');
@@ -177,7 +187,7 @@ Updater.prototype.start = function(callback) {
         }.bind(this),
         
 	function test(callback) {
-	callback();
+		callback();
 	}.bind(this)	
 	],
 

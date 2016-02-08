@@ -8,6 +8,7 @@
 	"engine_server_port" : 80,
 	"name" : "FabMo",
 	"password" : "go2fabmo",
+	"firmware_file" : "/fabmo/engine/firmware/g2.bin",
 	"network" : {
 		"mode" : "ap",
 		"wifi_networks" : []

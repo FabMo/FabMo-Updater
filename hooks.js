@@ -139,3 +139,28 @@ exports.updateEngine = function(version, callback) {
 
 }
 
+exports.updateFirmware = function(filename, callback) {
+	var updater = require('./updater');
+	callback = callback || function() {};
+	updater.setState('updating');
+	callback(null);
+	var cp = execute('update_firmware', filename, function(err, stdout) {
+		if(err) {
+			log.error("Did not update firmware successfully.");
+		} else {
+			log.info("Updated firmware successfully.");
+		}
+		updater.setState('idle');
+	});
+
+	var stdout = byline(cp.stdout);
+	var stderr = byline(cp.stderr);
+
+	stdout.on('data', function(line) {
+		log.shell(line);
+	});
+
+	stderr.on('data', function(line) {
+		log.shell(line);
+	});
+}
