@@ -139,6 +139,7 @@ getNetworkIdentity = function(req, res, next) {
 }
 
 getWifiHistory = function(req, res, next) {
+    var network = require('../updater').networkManager;
     network.getWifiHistory(function(err, data) {
         res.json({
             status : 'success',
