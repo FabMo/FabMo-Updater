@@ -6,6 +6,8 @@ set -e
 stty -F /dev/ttyACM0 1200
 sleep 1
 bossac -w -v $1
+sleep 1
 bossac -b
+sleep 1
 bossac -R
 sleep 1
