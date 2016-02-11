@@ -57,15 +57,7 @@ Updater.prototype.updateFirmware = function(callback) {
     if(this.status.state != 'idle') {
         callback(new Error("Cannot update the firmware when in the " + updater.status.state + " state."));
     } else {
-	hooks.stopEngine(function(err, result) {
-		if(err) {
-			callback(err);
-		} else {
-        		hooks.updateFirmware(config.updater.get('firmware_file'), function(err, result) {
-				hooks.startEngine(callback);		
-			});
-		}
-	});
+	hooks.updateFirmware(config.updater.get('firmware_file'), callback);
     }
 }
 
