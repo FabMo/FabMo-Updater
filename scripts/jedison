@@ -94,9 +94,7 @@ network={
 '''
 
 def set_hostname(hostname):
-    with open('/etc/hostname','w') as fp:
-        fp.write(hostname + "\n")
-    subprocess.call("hostname -F /etc/hostname", shell=True)
+    subprocess.call("hostnamectl set-hostname '%s'" % hostname, shell=True)
 
 def get_hostname():
     hostname = subprocess.check_output('hostname', shell=True)
@@ -209,7 +207,7 @@ def make_network_configuration(network, password):
     else:
         return wpa_templates.OPEN % (ssid, "")
 
-def join_wifi_network(ssid, password):
+def join_wifi_network(ssid, password, attempts=5):
     info = get_wifi_info()
     wifi_mode = info['mode']
 
@@ -218,40 +216,43 @@ def join_wifi_network(ssid, password):
         subprocess.call("systemctl stop hostapd &> /dev/null", shell=True)
         subprocess.call("systemctl start wpa_supplicant &> /dev/null", shell=True)
         while True:
-            time.sleep(1)
+            time.sleep(0.25)
             wifi_mode = get_wifi_info()['mode']
             if wifi_mode == 'managed' or timeout == 0:
                 break
             timeout -= 1
 
     if wifi_mode == 'managed':
-        time.sleep(3)
-        timeout = 10
-        while timeout > 0:
-            try:
-                scan_wifi()
+        while(attempts > 0):
+            timeout = 10
+            while timeout > 0:
+                try:
+                    scan_wifi()
+                    break
+                except Exception, e:
+                    pass
+                timeout-=1
+                time.sleep(0.25)
+
+            timeout = 10 
+            while timeout>0:
+                try:
+                    networks = get_wifi_networks()
+                    selected_network = None
+                    for network in networks:
+                        if network['ssid'] == ssid:
+                            selected_network = network
+                        break
+                    if selected_network:
+                        break
+                except:
+                    pass
+                time.sleep(0.25)
+                timeout -= 1
+
+            if selected_network:
                 break
-            except Exception, e:
-                pass
-            timeout-=1
-            time.sleep(1)
-
-        timeout = 10 
-	while timeout>0:
-            time.sleep(1)
-            try:
-                networks = get_wifi_networks()
-                selected_network = None
-                for network in networks:
-                    if network['ssid'] == ssid:
-                        selected_network = network
-                    break
-                if selected_network:
-                    break
-            except:
-                pass
-            timeout -= 1
-
+            attempts -= 1
  
         if selected_network: 
             network_conf = make_network_configuration(selected_network, password)
