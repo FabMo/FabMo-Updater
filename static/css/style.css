@@ -1,102 +1,219 @@
+/*
+ * Default Body Styles
+ */
 body {
-	margin: 20px;
+	margin: 0;
+	color: #222;
 }
 
-.button-success,
-.button-error,
-.button-warning,
-.button-github,
-.button-fabmo,
-.button-secondary {
-    color: white;
-    border-radius: 4px;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+h1 {
+	font-size: 32px;
 }
 
-.button-fabmo {
-   background: #2e3865;
+h2 {
+	font-size: 20px;
 }
 
-.button-success {
-    background: rgb(28, 184, 65); /* this is a green */
+/* 
+ * Scaffolding
+ */
+
+#container {
+    display: flex;
+    height: 100vh;
 }
 
-.button-error {
-    background: rgb(202, 60, 60); /* this is a maroon */
+#content{
+    flex-grow: 1;
+    height: 100%;
 }
 
-.button-warning {
-    background: rgb(223, 117, 20); /* this is an orange */
+#menu {
+    width: 200px;
+    flex: none;
+    background-color: #444444;
+	font-family: monospace;
 }
 
-.button-github {
-	 background: #542D92;
-}
-
-.gh-icon {
-	color: #ffffff;
-}
-
-.button-secondary {
-	background: #034080;
-}
-
-.log-console {
-	width: 100%;
-	height: 100px;
-	border-radius: 10px;
-	border: 1px solid black;
-	background-color: #2F3032;
-	color: #ebebeb;
-	font-family: "Lucida Console", Monaco, monospace;
-	font-weight: 100;
-	white-space: pre;
-	font-size: x-small;
-}
-
-#log-content {
-	overflow: scroll;
-	overflow-x:hidden;
-	overflow-y:scroll;
+.content-pane {
+	display: none;
 	margin: 10px;
 }
 
-.header {
+.content-pane.active {
+	display: block;
+}
+
+/*
+ * Left side menu
+ */
+#menu .items {
+    margin: 0;
+    padding: 0;
+}
+
+/* Clickable Menu Items */
+.menu-item {
+	width: 100%;
 	line-height: 3em;
+	list-style: none;
+	cursor: pointer;
+	transition: all 0.2s ease 0s;
+
+}
+
+.menu-item a {
+	margin-left: 1.5em;
+	color: white;
+	text-decoration: none;
+	cursor: inherit;
+}
+
+/* Menu Labels */
+.menu-title {
+	width: 100%;
+	line-height: 3em;
+	list-style: none;
+	font-weight: bold;
+	background-color: #2e3865;
+}
+
+.menu-title span {
+	margin-left: 1.5em;
+	color: white;
+	text-decoration: none;
+	cursor: inherit;	
+}
+
+.menu-item.active {
+	background-color: #555555;
+}
+
+.menu-item:hover {
+	background-color: #555555;
+}
+
+.menu-item.active:hover {
+	background-color: #666666;	
+}
+
+/* Non-clickable Menu Items */
+.menu-label {
+	width: 100%;
+	border-top: 1px solid #333;
+	line-height: 3em;
+	list-style: none;
+	font-style: italic;
 	font-weight: bold;
 }
 
-.loglevel-info {
-	color: #B5D837;
+.menu-label a {
+	margin-left: 1.5em;
+	color: white;
+	text-decoration: none;
 }
 
-.loglevel-debug {
-	color: #80CCBA;
+/* The status item */
+.status {
+    transition: all 0.5s ease 0s;
+    cursor: pointer;
 }
 
-.loglevel-error {
-	color: #E85169;
-}
-.loglevel-warn {
-	color: #E6D369;
-}
-
-.loglevel-websocket {
-	color: #E85377;
-}
-
-.loglevel-shell {
-	color: #A491FD;
-}
 .status-updating {
-	color: red;
-}
-
-.status-idle {
-	color: green;
+	background-color: #32B433;
 }
 
 .status-disconnected {
-	color: gray;
+	background-color: #333333;
 }
 
+/*
+ * Console Display
+ */
+#console {
+	font-family: monospace;
+	background-color: #222222;
+	color: #ebebeb;
+	font-family: "Lucida Console", Monaco, monospace;
+	font-weight: 100;
+	font-size: x-small;
+	border-left: 1px solid black;
+}
+
+#console .content {
+	padding: 10px;
+	overflow: scroll;
+	overflow-x:hidden;
+	overflow-y:scroll;
+	white-space: pre;
+	cursor: text;
+}
+
+#console-header {
+	padding: 10px;
+	font-weight: bold;
+	background-color: #222222;
+	color: #cccccc;
+	text-shadow: 1px 1px black;
+}
+
+.loglevel-info { color: #B5D837; }
+.loglevel-debug { color: #80CCBA; }
+.loglevel-error { color: #E85169; }
+.loglevel-warn { color: #E6D369; }
+.loglevel-websocket { color: #E85377; }
+.loglevel-shell { color: #A491FD; }
+
+/*
+ * Forms
+ */
+input[type="text"], input[type="password"] {
+	display: inline-block;
+	border-radius: 0.25em;
+    display: inline-block;
+	padding: 0.5em 1em;
+	border: 1px solid #aaa;
+
+}
+
+select {
+   background: transparent;
+	border-radius: 0.25em;
+	padding: 0.5em;
+	border: 1px solid #aaa;
+   -webkit-appearance: none;
+}
+
+fieldset {
+	border: none;
+}
+
+button {
+    border: none;
+	background-color: #444;
+    color: white;
+    padding: 0.5em 1em;
+    text-align: center;
+    text-decoration: none;
+    text-shadow: 1px 1px 3px black;
+    display: inline-block;
+    border-radius: 0.25em;
+    transition: all 0.3s ease 0s;
+    cursor: pointer;
+}
+
+.btn-blue {
+   background-color: #2e3865;
+}
+
+.btn-green {
+	background-color: #5daa35;
+}
+
+.btn-red {
+	background-color: #9c210c;
+}
+
+.btn-orange {
+	background-color: #dd8728;
+}

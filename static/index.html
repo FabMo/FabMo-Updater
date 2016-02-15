@@ -5,92 +5,91 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Command console for performing updates to the FabMo engine and dashboard">
-    <title>FabMo Engine Update Console</title>
-    <link rel="stylesheet" href="css/pure-min.css">
+    <title>FabMo Update Console</title>
     <link rel="stylesheet" href="css/style.css">    
     <link rel="stylesheet" href="css/font-awesome.min.css">
 </head>
 <body>
-<div class="pure-g">
-    <div class="pure-u-1-2">
-      <div class="header">System Operations</div>
-      <button id="system-reboot" class="pure-button button-warning">Reboot</button>
-      <button id="system-shutdown" class="pure-button button-error">Shutdown</button>
+<div id="container">
+  <div id="menu">
+    <ul class="items">
+      <li class="menu-title"><span>FabMo Updater</span></li>    
+      <li class="menu-item active" data-id="view-updates"><a href="#"><i class="fa fa-download"></i> Engine Updates</a></li>
+      <li class="menu-item" data-id="view-firmware"><a href="#"><i class="fa fa-gears"></i> Firmware Updates</a></li>
+      <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-wifi"></i> Network</a></li>
+      <li class="menu-item" data-id="view-system"><a href="#"><i class="fa fa-wrench"></i> System</a></li>
+      <li class="menu-label status" id="updater-status">
+        <a>
+          <i id="updater-status-icon" class="fa fa-circle-o"></i>
+          <span id="updater-status-text"> Unknown</span>
+        </a>
+      </li>
 
-      <div class="header">Engine Operations</div>
-      <button id="engine-start" class="pure-button button-success">Start Engine</button>
-      <button id="engine-stop" class="pure-button button-error">Stop Engine</button>
-      <button id="engine-restart" class="pure-button button-success">Restart Engine</button>
-
-      <div class="header">Update Operations</div>
-      <form class="pure-form">
-        <button class="pure-button button-github" id="update-to-latest">
-          <i class="fa fa-github gh-icon fa-lg"></i>
-          Update to latest master
-        </button>
+    </ul>
+  </div>
+  <div id="content">
+    <div class="content-pane active" id="view-updates">
+      <h1>Engine Updates</h1>
+      <h2>Stable Version</h2>
+      <p>To update to a stable release of the engine, choose one from the list below and click update.</p>
+      <form class="form-horizontal">
         <button id="update-go" class="pure-button button-success">Update to:</button>
         <select id="update-version">
         </select>
       </form>
 
-      <div class="header">Firmware Operations</div>
-        <button class="pure-button button-fabmo" id="update-firmware">
-          <i class="fa fa-cogs gh-icon fa-lg"></i>
-          Update Firmware
-        </button>
+      <h2>Development Version</h2>
+      <p>To update to a stable release of the engine, choose one from the list below and click update.</p>
+      <button id="update-go" class="pure-button button-success">Update to Latest Development Version</button>
 
-
-      <div class="header">Install Operations</div>
-      <form class="pure-form">
-        <button class="pure-button button-github" id="install-to-latest">
-          <i class="fa fa-github gh-icon fa-lg"></i>
-          Install latest master
-        </button>
-        <button id="install-go" class="pure-button button-success">Install at:</button>
-        <select id="install-version">
-        </select>
-      </form>
+      <h2>Reinstall</h2>
+      <p>In rare instances, an engine installation may become damaged or corrupt and need to be installed from scratch.  Click the button below to reinstall the latest stable engine version from scratch.  If you wish to run the development version, you can update once the installation is complete.</p>
+      <button id="update-go" class="pure-button button-success">Update to Latest Development Version</button>
 
     </div>
-    <div class="pure-u-1-2">
-      <div class="header">Wireless Networking</div>
-      <div>
-      <form class="pure-form">
-	      <fieldset>
-	       <input id="network-ssid" type="text" placeholder="SSID" />
-	       <input id="network-key" type="text" placeholder="password" />
-        <button id="network-join" class="pure-button button-success">Join Wifi</button>
-	      </fieldset>
-      </form>
-      </div>
-      <div class="header">Network ID and AP Mode</div>
-      <div>
-      <form class="pure-form">
+
+    <div class="content-pane" id="view-firmware">
+      <h1>Firmware Updates</h1>
+      <p>The button below will force a firmware update on the G2 motion system.  Firmware installed in this way will be taken from your engine installation so you are sure to be using the firmware that is qualified for use with the version of the engine that you are running.</p>
+      <p>Firmware installation can be a risky operation.  Do not proceed unless you are sure you need to update!</p>      
+      <button id="btn-update-firmware" class="btn-blue"><i class="fa fa-gears"></i> Update Firmware</button>
+      <br/>
+    </div>
+
+    <div class="content-pane" id="view-network">
+    <h1>Network</h1>
+    </div>
+
+    <div class="content-pane" id="view-system">
+      <h1>System</h1>
+      <h2>Tool Identity</h2>
+      <p>The name selected here will be used both as the system hostname as well as the SSID when in AP mode.  The password will be used both as the root password as well as the network key for AP mode.</p>
+      <form class="form-horizontal">
         <fieldset>
          <input id="network-name" type="text" placeholder="Name" />
          <input id="network-password" type="password" placeholder="Root Password" />
-         <button id="network-id" class="pure-button button-success">Set Network ID</button>
+         <button id="btn-network-id" class="button">Set Network ID</button>
         </fieldset>
       </form>
-      </div>
-      <div>
-      <button id="network-ap" class="pure-button button-fabmo">Switch to AP Mode</button>
-      </div>
-      <div class="header">Updater Status: <span id="updater-status"></span></div>
+      <h2>Engine Control</h2>
+      <p>The buttons below can be used to start and stop the engine software.  Normally, this doesn't need to be done manually.  It may be useful however, for certain diagnostic procedures.</p>
+      <button id="btn-start-engine" class="button btn-green">Start Engine</button>
+      <button id="btn-stop-engine" class="button btn-red">Stop Engine</button>
+
     </div>
+
+    <!-- Console (Always Visible) -->
+    <div id="console-header">
+      Updater Console
+    </div>
+    <div id="console">
+      <div class="content"></div>
+    </div>
+  </div>
 </div>
-
-<div class="header">
-	Log Output (<a href="/log">History</a>) 
-  <button class="pure-button button-error" id="log-clear" style="float: right;">Clear Log</button>
-</div>
-
-<div id="log-console" class="log-console"><div id="log-content"></div></div>
-
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/libs/jquery.min.js"></script>
 <script src="js/libs/updaterapi.js"></script>
 <script src="js/main.js"></script>
-
 </body>
 </html>

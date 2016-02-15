@@ -1,8 +1,10 @@
-var updater = new UpdaterAPI();
-
-var url = window.location.origin;
-var base_url = url.replace(/\/$/,'');
-var versions = [];
+$('.menu-item').click(function() {
+	$('.content-pane').removeClass('active');
+	$('#' + this.dataset.id).addClass('active');
+	$('.menu-item').removeClass('active');
+	$(this).addClass('active');
+	flowConsole();
+});
 
 // Prettify lines for "console" output
 function prettify(line) {
@@ -19,105 +21,50 @@ function prettify(line) {
 
 // Print a line to the "console"
 function printf(s) {
-    var log = $('#log-content');
+    var log = $('#console .content');
     log.append(prettify(s));
     log[0].scrollTop = log[0].scrollHeight;
 }
 
+function updateNetworks() {
+	var table = document.getElementById('network-table');
+/*	jobs.forEach(function(job) {
+		var row = table.insertRow(table.rows.length);
+		var menu = row.insertCell(0);
+		menu.className += ' actions-control';
+		var name = row.insertCell(1);
+		var done = row.insertCell(2);
+		var time = row.insertCell(3);
+
+		menu.innerHTML = createHistoryMenu(job._id);
+		name.innerHTML = '<div class="job-' + job.state + '">' + job.name + '</div>';
+		done.innerHTML = moment(job.finished_at).fromNow();
+		time.innerHTML = moment.utc(job.finished_at - job.started_at).format('HH:mm:ss');
+	});
+*/
+}
+function flowConsole() {
+  var c = $('#console');
+  var vph = $(window).height();
+  var r = c.position();
+  var margin = parseInt($(document.body).css('margin'), 10)
+  var new_height = vph-r.top-margin;
+  c.height(new_height);
+  $('#console .content').height(new_height-20);
+}
+
+$(window).resize(function() {
+	flowConsole();
+}).resize();
+
+
 $(document).ready(function() {
-  
+  var updater = new UpdaterAPI();
+
   // Direct updater log messages to the console
   updater.on('log', function(msg) {
     printf(msg);
   });
-
-  updater.on('status', function(status) {
-    $('#updater-status').text(status.state);
-    $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + status.state);
-    $('button').removeClass('pure-button-disabled');
-    $('select').show();
-  });
-
-  updater.on('disconnect', function(status) {
-    $('#updater-status').text('disconnected');
-    $('#updater-status').removeClass('status-idle status-updating').addClass('status-disconnected');
-    $('button').addClass('pure-button-disabled');
-    $('select').hide();
-  });
-
-  // Buttons for engine management
-  $("#system-reboot").click(function() {updater.reboot()});
-  $("#system-shutdown").click(function() {updater.shutdown()});
-  $("#engine-start").click(function() {updater.startEngine()});
-  $("#engine-stop").click(function() {updater.stopEngine()});
-  $("#engine-restart").click(function() {updater.restartEngine()});
-
-  // Buttons for network management
-  $("#network-ap").click(function() {updater.enableHotspot()});
-
-  // Button to clear the log
-  $("#log-clear").click( function() { 
-    $('#log-content').text('');
-  });
-
-  // The update button
-  $("#update-go").click( function(evt) { 
-    evt.preventDefault();
-    updater.updateEngine($("#update-version").val());
-  });
-
-  // The install button
-  $("#install-go").click( function(evt) { 
-    evt.preventDefault();
-    updater.installEngine('master');
-  });
-
-  $("#update-to-latest").click( function(evt) { 
-    evt.preventDefault();
-    updater.updateEngine('master');
-  });
-
-  $("#install-to-latest").click( function(evt) { 
-    evt.preventDefault();
-    updater.installEngine('master');
-  });
-
-  $("#update-firmware").click( function(evt) { 
-    evt.preventDefault();
-    updater.updateFirmware();
-  });
-
-
-  $("#network-join").click(function(evt) {
-	evt.preventDefault();
-	var ssid = $('#network-ssid').val();
-	var key = $('#network-key').val();
-	console.log(ssid)
-	console.log(key)
-	updater.connectToWifi(ssid, key);
-  });
-
-    $("#network-id").click(function(evt) {
-  evt.preventDefault();
-  var name = $('#network-name').val();
-  var password = $('#network-password').val();
-  var options = {};
-  if(name) {
-    options['name'] = name;
-  }
-  if(password) {
-    options['password'] = password;
-  }
-
-  updater.setNetworkIdentity(options, function(err, data) {
-    if(err) {
-      console.error(err);
-    } else {
-      console.info(data);
-    }
-  });
-});
-
 
   // The update version menu
   updater.getVersions(function(err, versions) {
@@ -130,14 +77,47 @@ $(document).ready(function() {
     });
 
   });
-});
 
-$(window).resize(function() {
-  var c = $('#log-console');
-  var vph = $(window).height();
-  var r = c.position();
-  var margin = parseInt($(document.body).css('margin'), 10)
-  var new_height = vph-r.top-margin;
-  c.height(new_height);
-  $('#log-content').height(new_height-20);
-}).resize();
+	function setState(state) {
+		console.log(state)
+	  	var stateText = state.charAt(0).toUpperCase() + state.slice(1);
+	    $('#updater-status-text').text(' ' + stateText);
+	    $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + state);
+	    var icon = $('#updater-status-icon');
+	    var classes = 'fa-circle-o fa-spin fa-spinner chain-broken'
+	    switch(state) {
+	    	case 'idle':
+	    		icon.removeClass(classes).addClass('fa-circle-o');
+	    		break;
+
+	    	case 'disconnected':
+	    		icon.removeClass(classes).addClass('fa-chain-broken');
+	    		break;
+
+	    	case 'updating':
+	    		icon.removeClass(classes).addClass('fa-spin fa-spinner');
+	    		break;
+	    }
+	}
+
+  updater.on('status', function(status) {
+  	setState(status.state);
+  });
+
+ updater.on('disconnect', function(state) {
+    setState('disconnected');
+ });
+
+  $("#btn-update-firmware").click( function(evt) { 
+    evt.preventDefault();
+    updater.updateFirmware();
+  });
+
+  updater.getWifiNetworks(function(err, networks) {
+  	console.log(networks);
+  })
+
+  // Buttons for engine management
+  $("#btn-start-engine").click(function() {updater.startEngine()});
+  $("#btn-stop-engine").click(function() {updater.stopEngine()});
+});

@@ -17,7 +17,8 @@ var doshell = require('./util').doshell;
 var Updater = function() {
     this.version = null;
     this.status = {
-        'state' : 'idle'
+        'state' : 'idle',
+        'online' : false
     }
     this.networkManager = network.Generic;
     events.EventEmitter.call(this);

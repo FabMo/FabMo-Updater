@@ -128,6 +128,9 @@ UpdaterAPI.prototype.reboot = function(callback) {
 }
 
 // Network management
+UpdaterAPI.prototype.getWifiNetworks = function(callback) {
+	this._get('/network/wifi/scan', callback, callback, 'wifi');
+}
 UpdaterAPI.prototype.connectToWifi = function(ssid, key, callback) {
 	var data = {'ssid' : ssid, 'key' : key};
 	this._post('/network/wifi/connect', data, callback, callback);
