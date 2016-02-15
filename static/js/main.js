@@ -1,3 +1,5 @@
+var updater = new UpdaterAPI();
+
 $('.menu-item').click(function() {
 	$('.content-pane').removeClass('active');
 	$('#' + this.dataset.id).addClass('active');
@@ -26,22 +28,30 @@ function printf(s) {
     log[0].scrollTop = log[0].scrollHeight;
 }
 
-function updateNetworks() {
-	var table = document.getElementById('network-table');
-/*	jobs.forEach(function(job) {
-		var row = table.insertRow(table.rows.length);
-		var menu = row.insertCell(0);
-		menu.className += ' actions-control';
-		var name = row.insertCell(1);
-		var done = row.insertCell(2);
-		var time = row.insertCell(3);
+function updateNetworks(callback) {
+	updater.getWifiNetworks(function(err, networks) {
+		if(err) {
+			return callback(err);
+		}
+	
+		var table = document.getElementById('network-table');
 
-		menu.innerHTML = createHistoryMenu(job._id);
-		name.innerHTML = '<div class="job-' + job.state + '">' + job.name + '</div>';
-		done.innerHTML = moment(job.finished_at).fromNow();
-		time.innerHTML = moment.utc(job.finished_at - job.started_at).format('HH:mm:ss');
+		var rows = table.rows.length;
+		for(var i=1; i<rows; i++) {
+			table.deleteRow(1);
+		}
+		networks.forEach(function(network) {
+		var row = table.insertRow(table.rows.length);
+		var ssid = row.insertCell(0);
+		var security = row.insertCell(1);
+		var strength = row.insertCell(2);
+
+		ssid.innerHTML = network.ssid;
+		security.innerHTML = network.security.join('/');
+		});
+		callback();
+
 	});
-*/
 }
 function flowConsole() {
   var c = $('#console');
@@ -59,7 +69,6 @@ $(window).resize(function() {
 
 
 $(document).ready(function() {
-  var updater = new UpdaterAPI();
 
   // Direct updater log messages to the console
   updater.on('log', function(msg) {
@@ -113,10 +122,13 @@ $(document).ready(function() {
     updater.updateFirmware();
   });
 
-  updater.getWifiNetworks(function(err, networks) {
-  	console.log(networks);
-  })
+  function updateService() {
+	updateNetworks(function(err) {
+		setTimeout(updateService,5000);
+	});
+  }
 
+  updateService();
   // Buttons for engine management
   $("#btn-start-engine").click(function() {updater.startEngine()});
   $("#btn-stop-engine").click(function() {updater.stopEngine()});

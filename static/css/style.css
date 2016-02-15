@@ -221,3 +221,26 @@ button {
 .btn-purple {
 	background-color: #542D92;
 }
+
+/*
+ *  Table Styles
+ */
+
+table {
+	width: 100%;
+	text-align: left;
+	border-collapse: collapse;
+	cursor: pointer;
+}
+
+
+tr:nth-child(even) {
+	background-color: #eeeeee;
+}
+
+tr:hover {
+	background-color: #dddddd;
+}
+td {
+	padding: 0.25em;
+}

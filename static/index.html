@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Command console for performing updates to the FabMo engine and dashboard">
     <title>FabMo Update Console</title>
-    <link rel="stylesheet" href="css/style.css">    
     <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/style.css">    
 </head>
 <body>
 <div id="container">
@@ -58,6 +58,27 @@
 
     <div class="content-pane" id="view-network">
     <h1>Network</h1>
+    <p>Below is a list of available wireless networks.  Enter an SSID and key at the bottom of the table to join a network.  You can click a network in the list to fill in that networks SSID.  <span class="emphasis">Note that when you join a network, you will lose your connection to the updater and will need to reconnect from the chosen network.</span></p>
+
+    <table id="network-table">
+	    <thead>
+	   <tr>
+		<th>SSID</th>
+		<th>Security</th>
+		<th>Strength</th>
+	</tr>
+	    </thead>
+	    <tbody>
+	<tr></tr>
+	    </tbody>
+    </table>
+      <form class="form-horizontal">
+        <fieldset>
+         <input id="network-ssid" type="text" placeholder="SSID" />
+         <input id="network-key" type="password" placeholder="Network Key" />
+	 <button id="btn-network-join" class="button"><i class="fa fa-wifi"></i> Join Wifi Network</button>
+        </fieldset>
+      </form>
     </div>
 
     <div class="content-pane" id="view-system">
