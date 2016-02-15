@@ -1,11 +1,13 @@
+// Create instance for communicating with the update service
 var updater = new UpdaterAPI();
 
+// Deal with switching tasks using the left menu
 $('.menu-item').click(function() {
-	$('.content-pane').removeClass('active');
-	$('#' + this.dataset.id).addClass('active');
-	$('.menu-item').removeClass('active');
-	$(this).addClass('active');
-	flowConsole();
+    $('.content-pane').removeClass('active');
+    $('#' + this.dataset.id).addClass('active');
+    $('.menu-item').removeClass('active');
+    $(this).addClass('active');
+    flowConsole();
 });
 
 // Prettify lines for "console" output
@@ -29,107 +31,156 @@ function printf(s) {
 }
 
 function updateNetworks(callback) {
-	updater.getWifiNetworks(function(err, networks) {
-		if(err) {
-			return callback(err);
-		}
-	
-		var table = document.getElementById('network-table');
+    updater.getWifiNetworks(function(err, networks) {
+        if(err) {
+            $('#network-table').hide();
+            $('#no-networks-message').show();
+            return callback(err);
+        }
+    
+        // Clear the existing networks
+        var table = document.getElementById('network-table');
+        var rows = table.rows.length;
+        for(var i=1; i<rows; i++) {
+            table.deleteRow(1);
+        }
 
-		var rows = table.rows.length;
-		for(var i=1; i<rows; i++) {
-			table.deleteRow(1);
-		}
-		networks.forEach(function(network) {
-		var row = table.insertRow(table.rows.length);
-		var ssid = row.insertCell(0);
-		var security = row.insertCell(1);
-		var strength = row.insertCell(2);
-
-		ssid.innerHTML = network.ssid;
-		security.innerHTML = network.security.join('/');
-		});
-		callback();
-
-	});
+        if(!networks || networks.length === 0) {
+          console.log('no networks')
+            $('#network-table').hide();
+            $('#no-networks-message').show();
+        } else {
+          console.log('networks')
+            $('#network-table').show();
+            $('#no-networks-message').hide();
+        }
+        // Add the newly defined ones
+        networks.forEach(function(network) {
+            var row = table.insertRow(table.rows.length);
+            var ssid = row.insertCell(0);
+            var security = row.insertCell(1);
+            var strength = row.insertCell(2);
+            ssid.innerHTML = network.ssid;
+            security.innerHTML = network.security.join('/');
+        });
+        callback();
+    });
 }
-function flowConsole() {
-  var c = $('#console');
-  var vph = $(window).height();
-  var r = c.position();
-  var margin = parseInt($(document.body).css('margin'), 10)
-  var new_height = vph-r.top-margin;
-  c.height(new_height);
-  $('#console .content').height(new_height-20);
-}
 
-$(window).resize(function() {
-	flowConsole();
-}).resize();
-
-
-$(document).ready(function() {
-
-  // Direct updater log messages to the console
-  updater.on('log', function(msg) {
-    printf(msg);
-  });
+function updateVersions() {
 
   // The update version menu
   updater.getVersions(function(err, versions) {
     menu1 = $("#update-version");
-    menu2 = $("#install-version");
+    //menu2 = $("#install-version");
 
     versions.forEach(function(entry) {
       menu1.append('<option value="' + entry.version + '">' + entry.version + '</option>');
-      menu2.append('<option value="' + entry.version + '">' + entry.version + '</option>');    
+      //menu2.append('<option value="' + entry.version + '">' + entry.version + '</option>');    
     });
 
   });
 
-	function setState(state) {
-		console.log(state)
-	  	var stateText = state.charAt(0).toUpperCase() + state.slice(1);
-	    $('#updater-status-text').text(' ' + stateText);
-	    $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + state);
-	    var icon = $('#updater-status-icon');
-	    var classes = 'fa-circle-o fa-spin fa-spinner chain-broken'
-	    switch(state) {
-	    	case 'idle':
-	    		icon.removeClass(classes).addClass('fa-circle-o');
-	    		break;
+}
 
-	    	case 'disconnected':
-	    		icon.removeClass(classes).addClass('fa-chain-broken');
-	    		break;
+function setState(state) {
+    var stateText = state.charAt(0).toUpperCase() + state.slice(1);
+    $('#updater-status-text').text(' ' + stateText);
+    $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + state);
+    var icon = $('#updater-status-icon');
+    var classes = 'fa-circle-o fa-spin fa-spinner chain-broken'
+    switch(state) {
+        case 'idle':
+            icon.removeClass(classes).addClass('fa-circle-o');
+            break;
 
-	    	case 'updating':
-	    		icon.removeClass(classes).addClass('fa-spin fa-spinner');
-	    		break;
-	    }
-	}
+        case 'disconnected':
+            icon.removeClass(classes).addClass('fa-chain-broken');
+            break;
 
-  updater.on('status', function(status) {
-  	setState(status.state);
+        case 'updating':
+            icon.removeClass(classes).addClass('fa-spin fa-spinner');
+            break;
+    }
+}
+
+$(document).ready(function() {
+
+
+
+  // Updater Events
+  updater.on('log', function(msg) {
+    printf(msg);
   });
 
- updater.on('disconnect', function(state) {
+  updater.on('status', function(status) {
+    setState(status.state);
+  });
+
+  updater.on('disconnect', function(state) {
     setState('disconnected');
- });
+  });
+
+
+  //
+  // Updates
+  //
+  $("#btn-update-latest").click( function(evt) { 
+    evt.preventDefault();
+    updater.updateEngine('master');
+  });
+
+  $("#form-update-stable").submit(function(evt) {
+    evt.preventDefault();
+    updater.updateEngine($("#update-version").val());
+  });
 
   $("#btn-update-firmware").click( function(evt) { 
     evt.preventDefault();
     updater.updateFirmware();
   });
 
-  function updateService() {
-	updateNetworks(function(err) {
-		setTimeout(updateService,5000);
-	});
-  }
 
-  updateService();
-  // Buttons for engine management
+  // 
+  // Network Management
+  //
+  $("#btn-network-ap-mode").click(function() {updater.enableHotspot()});
+
+  $("#form-network-id").submit(function(evt) {
+     evt.preventDefault();
+    var name = $('#network-name').val();
+    var password = $('#network-password').val();
+    var options = {};
+    if(name) {
+        options['name'] = name;
+    }
+    if(password) {
+        options['password'] = password;
+    }
+
+    updater.setNetworkIdentity(options, function(err, data) {
+        if(err) {
+          console.error(err);
+        } else {
+          console.info(data);
+        }
+      });
+  });
+
+  //
+  // System Functions
+  //
   $("#btn-start-engine").click(function() {updater.startEngine()});
   $("#btn-stop-engine").click(function() {updater.stopEngine()});
+
+  // Pull available update versions
+  updateVersions();
+  // Start a polling loop for networks...
+  function updateService() {
+    updateNetworks(function(err) {
+        setTimeout(updateService,5000);
+    });
+  }
+  updateService();
+
 });
