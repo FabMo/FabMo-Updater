@@ -195,7 +195,7 @@ button {
     padding: 0.5em 1em;
     text-align: center;
     text-decoration: none;
-    text-shadow: 1px 1px 3px black;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
     display: inline-block;
     border-radius: 0.25em;
     transition: all 0.3s ease 0s;
@@ -216,4 +216,8 @@ button {
 
 .btn-orange {
 	background-color: #dd8728;
+}
+
+.btn-purple {
+	background-color: #542D92;
 }
