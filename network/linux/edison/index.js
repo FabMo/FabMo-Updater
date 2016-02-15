@@ -71,6 +71,14 @@ EdisonNetworkManager.prototype.run = function() {
 				this.run();
 			}.bind(this));
 			break;
+		case 'noap':
+			this.command = null;
+			this.state = 'idle'
+			this.mode = 'unknown'
+			this._unjoinAP(function(err, data) {
+				this.run();
+			}.bind(this));
+			break;
 	}
 	return;
 } 
@@ -239,6 +247,7 @@ EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
 		'password' : password
 	}
 }
+
 EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   log.info("Attempting to join wifi network: " + ssid + " with password: " + password); 
   var network_config = config.updater.get('network');
@@ -253,11 +262,26 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   });
 }
 
+EdisonNetworkManager.prototype.unjoinAP = function() {
+	this.command = {
+		'cmd' : 'noap'
+	}
+}
+
+EdisonNetworkManager.prototype._unjoinAP = function(callback) {
+	jedison('unjoin', function(err, result) {
+		if(err) {
+			log.error(err);
+		}
+		callback(err, result);
+	});
+}
+
 EdisonNetworkManager.prototype.applyNetworkConfig = function() {
 	var network_config = config.updater.get('network');
 	switch(network_config.mode) {
 		case 'ap':
-			this.joinAP();
+			this.unjoinAP();
 			break;
 		case 'station':
 			if(network_config.wifi_networks.length > 0) {
