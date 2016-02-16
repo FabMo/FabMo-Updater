@@ -4,11 +4,11 @@ var modalShown = false;
 
 // Deal with switching tasks using the left menu
 $('.menu-item').click(function() {
+    if(!this.dataset.id) {return;} 
     $('.content-pane').removeClass('active');
     $('#' + this.dataset.id).addClass('active');
     $('.menu-item').removeClass('active');
     $(this).addClass('active');
-    flowConsole();
 });
 
 // Prettify lines for "console" output
