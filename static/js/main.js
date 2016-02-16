@@ -8,7 +8,6 @@ $('.menu-item').click(function() {
     $('#' + this.dataset.id).addClass('active');
     $('.menu-item').removeClass('active');
     $(this).addClass('active');
-    flowConsole();
 });
 
 // Prettify lines for "console" output
@@ -58,7 +57,11 @@ function updateNetworks(callback) {
         // Add the newly defined ones
         networks.forEach(function(network) {
             var row = table.insertRow(table.rows.length);
-            var ssid = row.insertCell(0);
+	    row.onclick = function(evt) {
+		$('#network-ssid').val(network.ssid);
+		$('#network-key').focus();
+	    }
+	    var ssid = row.insertCell(0);
             var security = row.insertCell(1);
             var strength = row.insertCell(2);
             ssid.innerHTML = network.ssid;
@@ -240,6 +243,9 @@ $(document).ready(function() {
     updater.connectToWifi(ssid, key);
   });
 
+  $('.row-network').click(function(evt) {
+	console.log(this.dataset.ssid);
+  });
   //
   // System Functions
   //
