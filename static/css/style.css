@@ -4,7 +4,8 @@
 body {
 	margin: 0;
 	color: #222;
-	font-family: "Trebuchet MS", Helvetica, sans-serif;
+	font-family: Verdana, Geneva, sans-serif;
+	font-size: 16px;
 }
 
 h1 {
@@ -35,7 +36,9 @@ h2 {
     width: 200px;
     flex: none;
     background-color: #444444;
-	font-family: monospace;
+	font-family: "Lucida Console", Monaco, monospace;
+	font-size: 12px;
+	font-weight: 100;
 }
 
 .content-pane {
@@ -138,7 +141,6 @@ h2 {
  * Console Display
  */
 #console {
-	font-family: monospace;
 	background-color: #222222;
 	color: #ebebeb;
 	font-family: "Lucida Console", Monaco, monospace;
@@ -192,6 +194,7 @@ select {
    -webkit-appearance: none;
    -moz-appearance: none;
    appearance: none;
+   font-size: 16px;
 }
 
 fieldset {
@@ -205,6 +208,7 @@ fieldset label {
 }
 button {
     border: none;
+    font-size: 14px;
 	background-color: #444;
     color: white;
     padding: 0.5em 1em;

@@ -37,14 +37,14 @@ function setState(state, options) {
 function fail(err) {
 	return setState('failed', {
 		title : 'Update Failed.',
-		message : 'System update could not complete' + (err ? (': ' + err) : '.')
+		message : 'System update could not complete' + (err ? (': ' + err) : '.') + '<br/><br/>' + '<a href="' + document.referrer + '">Click here to exit the updater.</a>'
 	});
 }
 
 function succeed() {
 	return setState('success', {
 		title : 'Update was Successful!',
-		message : 'You may return to the dashboard.'
+		message : '<a href="' + document.referrer + '">Click here to exit the updater.</a>'
 	});	
 }
 
@@ -55,7 +55,7 @@ $(document).ready(function() {
 			// First status report, no update task has been started
 			if(status.state === 'idle') {
 			// Updater is not otherwise busy
-				updater.updateEngine('master', function(err, data) {
+				updater.updateEngine('release', function(err, data) {
 					if(err) {
 						return fail(err);
 					}
@@ -78,7 +78,7 @@ $(document).ready(function() {
 					// Check the state of the one and only one task that we run per page-load.
 					if(updateTask in data) {
 						if(data[updateTask] === 'success') {
-							return success();
+							return succeed();
 						}
 						fail();
 					}
