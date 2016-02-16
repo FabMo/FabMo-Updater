@@ -88,7 +88,7 @@ function setState(state) {
     $('#updater-status-text').text(' ' + stateText);
     $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + state);
     var icon = $('#updater-status-icon');
-    var classes = 'fa-circle-o fa-spin fa-spinner chain-broken'
+    var classes = 'fa-circle-o fa-spin fa-spinner fa-chain-broken'
     switch(state) {
         case 'idle':
             icon.removeClass(classes).addClass('fa-circle-o');
