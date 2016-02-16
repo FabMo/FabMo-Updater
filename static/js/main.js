@@ -1,5 +1,6 @@
 // Create instance for communicating with the update service
 var updater = new UpdaterAPI();
+var modalShown = false;
 
 // Deal with switching tasks using the left menu
 $('.menu-item').click(function() {
@@ -104,9 +105,68 @@ function setState(state) {
     }
 }
 
+function showModal(options) {
+  var options = options || {};
+  
+  if(modalShown) {
+    return;
+  }
+
+  // Title
+  if(options.title) {
+    $('#modal-title').html(' ' + options.title).show();
+  } else {
+    $('#modal-title').hide();
+  }
+
+  // Message
+  if(options.message) {
+    $('#modal-text').html(options.message).show();
+  } else {
+    $('#modal-text').hide();
+  }
+  
+  // Buttons
+  if(!options.ok && !options.cancel) {
+    $('#modal-buttons').hide();
+  }
+  
+  if(options.ok) {
+    $('#btn-modal-ok').html(options.okText || 'Ok').show();
+    $('#btn-modal-ok').click(function(evt) {
+      options.ok()
+    });
+  } else {
+    $('#btn-modal-ok').hide();
+  }
+  if(options.cancel) {
+    $('#btn-modal-cancel').html(options.cancelText || 'Cancel').show();
+    $('#btn-modal-ok').click(function(evt) {
+      options.cancel()
+    });
+
+  } else {
+    $('#btn-modal-cancel').hide();
+  }
+
+  if(options.icon) {
+    $('#modal-icon').removeClass().addClass('fa fa-lg ' + options.icon).show();
+  } else {
+    $('#modal-icon').hide();
+  }
+  modalShown = true;
+  $('#modal').show();
+}
+
+function dismissModal() {
+  if(!modalShown) { return; }
+  $('#btn-modal-ok').off('click');
+  $('#btn-modal-cancel').off('click');
+  modalShown = false;
+  $('#modal').hide();  
+}
+
 $(document).ready(function() {
-
-
 
   // Updater Events
   updater.on('log', function(msg) {
@@ -115,10 +175,16 @@ $(document).ready(function() {
 
   updater.on('status', function(status) {
     setState(status.state);
+    dismissModal();
   });
 
   updater.on('disconnect', function(state) {
     setState('disconnected');
+    showModal({
+      title : 'Updater Disconnected',
+      message : 'This session is no longer connected to the updater.  This may be because the updater has changed networks.  This message will dismiss if connection is reestablished.',
+      icon : 'fa-chain-broken'
+    });
   });
 
 
@@ -147,7 +213,7 @@ $(document).ready(function() {
   $("#btn-network-ap-mode").click(function() {updater.enableHotspot()});
 
   $("#form-network-id").submit(function(evt) {
-     evt.preventDefault();
+    evt.preventDefault();
     var name = $('#network-name').val();
     var password = $('#network-password').val();
     var options = {};
@@ -165,6 +231,13 @@ $(document).ready(function() {
           console.info(data);
         }
       });
+  });
+
+  $("#form-join-network").submit(function(evt) {
+    evt.preventDefault();
+    var ssid = $('#network-ssid').val();
+    var key = $('#network-key').val();
+    updater.connectToWifi(ssid, key);
   });
 
   //

@@ -90,7 +90,7 @@
       <tr></tr>
 	    </tbody>
     </table>
-      <form class="form-horizontal">
+      <form id="form-join-network" class="form-horizontal">
         <fieldset>
          <label>Network ID: </label>
          <input id="network-ssid" type="text" placeholder="SSID" />
@@ -137,6 +137,20 @@
     </div>
   </div>
 </div>
+
+<div id="modal">
+  <div id="modal-content">
+  <div>
+    <a><i id="modal-icon" style="vertical-align: middle"></i><span id="modal-title" style="vertical-align:middle"></span></a>
+  </div>
+    <p id="modal-text">Some text in the Modal..</p>
+    <div id="modal-buttons">
+      <button class="btn-red" id="btn-modal-cancel">Cancel</button>
+      <button class="btn-green" id="btn-modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/libs/jquery.min.js"></script>
 <script src="js/libs/updaterapi.js"></script>
