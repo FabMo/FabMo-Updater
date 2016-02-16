@@ -23,8 +23,20 @@ echo "Installing dependencies..."
 npm install --production
 sync
 
+echo "Saving version information..."
+git describe
+if [ $? -eq 0 ]; then
+	VERSION=`git describe`
+	echo "{\"version\" : \"$VERSION\" }" > /fabmo/engine/version.json
+else
+	rm /fabmo/engine/version.json
+fi
+sync
+
 echo "Remounting root partition read only"
 mount -r -o remount /
+
+# END DANGER ZONE
 
 echo "Clearing the approot..."
 rm -rf /opt/fabmo/approot

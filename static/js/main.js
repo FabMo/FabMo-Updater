@@ -4,11 +4,22 @@ var modalShown = false;
 
 // Deal with switching tasks using the left menu
 $('.menu-item').click(function() {
-    if(!this.dataset.id) {return;} 
-    $('.content-pane').removeClass('active');
-    $('#' + this.dataset.id).addClass('active');
-    $('.menu-item').removeClass('active');
-    $(this).addClass('active');
+    if(!this.dataset.id) {return;}
+    switch(this.dataset.id) {
+      case undefined:
+      return;
+
+      case 'simple-updater':
+        launchSimpleUpdater();
+        break;
+
+      default:
+        $('.content-pane').removeClass('active');
+        $('#' + this.dataset.id).addClass('active');
+        $('.menu-item').removeClass('active');
+        $(this).addClass('active');
+        break;      
+    } 
 });
 
 // Prettify lines for "console" output
@@ -65,8 +76,8 @@ function updateNetworks(callback) {
 	    var ssid = row.insertCell(0);
             var security = row.insertCell(1);
             var strength = row.insertCell(2);
-            ssid.innerHTML = network.ssid;
-            security.innerHTML = network.security.join('/');
+            ssid.innerHTML = network.ssid || '<No SSID>';
+            security.innerHTML = (network.security || []).join('/');
         });
         callback();
     });
@@ -86,6 +97,20 @@ function updateVersions() {
 
   });
 
+}
+
+function launchSimpleUpdater() {
+  showModal({
+    title : 'Launch Simple Updater',
+    message : 'This will launch the simple update service and <span class="emphasis">update your engine to the latest stable release...</span> Are you sure you wish to do this?',
+    icon : 'fa-question-circle',
+    okText : 'Yes',
+    cancelText : 'No',
+    ok : function() {
+      window.open('/do_update');
+    },
+    cancel : function() { dismissModal(); }
+  })
 }
 
 function setState(state) {

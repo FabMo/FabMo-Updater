@@ -15,8 +15,7 @@ var GenericNetworkManager = require('./network/manager').NetworkManager;
 var doshell = require('./util').doshell;
 var uuid = require('node-uuid');
 
-// Maps unique identifiers to states which correspond to whether or not operations are complete, and whether they passed or failed.
-var TASK_TIMEOUT = 360000;
+var TASK_TIMEOUT = 10800000; // 3 hours
 
 var Updater = function() {
     this.version = null;
@@ -40,7 +39,6 @@ Updater.prototype.startTask = function() {
 }
 
 Updater.prototype.finishTask = function(key, state) {
-    console.log(this.tasks);
     if(key in this.tasks) {
         this.tasks[key] = state;
         log.info('Finishing task ' + key + ' with a state of ' + state);
