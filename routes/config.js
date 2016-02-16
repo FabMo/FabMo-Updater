@@ -1,18 +1,10 @@
 var log = require('../log').logger('routes');
 
-/**
- * @api {get} /status Engine status
- * @apiGroup Status
- * @apiDescription Get a system status report, which includes tool position, IO states, current job, progress, etc.
- * @apiSuccess {String} status `success`
- * @apiSuccess {Object} data Response data
- * @apiSuccess {Object} data.status Status info
-
- */
 var get_status = function(req, res, next) {
+  var updater = require('../updater');
   var answer = {
       status : "success",
-      data : {'status':'OK'}
+      data : {'status':updater.status}
     };
     res.json(answer);
 };

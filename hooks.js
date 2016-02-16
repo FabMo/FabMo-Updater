@@ -5,6 +5,8 @@ var exec = require('child_process').exec;
 var byline = require('byline');
 //var updater = require('./updater');
 
+var keys = {};
+
 var execute = function(name, args, callback) {
 	var OS = config.platform;
 	var PLATFORM = config.updater.get('platform');
@@ -86,12 +88,15 @@ exports.installEngine = function(version, callback) {
 	var updater = require('./updater');
 
 	callback = callback || function() {};
+	var key = updater.startTask();
 	updater.setState('updating');
-	callback(null);
+	callback(null, key);
 	var cp = execute('install_engine', config.updater.get('engine_git_repos') + ' ' + version, function(err,stdout) {
 		if(err) {
+			updater.failTask(key);
 			log.error("Did not update to " + version + " successfully.");
 		} else {
+			updater.passTask(key);
 			log.info("Updated to " + version + " successfully.");
 		}
 		updater.setState('idle');
@@ -113,12 +118,15 @@ exports.updateEngine = function(version, callback) {
 	var updater = require('./updater');
 
 	callback = callback || function() {};
+	var key = updater.startTask();
 	updater.setState('updating');
-	callback(null);
+	callback(null, key);
 	var cp = execute('update_engine', version, function(err,stdout) {
 		if(err) {
+			updater.failTask(key);
 			log.error("Did not update to " + version + " successfully.");
 		} else {
+			updater.passTask(key);
 			log.info("Updated to " + version + " successfully.");
 		}
 
@@ -142,12 +150,15 @@ exports.updateEngine = function(version, callback) {
 exports.updateFirmware = function(filename, callback) {
 	var updater = require('./updater');
 	callback = callback || function() {};
+	var key = updater.startTask();
 	updater.setState('updating');
-	callback(null);
+	callback(null, key);
 	var cp = execute('update_firmware', filename, function(err, stdout) {
 		if(err) {
+			updater.failTask(key);
 			log.error("Did not update firmware successfully.");
 		} else {
+			updater.passTask(key);
 			log.info("Updated firmware successfully.");
 		}
 		updater.setState('idle');

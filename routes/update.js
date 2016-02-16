@@ -23,7 +23,7 @@ var updateEngine = function(req, res, next) {
 		} else {
 			var answer = {
 			    status : "success",
-			   	  data : {}
+			   	  data : {'task' : data}
 			};
 		res.json(answer);			
 		}
@@ -37,7 +37,7 @@ var installEngine = function(req, res, next) {
 		} else {
 			var answer = {
 			    status : "success",
-			   	  data : {}
+			   	  data : {'task' : data}
 			};
 		res.json(answer);			
 		}
@@ -51,16 +51,24 @@ var updateFirmware = function(req, res, next) {
 		} else {
 			var answer = {
 			    status : "success",
-			   	  data : {}
+			   	  data : {'task' : data}
 			};
 		res.json(answer);			
 		}
     });
 };
 
+var getTasks = function(req, res, next) {
+	res.json({
+		status : "success",
+		data : {"tasks" : updater.tasks}
+ 	});
+}
+
 
 module.exports = function(server) {
   server.get('/update/versions', getVersions);
+  server.get('/tasks', getTasks);
   server.post('/update/engine', updateEngine);
   server.post('/update/firmware', updateFirmware);
   server.post('/install/engine', installEngine);

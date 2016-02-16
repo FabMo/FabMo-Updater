@@ -13,17 +13,47 @@ var network = require('./network');
 var fs = require('fs');
 var GenericNetworkManager = require('./network/manager').NetworkManager;
 var doshell = require('./util').doshell;
+var uuid = require('node-uuid');
+
+// Maps unique identifiers to states which correspond to whether or not operations are complete, and whether they passed or failed.
+var TASK_TIMEOUT = 360000;
 
 var Updater = function() {
     this.version = null;
     this.status = {
         'state' : 'idle',
-        'online' : false
+        'online' : false,
+        'task' : null
     }
+    this.tasks = {};
     this.networkManager = network.Generic;
     events.EventEmitter.call(this);
 };
 util.inherits(Updater, events.EventEmitter);
+
+Updater.prototype.startTask = function() {
+    var id = uuid.v1();
+    this.tasks[id] = 'pending';
+    log.info('Starting task: ' + id);
+    this.status.task = id;
+    return id;
+}
+
+Updater.prototype.finishTask = function(key, state) {
+    console.log(this.tasks);
+    if(key in this.tasks) {
+        this.tasks[key] = state;
+        log.info('Finishing task ' + key + ' with a state of ' + state);
+        return setTimeout(function() {
+            log.info('Expiring task ' + key);
+            delete this.tasks[key];
+        }.bind(this), TASK_TIMEOUT);
+    }
+    log.warn('Cannot finish task ' + key + ': No such task.');
+}
+
+Updater.prototype.passTask = function(key) { this.finishTask(key, 'success'); }
+Updater.prototype.failTask = function(key) { this.finishTask(key, 'failed'); }
 
 Updater.prototype.setState = function(state) {
     this.status.state = state;
@@ -58,7 +88,7 @@ Updater.prototype.updateFirmware = function(callback) {
     if(this.status.state != 'idle') {
         callback(new Error("Cannot update the firmware when in the " + updater.status.state + " state."));
     } else {
-	hooks.updateFirmware(config.updater.get('firmware_file'), callback);
+    	hooks.updateFirmware(config.updater.get('firmware_file'), callback);
     }
 }
 

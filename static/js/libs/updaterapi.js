@@ -92,6 +92,9 @@ UpdaterAPI.prototype.getStatus = function(callback) {
 UpdaterAPI.prototype.requestStatus = function() {
 	this.socket.emit('status');
 }
+UpdaterAPI.prototype.getTasks = function(callback) {
+	this._get('/tasks', callback, callback, 'tasks');
+}
 
 // Updates
 UpdaterAPI.prototype.getVersions = function(callback) {

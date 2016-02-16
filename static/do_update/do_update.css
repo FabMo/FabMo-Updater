@@ -1,0 +1,47 @@
+body {
+	background-color: #444444;
+	color: white;
+	transition: all 1s ease 0s;
+}
+
+.status-idle {
+	background-color: #444444;
+}
+
+.status-busy {
+	background-color: #2e3865;
+}
+
+.status-success {
+	background-color: #5daa35;
+}
+
+.status-failed {
+	background-color: #9c210c;
+}
+
+#spinner {
+	margin-top: 10%;
+	position: relative;
+	text-align: center;
+}
+
+#content {
+	width: 100%;
+	text-align: center;
+	margin-top: 20px;
+}
+
+#title {
+	font-size: 20px;
+	font-weight: 900;
+}
+
+.fa-10x {
+	font-size: 10em !important;
+}
+
+.fa-spin-5x {
+	-webkit-animation: fa-spin 5s infinite linear;
+	animation: fa-spin 5s infinite linear;
+}
