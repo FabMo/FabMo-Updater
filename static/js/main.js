@@ -109,7 +109,9 @@ function launchSimpleUpdater() {
     ok : function() {
       window.open('/do_update');
     },
-    cancel : function() { dismissModal(); }
+    cancel : function() { 
+      dismissModal(); 
+    }
   })
 }
 
@@ -156,8 +158,10 @@ function showModal(options) {
   }
   
   // Buttons
-  if(!options.ok && !options.cancel) {
-    $('#modal-buttons').hide();
+  if(options.ok || options.cancel) {
+    $('#modal-buttons').show();
+  } else {
+    $('#modal-buttons').hide();    
   }
   
   if(options.ok) {
@@ -170,7 +174,7 @@ function showModal(options) {
   }
   if(options.cancel) {
     $('#btn-modal-cancel').html(options.cancelText || 'Cancel').show();
-    $('#btn-modal-ok').click(function(evt) {
+    $('#btn-modal-cancel').click(function(evt) {
       options.cancel()
     });
 
