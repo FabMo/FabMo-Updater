@@ -58,11 +58,9 @@ function updateNetworks(callback) {
         }
 
         if(!networks || networks.length === 0) {
-          console.log('no networks')
             $('#network-table').hide();
             $('#no-networks-message').show();
         } else {
-          console.log('networks')
             $('#network-table').show();
             $('#no-networks-message').hide();
         }
@@ -273,9 +271,6 @@ $(document).ready(function() {
     updater.connectToWifi(ssid, key);
   });
 
-  $('.row-network').click(function(evt) {
-	console.log(this.dataset.ssid);
-  });
   //
   // System Functions
   //

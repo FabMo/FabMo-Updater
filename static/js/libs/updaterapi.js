@@ -38,6 +38,11 @@ UpdaterAPI.prototype._initializeWebsocket = function() {
 			this.emit('disconnect');
 		}.bind(this));
 
+		this.socket.on('connect_error', function() {
+			console.info("Websocket disconnected");
+			this.emit('disconnect');
+		});
+
 		this.socket.on('status', function(status) {
 			this._setStatus(status);
 			this.emit('status', status)
