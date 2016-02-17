@@ -14,6 +14,12 @@ var UpdaterAPI = function(base_url) {
 	this._initializeWebsocket();
 }
 
+UpdaterAPI.prototype.getEngineURL = function() {
+	a = document.createElement('a');
+	a.href = this.base_url;
+	return a.protocol + '//' + a.hostname + ':' + (parseInt(a.port || 80)-1)
+}
+
 UpdaterAPI.prototype._initializeWebsocket = function() {
 	localStorage.debug = false
 	try {

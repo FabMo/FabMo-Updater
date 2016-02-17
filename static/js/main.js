@@ -13,6 +13,10 @@ $('.menu-item').click(function() {
         launchSimpleUpdater();
         break;
 
+      case 'goto-dashboard':
+        window.open(updater.getEngineURL());
+        break;
+
       default:
         $('.content-pane').removeClass('active');
         $('#' + this.dataset.id).addClass('active');
