@@ -1,4 +1,6 @@
-#!/bin/bash -e 
+#!/bin/bash
+
+set -e
 
 echo "Stopping the engine..."
 systemctl stop fabmo
@@ -24,12 +26,15 @@ npm install --production
 sync
 
 echo "Saving version information..."
+set +e
 git describe
-if [ $? -eq 0 ]; then
+INVALID_VERSION=$?
+set -e
+if [ $INVALID_VERSION -eq 0 ]; then
 	VERSION=`git describe`
 	echo "{\"version\" : \"$VERSION\" }" > /fabmo/engine/version.json
 else
-	rm /fabmo/engine/version.json
+	rm /fabmo/engine/version.json || true
 fi
 sync
 

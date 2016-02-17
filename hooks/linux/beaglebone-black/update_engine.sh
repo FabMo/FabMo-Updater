@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 echo "Stopping the engine..."
 systemctl stop fabmo
 
@@ -14,17 +16,18 @@ echo "Updating to version $1..."
 git checkout $1
 git merge
 
-echo "Installing dependencies..."
-npm install
-
 echo "Saving version information..."
+set +e
 git describe
-if [ $? -eq 0 ]; then
+INVALID_VERSION=$?
+set -e
+if [ $INVALID_VERSION -eq 0 ]; then
 	VERSION=`git describe`
 	echo "{\"version\" : \"$VERSION\" }" > /fabmo/engine/version.json
 else
-	rm /fabmo/engine/version.json
+	rm /fabmo/engine/version.json || true
 fi
+
 
 echo "Clearing the approot..."
 rm -rf /opt/fabmo/approot
