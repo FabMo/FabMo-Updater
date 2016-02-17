@@ -47,4 +47,9 @@ GenericNetworkManager.prototype.isOnline=function(callback) {
   isOnline(callback);
 }
 
+GenericNetworkManager.prototype.getStatus=function(callback) {
+  log.warn('Unimplemented: getStatus()');
+  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+}
+
 exports.NetworkManager = GenericNetworkManager;

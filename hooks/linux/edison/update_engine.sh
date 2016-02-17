@@ -32,7 +32,7 @@ INVALID_VERSION=$?
 set -e
 if [ $INVALID_VERSION -eq 0 ]; then
 	VERSION=`git describe`
-	echo "{\"version\" : \"$VERSION\" }" > /fabmo/engine/version.json
+	echo "{\"number\" : \"$VERSION\" }" > /fabmo/engine/version.json
 else
 	rm /fabmo/engine/version.json || true
 fi

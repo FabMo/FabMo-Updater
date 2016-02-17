@@ -96,21 +96,17 @@ EdisonNetworkManager.prototype.run = function() {
       this.getInfo(function(err, data) {
         if(!err) {
           var old_mode = this.mode;
-	 log.info("Wireless mode is '" + data.mode + "'"); 
+	       log.info("Wireless mode is '" + data.mode + "'"); 
          log.debug(JSON.stringify(data)); 
-	 if(data.mode == 'managed') {this.mode = 'station';}
+	       if(data.mode == 'managed') {this.mode = 'station';}
          else if(data.mode == 'master') { this.mode = 'ap';}
          else { log.warn('Unknown network mode: ' + data.mode)}
         	if(this.mode != old_mode) {
-
-        setImmediate(this.run.bind(this));
-		} else {
-
+            setImmediate(this.run.bind(this));
+          } else {
         setTimeout(this.run.bind(this), 5000);
-
-}
-	} else {
-
+    }
+  } else {
         setTimeout(this.run.bind(this), 5000);
 }
 
@@ -327,6 +323,9 @@ EdisonNetworkManager.prototype.turnWifiHotspotOn=function(callback){
   callback(null);
 }
 
+EdisonNetworkManager.prototype.getStatus = function(callback) {
+  var status = {'wifi' : {}}
+}
 
 EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
       async.series([

@@ -150,6 +150,17 @@ isOnline = function(req, res, next) {
     });
 }
 
+getStatus = function(req, res, next) {
+    var network = require('../updater').networkManager;
+
+    network.getStatus(function(err, status) {
+        if(err) {
+            return res.json({'status':'error', 'message' : err.message });
+        }
+        return res.json({'status':'success', 'data':{'status' : status}});
+    });
+}
+
 module.exports = function(server) {
     server.post('/network/wifi/state',wifiState);
     server.post('/network/hotspot/state',hotspotState);
