@@ -10,11 +10,14 @@ mount /dev/mmcblk0p1 /mnt
 cd /mnt/fabmo/engine
 
 echo "Fetching new versions..."
-git fetch origin
+cd /fabmo/engine
+git reset --hard HEAD
+git fetch origin --tags
+git checkout master
+git pull
 
 echo "Updating to version $1..."
 git checkout $1
-git merge
 
 echo "Saving version information..."
 set +e
