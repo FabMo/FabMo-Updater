@@ -14,7 +14,6 @@ $('.menu-item').click(function() {
         break;
 
       case 'goto-dashboard':
-
         launchDashboard();
         break;
 
@@ -53,7 +52,7 @@ function setNetworkMode(mode) {
     default:
       $('#update-controls').show();
       $('#message-noupdate-ap').hide();
-
+      break;
   }
 }
 
@@ -74,7 +73,14 @@ function prettify(line) {
 function printf(s) {
     var log = $('#console .content');
     log.append(prettify(s));
-    log[0].scrollTop = log[0].scrollHeight;
+
+    var scrollpane = $('#console');
+    scrollpane[0].scrollTop = scrollpane[0].scrollHeight;
+}
+
+function clearConsole() {
+    var log = $('#console .content');
+    log.text('');
 }
 
 function updateNetworks(callback) {
@@ -269,7 +275,6 @@ $(document).ready(function() {
     });
   });
 
-
   //
   // Updates
   //
@@ -346,6 +351,10 @@ $("#btn-reinstall").click( function(evt) {
   //
   $("#btn-start-engine").click(function() {updater.startEngine()});
   $("#btn-stop-engine").click(function() {updater.stopEngine()});
+  
+
+  // Console clear
+  $('#btn-console-clear').click(function() {clearConsole()});
 
   // Pull available update versions
   updateVersions();

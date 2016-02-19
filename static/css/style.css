@@ -276,6 +276,14 @@ button.disabled {
 	background-color: #542D92;
 }
 
+#btn-console-clear {
+	color: #9c210c;
+	cursor: pointer;
+}
+#btn-console-copy {
+	cursor: pointer;
+}
+
 /*
  *  Table Styles
  */
@@ -366,4 +374,8 @@ td {
 	color: #e00;
 }
 
+
+#message-console {
+	transition: all 0.3s ease 0s;
+}
 
