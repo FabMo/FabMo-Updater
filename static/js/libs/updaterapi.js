@@ -107,6 +107,10 @@ UpdaterAPI.prototype.getTasks = function(callback) {
 	this._get('/tasks', callback, callback, 'tasks');
 }
 
+UpdaterAPI.prototype.getConfig = function(callback) {
+	this._get('/config', callback, callback, 'config');
+}
+
 // Updates
 UpdaterAPI.prototype.getVersions = function(callback) {
 	this._get('/update/versions', callback, callback, 'versions');
@@ -176,6 +180,10 @@ UpdaterAPI.prototype.disableHotspot = function(callback) {
 
 UpdaterAPI.prototype.setNetworkIdentity = function(id, callback) {
 	this._post('/network/identity', id, callback, callback);
+}
+
+UpdaterAPI.prototype.getNetworkIdentity = function(callback) {
+	this._get('/network/identity', callback, callback);
 }
 
 function makeFormData(obj, default_name, default_type) {

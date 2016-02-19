@@ -264,6 +264,18 @@ td {
 	padding: 0.25em;
 }
 
+.info-key-header {
+	padding-right: 4em;
+	text-align: right;
+}
+.info-key {
+	color: #2e3865;
+	text-align: right;
+	padding-right: 4em;
+}
+.info-value {
+	font-style: italic;
+}
 /*
  * Modal Dialog
  */

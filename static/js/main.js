@@ -263,7 +263,9 @@ $(document).ready(function() {
         if(err) {
           console.error(err);
         } else {
-          console.info(data);
+          updater.getNetworkIdentity(function(err, id) {
+            $(".label-network-id").text(id.name);
+          });
         }
       });
   });
@@ -290,5 +292,16 @@ $(document).ready(function() {
     });
   }
   updateService();
+
+  updater.getNetworkIdentity(function(err, id) {
+    $(".label-network-id").text(id.name);
+  });
+
+  updater.getConfig(function(err, config) {
+    $('.label-network-mode').text(config.network.mode)
+    $('.label-engine-git').text(config.engine_git_repos)
+    $('.label-updater-git').text(config.updater_git_repos)
+  });
+
 
 });

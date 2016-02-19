@@ -14,6 +14,11 @@
   <div id="menu">
     <ul class="items">
       <li class="menu-title"><span>FabMo Updater</span></li>    
+      <li class="menu-label">
+        <a href="#">
+          <i class="fa fa-star"></i> <span class="label-network-id">&lt;name&lt;</span>
+          </a>
+      </li>
       <li class="menu-item active" data-id="view-updates"><a href="#"><i class="fa fa-download"></i> Engine Updates</a></li>
       <li class="menu-item" data-id="view-firmware"><a href="#"><i class="fa fa-gears"></i> Firmware Updates</a></li>
       <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-wifi"></i> Network</a></li>
@@ -135,7 +140,19 @@
 
     <div class="content-pane" id="view-info">
     <h1>Information</h1>
-    <p>There is nothing here yet.</p>
+    <table>
+      <thead>
+        <tr>
+          <th class="info-key-header">Key</th> <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="info-key">System ID:</td> <td><span class="info-value label-network-id"></span></td></tr>
+        <tr><td class="info-key">Network Mode:</td> <td><span class="info-value label-network-mode"></span></td></tr>
+        <tr><td class="info-key">Engine Repository:</td> <td><span class="info-value label-engine-git"></span></td></tr>
+        <tr><td class="info-key">Updater Repository:</td> <td><span class="info-value label-updater-git"></span></td></tr>
+      </tbody>
+      </table>
     </div>
 
     <!-- Console (Always Visible) -->

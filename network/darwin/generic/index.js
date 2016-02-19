@@ -1,7 +1,7 @@
 var log = require('../../../log').logger('network');
 var doshell = require('../../../util').doshell
 var parseString = require('xml2js').parseString;
-
+var config = require('../../../config');
 var AIRPORT = '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport'
 
 var util = require('util');
@@ -56,6 +56,13 @@ DarwinNetworkManager.prototype.init = function() {
 
 DarwinNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
   callback(null, this.networks);
+}
+
+DarwinNetworkManager.prototype.setIdentity = function(identity, callback) {
+  if(identity.name) {
+    config.updater.set('name', identity.name)
+  }
+  typeof callback === 'function' && callback(null, this);
 }
 
 exports.NetworkManager = DarwinNetworkManager;
