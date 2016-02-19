@@ -242,6 +242,23 @@ $(document).ready(function() {
   });
 
 
+$("#btn-reinstall").click( function(evt) { 
+    evt.preventDefault();
+    showModal({
+      title : 'Reinstall Engine?',
+      message : 'This will reinstall the FabMo engine <em>from scratch</em> - You will lose all your settings and apps, and will take several minutes.  This is only to be done in circumstances in which <em>the engine is corrupted and unrecoverable by any other means</em> - Are you sure you wish to do this?  Are you absolutely sure?',
+      icon : 'fa-exclamation-circle',
+      okText : 'Yes!  I understand the risk!',
+      cancelText : 'No!  Get me out of here!',
+      ok : function() {
+        updater.installEngine()
+      },
+      cancel : function() { 
+        dismissModal(); 
+      }
+    });
+  });
+
   // 
   // Network Management
   //
