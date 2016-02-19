@@ -26,6 +26,20 @@ $('.menu-item').click(function() {
     } 
 });
 
+function setOS(os) {
+  var icons = {
+    linux : 'fa fa-linux',
+    darwin : 'fa fa-apple',
+    win32 : 'fa fa-windows',
+    win64 : 'fa fa-windows'
+  }
+  try {
+    var iconClass = icons[os] || 'fa fa-question';
+  } catch(e) {
+    iconClass = 'fa fa-question';
+  }
+  $("#network-id-icon").attr('class', iconClass)
+}
 // Prettify lines for "console" output
 function prettify(line) {
   var line_re = /^(\w*)\:(.*)/i;
@@ -315,10 +329,13 @@ $("#btn-reinstall").click( function(evt) {
   });
 
   updater.getConfig(function(err, config) {
-    $('.label-network-mode').text(config.network.mode)
-    $('.label-engine-git').text(config.engine_git_repos)
-    $('.label-updater-git').text(config.updater_git_repos)
+    $('.label-network-mode').text(config.network.mode);
+    $('.label-engine-git').text(config.engine_git_repos);
+    $('.label-updater-git').text(config.updater_git_repos);
+    $('.label-platform').text(config.os + '/' + config.platform);
+    setOS(config.os);
   });
+
 
 
 });

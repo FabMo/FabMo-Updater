@@ -11,7 +11,14 @@ util.inherits(UpdaterConfig, Config);
 UpdaterConfig.prototype.update = function(data, callback) {
 	try {
 		for(var key in data) {
-			this._cache[key] = data[key];
+			switch(key) {
+				case 'os':
+				break;
+
+				default:
+					this._cache[key] = data[key];
+				break;				
+			}
 		}
 	} catch (e) {
 		if(callback) {
@@ -26,6 +33,15 @@ UpdaterConfig.prototype.update = function(data, callback) {
 		}
 	});
 };
+
+UpdaterConfig.prototype.getData = function() {
+	var cfg_copy = {}
+	for(var key in this._cache) {
+		cfg_copy[key] = this._cache[key];
+	}
+	cfg_copy.os = require('./index').platform;
+	return cfg_copy
+}
 
 UpdaterConfig.prototype.apply = function(callback) {
 	try {

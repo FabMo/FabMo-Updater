@@ -12,7 +12,6 @@ var getStatus = function(req, res, next) {
 
 var getConfig = function(req, res, next) {
   var cfg = {'config':config.updater.getData()}
-
   try {
 	  delete cfg.config.password
   } catch(e) {}
