@@ -28,7 +28,6 @@
       <li class="menu-item" data-id="goto-dashboard"><a href="#"><i class="fa fa-tachometer"></i> Goto Dashboard</a></li>
       <li class="menu-item" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> Info</a></li>
       <li class="menu-item" data-id="view-console"><a href="#"><i class="fa fa-terminal"></i> Console</a></li>
-
       <li class="menu-label status" id="updater-status">
         <a>
           <i id="updater-status-icon" class="fa fa-circle-o"></i>
@@ -50,10 +49,11 @@
       <div id="update-controls">
       <h2>Stable Version</h2>
       <p>To update to a stable release of the engine, choose one from the list below and click update.</p>
+      
       <form class="form-horizontal" id="form-update-stable">
-        <button id="btn-update-stable" class="btn-green"><i class="fa fa-tags fa-lg"></i> Update to:</button>
-        <select id="update-version">
-        </select>
+        <button id="btn-update-stable" class="btn-green disabled"><i class="fa fa-tags fa-lg"></i> Update to:</button>
+        <select id="update-version" class="disabled"></select>
+        <i id="icon-update-version-spinner" class="fa fa-spinner fa-lg fa-spin"></i>
       </form>
 
       <h2>Development Version</h2>
