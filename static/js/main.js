@@ -142,7 +142,7 @@ function updateVersions() {
 function launchSimpleUpdater() {
   showModal({
     title : 'Launch Simple Updater',
-    message : 'This will launch the simple update service and <em>update your engine to the latest stable release...</em> Are you sure you wish to do this?',
+    message : 'This will launch the simple update service and <em>update your engine to the latest stable release... Are you sure you wish to do this?</em>',
     icon : 'fa-question-circle',
     okText : 'Yes',
     cancelText : 'No',

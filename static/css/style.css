@@ -31,7 +31,7 @@ h2 {
 }
 
 em {
-	font-weight: bold;
+	color: #900;
 }
 /* 
  * Scaffolding
@@ -213,7 +213,7 @@ select {
    -webkit-appearance: none;
    -moz-appearance: none;
    appearance: none;
-   font-size: 16px;
+   font-size: 14px;
 }
 
 select.disabled {
