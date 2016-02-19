@@ -32,12 +32,17 @@ function setState(state, options) {
 		$('#message').html(options.message);
 	}
 
+	if(options.message2) {
+		$('#message2').html(options.message2);
+	}
+
 }
 
 function fail(err) {
 	return setState('failed', {
 		title : 'Update Failed.',
-		message : 'System update could not complete' + (err ? (': ' + err) : '.') + '<br/><br/>' + '<a href="' + document.referrer + '">Click here to exit the updater.</a>'
+		message : 'System update could not complete' + (err ? (': ' + err) : '.') + '<br/><br/>' + '<a href="' + document.referrer + '">Click here to exit the updater.</a>',
+		message2 :  '<a href="/log" class="logdl"><i class="fa fa-file"></i> Error Log</a>'
 	});
 }
 

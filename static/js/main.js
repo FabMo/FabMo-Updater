@@ -14,7 +14,8 @@ $('.menu-item').click(function() {
         break;
 
       case 'goto-dashboard':
-        window.open(updater.getEngineURL());
+
+        launchDashboard();
         break;
 
       default:
@@ -40,6 +41,22 @@ function setOS(os) {
   }
   $("#network-id-icon").attr('class', iconClass)
 }
+
+function setNetworkMode(mode) {
+  console.log(mode);
+  switch(mode) {
+    case 'ap':
+      $('#update-controls').hide();
+      $('#message-noupdate-ap').show();
+    break;
+
+    default:
+      $('#update-controls').show();
+      $('#message-noupdate-ap').hide();
+
+  }
+}
+
 // Prettify lines for "console" output
 function prettify(line) {
   var line_re = /^(\w*)\:(.*)/i;
@@ -64,7 +81,7 @@ function updateNetworks(callback) {
     updater.getWifiNetworks(function(err, networks) {
         if(err) {
             $('#network-table').hide();
-            $('#no-networks-message').show();
+            $('#message-no-networks').show();
             return callback(err);
         }
     
@@ -77,10 +94,10 @@ function updateNetworks(callback) {
 
         if(!networks || networks.length === 0) {
             $('#network-table').hide();
-            $('#no-networks-message').show();
+            $('#message-no-networks').show();
         } else {
             $('#network-table').show();
-            $('#no-networks-message').hide();
+            $('#message-no-networks').hide();
         }
         // Add the newly defined ones
         networks.forEach(function(network) {
@@ -118,12 +135,27 @@ function updateVersions() {
 function launchSimpleUpdater() {
   showModal({
     title : 'Launch Simple Updater',
-    message : 'This will launch the simple update service and <span class="emphasis">update your engine to the latest stable release...</span> Are you sure you wish to do this?',
+    message : 'This will launch the simple update service and <em>update your engine to the latest stable release...</em> Are you sure you wish to do this?',
     icon : 'fa-question-circle',
     okText : 'Yes',
     cancelText : 'No',
     ok : function() {
       window.open('/do_update');
+    },
+    cancel : function() { 
+      dismissModal(); 
+    }
+  })
+}
+
+function launchDashboard() {
+  showModal({
+    title : 'Go to Dashboard?',
+    message : 'Do you want to leave the updater and go to the FabMo dashboard?',
+    okText : 'Yes',
+    cancelText : 'No',
+    ok : function() {
+      window.open(updater.getEngineURL());
     },
     cancel : function() { 
       dismissModal(); 
@@ -334,6 +366,7 @@ $("#btn-reinstall").click( function(evt) {
     $('.label-updater-git').text(config.updater_git_repos);
     $('.label-platform').text(config.os + '/' + config.platform);
     setOS(config.os);
+    setNetworkMode(config.network.mode);
   });
 
 
