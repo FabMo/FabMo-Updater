@@ -242,7 +242,6 @@ def join_wifi_network(ssid, password, attempts=5):
                     for network in networks:
                         if network['ssid'] == ssid:
                             selected_network = network
-                        break
                     if selected_network:
                         break
                 except:
