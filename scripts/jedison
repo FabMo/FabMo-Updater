@@ -158,8 +158,8 @@ def get_wifi_networks():
  
     seen = set()
     networks = []
-    line_regex = re.compile('(?P<bssid>(?:[a-fA-F0-9][a-fA-F0-9]:?)+)\s+(?P<frequency>\d+)\s+(?P<signal>-?\d+)\s+(?P<security>(?:\[(?:\w|\-)+\])+)\s+(?P<ssid>\w(?:\w|\s|\-|\_)*)')
-    security_regex = re.compile('\[((?:\w|\d|\s|\-)+)\]')
+    line_regex = re.compile('(?P<bssid>(?:[a-fA-F0-9][a-fA-F0-9]:?)+)\s+(?P<frequency>\d+)\s+(?P<signal>-?\d+)\s+(?P<security>(?:\[(?:\w|\-|\+)+\])+)\s+(?P<ssid>\w(?:\w|\s|\-|\_)*)')
+    security_regex = re.compile('\[((?:\w|\d|\s|\-|\+)+)\]')
     for line in results.split('\n'):
         match = line_regex.match(line)
         if match:
