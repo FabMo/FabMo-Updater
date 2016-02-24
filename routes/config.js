@@ -1,6 +1,7 @@
 var log = require('../log').logger('routes');
+var config = require('../config')
 
-var get_status = function(req, res, next) {
+var getStatus = function(req, res, next) {
   var updater = require('../updater');
   var answer = {
       status : "success",
@@ -9,6 +10,19 @@ var get_status = function(req, res, next) {
     res.json(answer);
 };
 
+var getConfig = function(req, res, next) {
+  var cfg = {'config':config.updater.getData()}
+  try {
+	  delete cfg.config.password
+  } catch(e) {}
+
+  res.json({
+  	status : 'success',
+  	data : cfg
+  })
+};
+
 module.exports = function(server) {
-  server.get('/status', get_status);     //OK
+  server.get('/status', getStatus);
+  server.get('/config', getConfig)
 };

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Command console for performing updates to the FabMo engine and dashboard">
     <title>FabMo Update Console</title>
+    <link rel="stylesheet" href="css/fonts.css">    
     <link rel="stylesheet" href="css/font-awesome.min.css">
     <link rel="stylesheet" href="css/style.css">    
 </head>
@@ -14,11 +15,18 @@
   <div id="menu">
     <ul class="items">
       <li class="menu-title"><span>FabMo Updater</span></li>    
+      <li class="menu-label">
+        <a href="#">
+          <i id="network-id-icon" class="fa fa-question"></i> <span class="label-network-id">&lt;name&gt;</span>
+          </a>
+      </li>
       <li class="menu-item active" data-id="view-updates"><a href="#"><i class="fa fa-download"></i> Engine Updates</a></li>
       <li class="menu-item" data-id="view-firmware"><a href="#"><i class="fa fa-gears"></i> Firmware Updates</a></li>
       <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-wifi"></i> Network</a></li>
       <li class="menu-item" data-id="view-system"><a href="#"><i class="fa fa-wrench"></i> System</a></li>
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
+      <li class="menu-item" data-id="goto-dashboard"><a href="#"><i class="fa fa-tachometer"></i> Goto Dashboard</a></li>
+      <li class="menu-item" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> Info</a></li>
       <li class="menu-item" data-id="view-console"><a href="#"><i class="fa fa-terminal"></i> Console</a></li>
       <li class="menu-label status" id="updater-status">
         <a>
@@ -37,22 +45,25 @@
     -->
     <div class="content-pane active" id="view-updates">
       <h1>Engine Updates</h1>
+      <p id="message-noupdate-ap">You cannot update your engine version because you are in "AP Mode" - Use the network manager to join a wireless network with internet access to perform software updates.</p>
+      <div id="update-controls">
       <h2>Stable Version</h2>
       <p>To update to a stable release of the engine, choose one from the list below and click update.</p>
+      
       <form class="form-horizontal" id="form-update-stable">
-        <button id="btn-update-stable" class="btn-green"><i class="fa fa-tags fa-lg"></i> Update to:</button>
-        <select id="update-version">
-        </select>
+        <button id="btn-update-stable" class="btn-green disabled"><i class="fa fa-tags fa-lg"></i> Update to:</button>
+        <select id="update-version" class="disabled"></select>
+        <i id="icon-update-version-spinner" class="fa fa-spinner fa-lg fa-spin"></i>
       </form>
 
       <h2>Development Version</h2>
-      <p>To update to a stable release of the engine, choose one from the list below and click update. <span class="emphasis">Note that the latest development version may be unstable and contain undocumented bugs</span></p>
+      <p>To update to a stable release of the engine, choose one from the list below and click update. <em>Note that the latest development version may be unstable and contain undocumented bugs.</em></p>
       <button id="btn-update-latest" class="btn-purple"><i class="fa fa-github fa-lg"></i>  Update to Latest Development Version</button>
 
       <h2>Reinstall</h2>
-      <p>In rare instances, an engine installation may become damaged or corrupt and need to be installed from scratch.  Click the button below to reinstall the latest stable engine version from scratch.  If you wish to run the development version, you can update once the installation is complete. <span class="emphasis">You should only perform this operation if you are certain that your engine needs to be reinstalled</span></p>
+      <p>In rare instances, an engine installation may become damaged or corrupt and need to be installed from scratch.  Click the button below to reinstall the latest stable engine version from scratch.  If you wish to run the development version, you can update once the installation is complete. <em>You should only perform this operation if you are certain that your engine needs to be reinstalled.</em></p>
       <button id="btn-reinstall" class="btn-red"><i class="fa fa-download fa-lg"></i> Reinstall the Engine</button>
-
+      </div>
     </div>
 
     <!--
@@ -63,7 +74,7 @@
     <div class="content-pane" id="view-firmware">
       <h1>Firmware Updates</h1>
       <p>The button below will force a firmware update on the G2 motion system.  Firmware installed in this way will be taken from your engine installation so you are sure to be using the firmware that is qualified for use with the version of the engine that you are running.</p>
-      <p><span class="emphasis">Firmware installation can be a risky operation.  Do not proceed unless you are sure you need to update!</span></p>      
+      <p><em>Firmware installation can be a risky operation.  Do not proceed unless you are sure you need to update!</em></p>      
       <button id="btn-update-firmware" class="btn-blue"><i class="fa fa-gears"></i> Update Firmware</button>
       <br/>
     </div>
@@ -75,8 +86,8 @@
     -->
     <div class="content-pane" id="view-network">
     <h1>Network</h1>
-    <p>Below is a list of available wireless networks.  Enter an SSID and key at the bottom of the table to join a network.  You can click a network in the list to fill in that network's SSID.  <span class="emphasis">Note that when you join a network, you will lose your connection to the updater and will need to reconnect from the chosen network.</span></p>
-    <div id="no-networks-message">
+    <p>Below is a list of available wireless networks.  Enter an SSID and key at the bottom of the table to join a network.  You can click a network in the list to fill in that network's SSID.  <em>Note that when you join a network, you will lose your connection to the updater and will need to reconnect from the chosen network.</em></p>
+    <div id="message-no-networks">
       <h3>No wireless networks are currently visible.</h3>  
       <p>If you know a nearby network is active but not listed here, you can enter its SSID and network key in the form below, and an attempt will be made to join it anyway.</p>
     </div>
@@ -114,7 +125,7 @@
     <div class="content-pane" id="view-system">
       <h1>System</h1>
       <h2>System Identity</h2>
-      <p>The name selected here will be used both as the system hostname as well as the SSID when in AP mode.  The password will be used both as the root password as well as the network key for AP mode.  <span class="emphasis">You do not need to enter both values.  Only non-blank values will be changed.</span></p>
+      <p>The name selected here will be used both as the system hostname as well as the SSID when in AP mode.  The password will be used both as the root password as well as the network key for AP mode.  <em>You do not need to enter both values.  Only non-blank values will be changed.</em></p>
       <form class="form-horizontal" id="form-network-id">
         <fieldset>
          <label>System ID: </label>
@@ -124,15 +135,38 @@
         </fieldset>
       </form>
       <h2>Engine Control</h2>
-      <p>The buttons below can be used to start and stop the engine software.  <span class="emphasis">These operations do not normally need to be performed manually</span></p>
+      <p>The buttons below can be used to start and stop the engine software.  <em>These operations do not normally need to be performed manually.</em></p>
       <button id="btn-start-engine" class="button btn-green">Start Engine</button>
       <button id="btn-stop-engine" class="button btn-red">Stop Engine</button>
 
     </div>
 
+    <div class="content-pane" id="view-info">
+    <h1>System Information</h1>
+    <table>
+      <thead>
+        <tr>
+          <th class="info-key-header">Key</th> <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="info-key">System ID:</td> <td><span class="info-value label-network-id"></span></td></tr>
+        <tr><td class="info-key">Network Mode:</td> <td><span class="info-value label-network-mode"></span></td></tr>
+        <tr><td class="info-key">Engine Repository:</td> <td><span class="info-value label-engine-git"></span></td></tr>
+        <tr><td class="info-key">Updater Repository:</td> <td><span class="info-value label-updater-git"></span></td></tr>
+        <tr><td class="info-key">Platform:</td> <td><span class="info-value label-platform"/></td></tr>
+      </tbody>
+      </table>
+    </div>
+
     <!-- Console (Always Visible) -->
     <div id="console-header">
-      Updater Console
+      Updater Console &nbsp;
+      <!--<i id="btn-console-copy" class="fa fa-clipboard fa-md"></i>
+      &nbsp; -->
+      <i id="btn-console-clear" class="fa fa-md fa-remove"></i>
+      &nbsp;
+      <span id="message-console"></span>      
     </div>
     <div id="console">
       <div class="content"></div>

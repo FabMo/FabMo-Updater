@@ -13,6 +13,10 @@ $('.menu-item').click(function() {
         launchSimpleUpdater();
         break;
 
+      case 'goto-dashboard':
+        launchDashboard();
+        break;
+
       default:
         $('.content-pane').removeClass('active');
         $('#' + this.dataset.id).addClass('active');
@@ -21,6 +25,36 @@ $('.menu-item').click(function() {
         break;      
     } 
 });
+
+function setOS(os) {
+  var icons = {
+    linux : 'fa fa-linux',
+    darwin : 'fa fa-apple',
+    win32 : 'fa fa-windows',
+    win64 : 'fa fa-windows'
+  }
+  try {
+    var iconClass = icons[os] || 'fa fa-question';
+  } catch(e) {
+    iconClass = 'fa fa-question';
+  }
+  $("#network-id-icon").attr('class', iconClass)
+}
+
+function setNetworkMode(mode) {
+  console.log(mode);
+  switch(mode) {
+    case 'ap':
+      $('#update-controls').hide();
+      $('#message-noupdate-ap').show();
+    break;
+
+    default:
+      $('#update-controls').show();
+      $('#message-noupdate-ap').hide();
+      break;
+  }
+}
 
 // Prettify lines for "console" output
 function prettify(line) {
@@ -39,14 +73,21 @@ function prettify(line) {
 function printf(s) {
     var log = $('#console .content');
     log.append(prettify(s));
-    log[0].scrollTop = log[0].scrollHeight;
+
+    var scrollpane = $('#console');
+    scrollpane[0].scrollTop = scrollpane[0].scrollHeight;
+}
+
+function clearConsole() {
+    var log = $('#console .content');
+    log.text('');
 }
 
 function updateNetworks(callback) {
     updater.getWifiNetworks(function(err, networks) {
         if(err) {
             $('#network-table').hide();
-            $('#no-networks-message').show();
+            $('#message-no-networks').show();
             return callback(err);
         }
     
@@ -58,13 +99,11 @@ function updateNetworks(callback) {
         }
 
         if(!networks || networks.length === 0) {
-          console.log('no networks')
             $('#network-table').hide();
-            $('#no-networks-message').show();
+            $('#message-no-networks').show();
         } else {
-          console.log('networks')
             $('#network-table').show();
-            $('#no-networks-message').hide();
+            $('#message-no-networks').hide();
         }
         // Add the newly defined ones
         networks.forEach(function(network) {
@@ -88,13 +127,14 @@ function updateVersions() {
   // The update version menu
   updater.getVersions(function(err, versions) {
     menu1 = $("#update-version");
-    //menu2 = $("#install-version");
 
     versions.forEach(function(entry) {
       menu1.append('<option value="' + entry.version + '">' + entry.version + '</option>');
       //menu2.append('<option value="' + entry.version + '">' + entry.version + '</option>');    
     });
-
+    $('#btn-update-stable').removeClass('disabled');
+    $('#update-version').removeClass('disabled');
+    $('#icon-update-version-spinner').hide();
   });
 
 }
@@ -102,12 +142,27 @@ function updateVersions() {
 function launchSimpleUpdater() {
   showModal({
     title : 'Launch Simple Updater',
-    message : 'This will launch the simple update service and <span class="emphasis">update your engine to the latest stable release...</span> Are you sure you wish to do this?',
+    message : 'This will launch the simple update service and <em>update your engine to the latest stable release... Are you sure you wish to do this?</em>',
     icon : 'fa-question-circle',
     okText : 'Yes',
     cancelText : 'No',
     ok : function() {
       window.open('/do_update');
+    },
+    cancel : function() { 
+      dismissModal(); 
+    }
+  })
+}
+
+function launchDashboard() {
+  showModal({
+    title : 'Go to Dashboard?',
+    message : 'Do you want to leave the updater and go to the FabMo dashboard?',
+    okText : 'Yes',
+    cancelText : 'No',
+    ok : function() {
+      window.open(updater.getEngineURL());
     },
     cancel : function() { 
       dismissModal(); 
@@ -220,7 +275,6 @@ $(document).ready(function() {
     });
   });
 
-
   //
   // Updates
   //
@@ -239,6 +293,23 @@ $(document).ready(function() {
     updater.updateFirmware();
   });
 
+
+$("#btn-reinstall").click( function(evt) { 
+    evt.preventDefault();
+    showModal({
+      title : 'Reinstall Engine?',
+      message : 'This will reinstall the FabMo engine <em>from scratch</em> - You will lose all your settings and apps, and will take several minutes.  This is only to be done in circumstances in which <em>the engine is corrupted and unrecoverable by any other means</em> - Are you sure you wish to do this?  Are you absolutely sure?',
+      icon : 'fa-exclamation-circle',
+      okText : 'Yes!  I understand the risk!',
+      cancelText : 'No!  Get me out of here!',
+      ok : function() {
+        updater.installEngine()
+      },
+      cancel : function() { 
+        dismissModal(); 
+      }
+    });
+  });
 
   // 
   // Network Management
@@ -261,7 +332,9 @@ $(document).ready(function() {
         if(err) {
           console.error(err);
         } else {
-          console.info(data);
+          updater.getNetworkIdentity(function(err, id) {
+            $(".label-network-id").text(id.name);
+          });
         }
       });
   });
@@ -273,14 +346,15 @@ $(document).ready(function() {
     updater.connectToWifi(ssid, key);
   });
 
-  $('.row-network').click(function(evt) {
-	console.log(this.dataset.ssid);
-  });
   //
   // System Functions
   //
   $("#btn-start-engine").click(function() {updater.startEngine()});
   $("#btn-stop-engine").click(function() {updater.stopEngine()});
+  
+
+  // Console clear
+  $('#btn-console-clear').click(function() {clearConsole()});
 
   // Pull available update versions
   updateVersions();
@@ -291,5 +365,20 @@ $(document).ready(function() {
     });
   }
   updateService();
+
+  updater.getNetworkIdentity(function(err, id) {
+    $(".label-network-id").text(id.name);
+  });
+
+  updater.getConfig(function(err, config) {
+    $('.label-network-mode').text(config.network.mode);
+    $('.label-engine-git').text(config.engine_git_repos);
+    $('.label-updater-git').text(config.updater_git_repos);
+    $('.label-platform').text(config.os + '/' + config.platform);
+    setOS(config.os);
+    setNetworkMode(config.network.mode);
+  });
+
+
 
 });

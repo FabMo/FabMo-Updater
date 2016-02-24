@@ -116,6 +116,7 @@ function UpdaterConfigFirstTime(callback) {
             log.info('OSX Detected.');
             config.updater.set('server_port',9877);
             config.updater.set('engine_server_port',9876);
+            config.updater.update({network : {mode : 'station', networks : []}});
             callback();
         break;
         default:

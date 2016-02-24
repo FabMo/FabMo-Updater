@@ -11,7 +11,7 @@ exports.get_versions = function(err, stdout, stderr, callback) {
 			retval.push({'version' : match[2], 'hash' : match[1]})
 		}
 	});
-	callback(null, retval);
+	callback(null, retval.reverse());
 }
 
 exports.reboot = function(err, stdout, stderr, callback) {

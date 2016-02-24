@@ -8,6 +8,7 @@ var log = require('../log');
 var getLog = function(req, res, next) {
   body = log.getLogBuffer();
   res.setHeader('content-type', 'text/plain');
+  res.setHeader('content-disposition', 'attachment');
   res.send(body);
 };
 

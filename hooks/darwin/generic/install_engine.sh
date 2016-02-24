@@ -1,7 +1,5 @@
-#!/bin/bash -e 
-
-echo "Stopping the engine..."
-#systemctl stop fabmo
+#!/bin/bash 
+set -e
 
 echo "Clearing settings..."
 rm -rf /opt/fabmo/engine
@@ -22,6 +20,3 @@ sync
 echo "Installing dependencies..."
 npm install --production
 sync
-
-echo "Restarting the engine..."
-#systemctl start fabmo
