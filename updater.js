@@ -78,6 +78,15 @@ Updater.prototype.installEngine = function(version, callback) {
     }
 }
 
+Updater.prototype.factoryReset = function(callback) {
+    if(this.status.state != 'idle') {
+        callback(new Error("Cannot update the firmware when in the " + updater.status.state + " state."));
+    } else {
+        callback(); // Go ahead and callback because the factory reset is going to cause the process to bail.
+        hooks.factoryReset();
+    }    
+}
+
 Updater.prototype.getVersions = function(callback) {
     hooks.getVersions(callback);
 }

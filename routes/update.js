@@ -58,6 +58,20 @@ var updateFirmware = function(req, res, next) {
     });
 };
 
+var factoryReset = function(req, res, next) {
+    updater.factoryReset(function(err, data) {
+	  if(err) {
+	  	res.json({status : 'error', message : err});
+		} else {
+			var answer = {
+			    status : "success",
+			   	  data : null /*{'task' : data}*/
+			};
+			res.json(answer);			
+		}
+    });	
+}
+
 var getTasks = function(req, res, next) {
 	res.json({
 		status : "success",
@@ -72,4 +86,6 @@ module.exports = function(server) {
   server.post('/update/engine', updateEngine);
   server.post('/update/firmware', updateFirmware);
   server.post('/install/engine', installEngine);
+  server.post('/update/factory', factoryReset);
+
 };

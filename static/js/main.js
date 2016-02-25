@@ -311,6 +311,24 @@ $("#btn-reinstall").click( function(evt) {
     });
   });
 
+$("#btn-factory-reset").click( function(evt) { 
+    evt.preventDefault();
+    showModal({
+      title : 'Factory Reset?',
+      message : 'This will reset your software to its factory state.  This process is not reversible and you will lose all data.  Are you certain you want to do this?  <em>Are you really really sure? This is a destructive operation.  It will take some time, and you will lose contact with the updater temporarily.</em>',
+      icon : 'fa-exclamation-circle',
+      okText : 'Yes!  I understand the risk!',
+      cancelText : 'No!  Get me out of here!',
+      ok : function() {
+        updater.factoryReset();
+        dismissModal();
+      },
+      cancel : function() { 
+        dismissModal(); 
+      }
+    });
+  });
+
   // 
   // Network Management
   //

@@ -27,6 +27,7 @@
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
       <li class="menu-item" data-id="goto-dashboard"><a href="#"><i class="fa fa-tachometer"></i> Goto Dashboard</a></li>
       <li class="menu-item" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> Info</a></li>
+      <li class="menu-item" data-id="view-factory"><a href="#"><i class="fa fa-industry"></i> Factory Reset</a></li>
       <li class="menu-item" data-id="view-console"><a href="#"><i class="fa fa-terminal"></i> Console</a></li>
       <li class="menu-label status" id="updater-status">
         <a>
@@ -157,6 +158,18 @@
         <tr><td class="info-key">Platform:</td> <td><span class="info-value label-platform"/></td></tr>
       </tbody>
       </table>
+    </div>
+
+    <!--
+
+      FACTORY RESET
+
+    -->
+    <div class="content-pane" id="view-factory">
+      <h1>Factory Reset</h1>
+      <p>The button below will reset all system software to its factory state.  This is not a reversible operation, and you will lose ALL data.  <em>Do not proceed unless you know what you are doing</em></p>      
+      <button id="btn-factory-reset" class="btn-red"><i class="fa fa-industry"></i> Factory Reset</button>
+      <br/>
     </div>
 
     <!-- Console (Always Visible) -->

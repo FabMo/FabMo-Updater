@@ -175,3 +175,9 @@ exports.updateFirmware = function(filename, callback) {
 		log.shell(line);
 	});
 }
+
+exports.factoryReset = function(callback) {
+	var updater = require('./updater');
+	updater.setState('updating');
+	execute('factory_reset', null, callback);
+}
