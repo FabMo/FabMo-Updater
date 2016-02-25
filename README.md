@@ -7,19 +7,19 @@ The FabMo Updater is companion software to the FabMo Engine.  It provides online
 ## Design Philosophy
 In systems where the network is the only means of accessing the FabMo software (Such as on the Intel Edison) it is critical that the network management be done by a small, simple, robust software agent.  The updater aims to be this, above all else, and for this reason, network management is a function of the updater, not the engine.  The updater, then, provides the following functions at a high level:
 
- #. Network management
- #. Online Updates
- #. System identity and security management
- #. Failsafe and factory reset operations
- #. Engine service management
- #. System management (reboot, shutdown, etc.)
+  1. Network management
+  2. Online Updates
+  3. System identity and security management
+  4. Failsafe and factory reset operations
+  5. Engine service management
+  6. System management (reboot, shutdown, etc.)
 
 ## Installation
 The standard install location for the updater is `/fabmo/updater` - To install:
 
- #. Clone the source
- #. `npm install` in the source directory to install dependencies
- #. (optional) copy the systemd service file `files/fabmo-updater.service` to `/etc/systemd/system` and enable the service with `systemctl enable fabmo-updater`
+ 1. Clone the source
+ 2. `npm install` in the source directory to install dependencies
+ 3. (optional) copy the systemd service file `files/fabmo-updater.service` to `/etc/systemd/system` and enable the service with `systemctl enable fabmo-updater`
 
 ## Configuration
 The default location for the updater configuration file is `/opt/fabmo/config/updater.json` - if this file or the parent directory does not exist, they will be created.  The configuration file can be edited manually, but should not be modified while the updater is running.
