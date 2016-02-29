@@ -9,6 +9,7 @@ Restart=always
 StandardOutput=syslog
 StandardError=syslog
 WorkingDirectory = /fabmo/updater/
+KillMode=process
 
 [Install]
 WantedBy=multi-user.target
