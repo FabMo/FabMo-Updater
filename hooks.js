@@ -1,17 +1,33 @@
 var glob = require('glob');
 var config = require('./config');
 var log = require('./log').logger('hooks');
-var exec = require('child_process').exec;
+var cp = require('child_process');
 var byline = require('byline');
 //var updater = require('./updater');
 
 var keys = {};
 
 var execute = function(name, args, callback) {
+	callback = callback || function() {};
+	hook = getHook(name);
+ 	var hook_func = hook.func || function(err, stdout, stderr, callback) {
+		callback(err, stdout);
+	}
+	return cp.exec(hook.file + ' ' + (args || ''), function(err, stdout, stderr) {
+				log.shell(stdout);	
+				hook_func(err, stdout, stderr, callback);
+			});
+}
+
+var spawn = function(name) {
+	hook = getHook(name);
+	return cp.spawn(hook.file, [], {detached:true});
+}
+
+var getHook = function(name) {
 	var OS = config.platform;
 	var PLATFORM = config.updater.get('platform');
 
-	callback = callback || function() {};
 
 	// JS Function for post processing the hook
 	var hook_func = null;
@@ -19,9 +35,6 @@ var execute = function(name, args, callback) {
 		hook_func = require('./hooks/' + OS + '/' + PLATFORM)[name];
 	} catch(e) {
 		log.warn(e);
-	}
- 	hook_func = hook_func || function(err, stdout, stderr, callback) {
-		callback(err, stdout);
 	}
 
 	var hook_exec_pattern = './hooks/' + OS + '/'  + PLATFORM + '/' + name + '.*';
@@ -35,21 +48,18 @@ var execute = function(name, args, callback) {
 
 	switch(matches.length) {
 		case 0:
-			setImmediate(callback, new Error("No hook defined for " + name + " on " + PLATFORM + " platform"));
+			throw new Error("No hook defined for " + name + " on " + PLATFORM + " platform");
 			break;
 
 		case 1:
-			var match = matches[0];
-			log.info("Running hook " + match);
-			return exec(match + ' ' + (args || ''), function(err, stdout, stderr) {
-				log.shell(stdout);	
-				hook_func(err, stdout, stderr, callback);
-			});
+			return {
+				file : matches[0],
+				func : hook_func
+			}
 		break;
 
 		default:
-			setImmediate(callback, new Error("More than one hook defined for " + name + " on " + PLATFORM + "???"));
-			log.error(new Error("More than one hook defined for " + name + " on " + PLATFORM + "???"));
+			throw new Error("More than one hook defined for " + name + " on " + PLATFORM + "???");
 			break;
 	}
 }
@@ -179,5 +189,7 @@ exports.updateFirmware = function(filename, callback) {
 exports.factoryReset = function(callback) {
 	var updater = require('./updater');
 	updater.setState('updating');
-	execute('factory_reset', null, callback);
+
+	spawn('factory_reset');
+	callback();
 }
