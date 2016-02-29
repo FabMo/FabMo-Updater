@@ -3,7 +3,7 @@ var config = require('./config');
 var log = require('./log').logger('hooks');
 var cp = require('child_process');
 var byline = require('byline');
-//var updater = require('./updater');
+var fs = require('fs');
 
 var keys = {};
 
@@ -21,9 +21,13 @@ var execute = function(name, args, callback) {
 
 var spawn = function(name) {
 	var hook = getHook(name);
+	out = fs.openSync('/tmp/factory_reset.log', 'a');
+	err = fs.openSync('/tmp/factory_reset.log', 'a');
+
+
 	var child = cp.spawn(hook.file, [], {
 		detached:true,
-		stdio: 'ignore'
+		stdio: ['ignore', out, err]
 	});
 	child.unref();
 	return child;
