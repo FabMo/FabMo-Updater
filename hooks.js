@@ -20,11 +20,13 @@ var execute = function(name, args, callback) {
 }
 
 var spawn = function(name) {
-	hook = getHook(name);
-	return cp.spawn(hook.file, [], {
+	var hook = getHook(name);
+	var child = cp.spawn(hook.file, [], {
 		detached:true,
 		stdio: 'ignore'
 	});
+	child.unref();
+	return child;
 }
 
 var getHook = function(name) {
