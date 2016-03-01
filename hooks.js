@@ -200,7 +200,6 @@ exports.factoryReset = function(callback) {
 	updater.setState('updating');
 
 	spawn('factory_reset');
-	callback();
 }
 
 exports.updateUpdater = function(callback) {
@@ -208,5 +207,4 @@ exports.updateUpdater = function(callback) {
 	updater.setState('updating');
 
 	spawn('update_updater');
-	callback();
 }

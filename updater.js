@@ -100,7 +100,7 @@ Updater.prototype.updateUpdater = function(version, callback) {
     if(this.status.state != 'idle') {
         callback(new Error("Cannot update the updater when in the " + updater.status.state + " state."));
     } else {
-        callback(); // Go ahead and callback because the factory reset is going to cause the process to bail.
+        callback(); // Go ahead and callback because the updater update is going to cause the process to bail.
         hooks.updateUpdater();
     }    
 }
