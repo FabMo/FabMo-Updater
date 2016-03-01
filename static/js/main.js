@@ -18,6 +18,7 @@ $('.menu-item').click(function() {
         break;
 
       default:
+        console.log("clickyclick")
         $('.content-pane').removeClass('active');
         $('#' + this.dataset.id).addClass('active');
         $('.menu-item').removeClass('active');
@@ -42,7 +43,6 @@ function setOS(os) {
 }
 
 function setNetworkMode(mode) {
-  console.log(mode);
   switch(mode) {
     case 'ap':
       $('#update-controls').hide();
