@@ -376,4 +376,8 @@ EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
     );
 }
 
+EdisonNetworkManager.prototype.isOnline = function(callback) {
+  setImmediate(callback, this.mode === 'station');
+}
+
 exports.NetworkManager = EdisonNetworkManager;

@@ -55,7 +55,15 @@ Updater.prototype.failTask = function(key) { this.finishTask(key, 'failed'); }
 
 Updater.prototype.setState = function(state) {
     this.status.state = state;
-    this.emit('status',this.status);
+    this.status.online = this.networkManager.isOnline(function(online) {
+        this.status.online = online;
+        this.emit('status',this.status);
+    }.bind(this));
+}
+
+Updater.prototype.setOnline = function(online) {
+    this.status.online = online;
+    this.emit('status', this.status);
 }
 
 Updater.prototype.stop = function(callback) {
@@ -171,7 +179,7 @@ Updater.prototype.start = function(callback) {
             } catch(e) {
                 log.warn(e);
                 this.networkManager = new GenericNetworkManager();
-                return callback(null);
+                //return callback(null);
             }
             log.info("Setting up the network...");
             try {
@@ -181,7 +189,17 @@ Updater.prototype.start = function(callback) {
                 log.error(e);
                 log.error('Problem starting network manager:' + e);
             }
-            callback(null);
+
+            var onlineCheck = function() {
+                this.networkManager.isOnline(function(online) {
+                    if(online != this.status.online) {
+                        this.setOnline(online);
+                    }
+                }.bind(this));                
+            }.bind(this);
+            onlineCheck();
+            setInterval(onlineCheck,10000);
+            return callback(null);
         }.bind(this),
 
         function start_server(callback) {

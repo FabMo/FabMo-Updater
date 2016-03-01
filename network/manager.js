@@ -1,5 +1,4 @@
 var log = require('../log').logger('manager');
-//var isOnline = require('is-online');
 
 var GenericNetworkManager = function() {
 	this.platform = '???';
@@ -44,7 +43,7 @@ GenericNetworkManager.prototype.setIdentity=function(identity, callback){
 }
 
 GenericNetworkManager.prototype.isOnline=function(callback) {
-//  isOnline(callback);
+  callback(true);
 }
 
 GenericNetworkManager.prototype.getStatus=function(callback) {

@@ -18,7 +18,6 @@ $('.menu-item').click(function() {
         break;
 
       default:
-        console.log("clickyclick")
         $('.content-pane').removeClass('active');
         $('#' + this.dataset.id).addClass('active');
         $('.menu-item').removeClass('active');
@@ -42,17 +41,13 @@ function setOS(os) {
   $("#network-id-icon").attr('class', iconClass)
 }
 
-function setNetworkMode(mode) {
-  switch(mode) {
-    case 'ap':
-      $('#update-controls').hide();
-      $('#message-noupdate-ap').show();
-    break;
-
-    default:
-      $('#update-controls').show();
-      $('#message-noupdate-ap').hide();
-      break;
+function setOnline(online) {
+  if(online) {
+    $('#update-controls').show();
+    $('#message-noupdate-ap').hide();
+  } else {
+    $('#update-controls').hide();
+    $('#message-noupdate-ap').show();
   }
 }
 
@@ -263,6 +258,7 @@ $(document).ready(function() {
 
   updater.on('status', function(status) {
     setState(status.state);
+    setOnline(status.online);
     dismissModal();
   });
 
@@ -399,7 +395,6 @@ $("#btn-factory-reset").click( function(evt) {
     $('.label-updater-git').text(config.updater_git_repos);
     $('.label-platform').text(config.os + '/' + config.platform);
     setOS(config.os);
-    setNetworkMode(config.network.mode);
   });
 
 
