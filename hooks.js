@@ -202,3 +202,11 @@ exports.factoryReset = function(callback) {
 	spawn('factory_reset');
 	callback();
 }
+
+exports.updateUpdater = function(callback) {
+	var updater = require('./updater');
+	updater.setState('updating');
+
+	spawn('update_updater');
+	callback();
+}

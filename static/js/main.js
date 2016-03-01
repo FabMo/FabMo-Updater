@@ -283,6 +283,11 @@ $(document).ready(function() {
     updater.updateEngine('master');
   });
 
+  $("#btn-update-updater-latest").click( function(evt) { 
+    evt.preventDefault();
+    updater.updateUpdater('master');
+  });
+
   $("#form-update-stable").submit(function(evt) {
     evt.preventDefault();
     updater.updateEngine($("#update-version").val());
