@@ -46,3 +46,5 @@ Updates are done using hooks, and the default hook uses `git` to perform the upd
 ### .fmu Updates
 In the absence of a network connection, or in the instance that a `git` based network update fails for some reason, an alternative update vector is provided with .fmu files.  An .fmu file is simply a bzipped tar archive that contains installation data, including a manifest, an install script, and the files to be installed.  An .fmu file can be delivered to the updater and is executed on reciept, performing its prescribed actions and taking whatever action is necessary to put the system back in a workable state.  An .fmu file needn't even be a software update, and can be used to perform system maintenance in a way that is not supported natively by the updater.
 
+### Self Updates
+The updater can also update *itself* but this should be done with caution.  The updater must shut itself down and hand the update off to an external process in order to update, so progress monitoring can't be done.
