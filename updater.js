@@ -96,7 +96,7 @@ Updater.prototype.factoryReset = function(callback) {
 }
 
 
-Updater.prototype.updateUpdater = function(callback) {
+Updater.prototype.updateUpdater = function(version, callback) {
     if(this.status.state != 'idle') {
         callback(new Error("Cannot update the updater when in the " + updater.status.state + " state."));
     } else {
