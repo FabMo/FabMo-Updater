@@ -42,9 +42,10 @@ sync
 
 sleep 3
 echo "Remounting root partition read only"
-echo u > /proc/sysrq-trigger
-sleep 1
-mount -w -o remount /home
+mount -r -o remount /
+#echo u > /proc/sysrq-trigger
+#sleep 1
+#mount -w -o remount /home
 
 # END DANGER ZONE
 

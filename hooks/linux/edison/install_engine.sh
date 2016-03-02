@@ -33,9 +33,10 @@ echo "Synchronizing filesystem..."
 sync
 
 echo "Remounting the root partition as read only"
-echo u > /proc/sysrq-trigger
-sleep 1
-mount -w -o remount /home
+mount -r -o remount /
+#echo u > /proc/sysrq-trigger
+#sleep 1
+#mount -w -o remount /home
 
 echo "Restarting the engine..."
 systemctl start fabmo
