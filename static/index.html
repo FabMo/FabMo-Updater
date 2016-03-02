@@ -46,7 +46,7 @@
     -->
     <div class="content-pane active" id="view-updates">
       <h1>Engine Updates</h1>
-      <p id="message-noupdate-ap">You cannot update your engine version because you are in "AP Mode" - Use the network manager to join a wireless network with internet access to perform software updates.</p>
+      <p id="message-noupdate-ap">You cannot perform software updates because you do not have a reliable internet connection.  Please wait a moment, or use the network manager to join a wireless network.</p>
       <div id="update-controls">
       <h2>Stable Version</h2>
       <p>To update to a stable release of the engine, choose one from the list below and click update.</p>
@@ -167,7 +167,9 @@
     -->
     <div class="content-pane" id="view-factory">
       <h1>Factory Reset</h1>
-      <p>The button below will reset all system software to its factory state.  This is not a reversible operation, and you will lose ALL data.  <em>Do not proceed unless you know what you are doing</em></p>      
+      <p>The button below will reset all system software to its factory state.  This is not a reversible operation, and you will lose all software settings, history and user data.  <em>Do not proceed unless you know what you are doing.</em></p> 
+      <p>When a factory reset is performed, you will temporarily lose contact with the updater.  Please be patient.  Factory updates take about 5 minutes, and you may need to refresh this page to restore your connection.  The system will try to re-establish the current wireless configuration after the reset, but after a system power-cycle, all wireless settings will be forgotten.  The system will be in AP mode and you will need to reconnect and re-enter wireless credentials.</p>
+      <p>In other words, a factory reset is a little weird, and you really shouldn't do it unless you're absolutely sure you have to.</p>
       <button id="btn-factory-reset" class="btn-red"><i class="fa fa-industry"></i> Factory Reset</button>
       <br/>
     </div>
