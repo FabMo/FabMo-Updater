@@ -51,3 +51,5 @@ sync
 
 echo "Restarting the engine..."
 systemctl start fabmo
+
+sleep 10
