@@ -3,7 +3,7 @@
 set -e
 
 echo "Stopping the updater..."
-systemctl stop fabmo-updater
+systemctl stop fabmo fabmo-updater
 
 echo "Remounting root partition read-write"
 mount -w -o remount /
@@ -44,4 +44,4 @@ mount -r -o remount /
 # END DANGER ZONE
 
 echo "Restarting the updater..."
-systemctl start fabmo-updater
+systemctl start fabmo fabmo-updater

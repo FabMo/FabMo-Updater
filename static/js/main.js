@@ -122,11 +122,12 @@ function updateVersions() {
   // The update version menu
   updater.getVersions(function(err, versions) {
     menu1 = $("#update-version");
-
     versions.forEach(function(entry) {
       menu1.append('<option value="' + entry.version + '">' + entry.version + '</option>');
       //menu2.append('<option value="' + entry.version + '">' + entry.version + '</option>');    
     });
+    menu1.append('<option value="rc">Release Candidate</option>');
+
     $('#btn-update-stable').removeClass('disabled');
     $('#update-version').removeClass('disabled');
     $('#icon-update-version-spinner').hide();

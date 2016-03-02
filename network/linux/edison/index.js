@@ -250,7 +250,7 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   network_config.mode = 'station';
   network_config.wifi_networks = [{'ssid' : ssid, 'password' : password}];
   config.updater.set('network', network_config);
-  jedison('join wifi --ssid=' + ssid + ' --password=' + password , function(err, result) {
+  jedison('join wifi --ssid="' + ssid + '" --password="' + password + '"', function(err, result) {
     if(err) {
         log.error(err);
     }
