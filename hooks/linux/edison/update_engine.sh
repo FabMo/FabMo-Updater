@@ -15,6 +15,8 @@ cd /fabmo/engine
 git reset --hard HEAD
 git fetch origin --tags
 git checkout master
+git fetch origin release:release
+git fetch origin rc:rc
 git pull
 
 echo "Updating to version $1..."
