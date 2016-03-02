@@ -40,8 +40,10 @@ else
 fi
 sync
 
+sleep 3
 echo "Remounting root partition read only"
-mount -r -o remount /
+echo u > /proc/sysrq-trigger
+#mount -r -o remount /
 
 # END DANGER ZONE
 

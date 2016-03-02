@@ -13,8 +13,10 @@ fi
 echo "Putting G2 in firmware-reloadable state..."
 stty -F /dev/ttyACM0 1200
 sleep 1
+
 echo "Flashing/verifying $1..."
 bossac -w -v $1
+
 echo "Setting the boot flag and rbooting G2..."
 bossac -b 
 bossac -R 
