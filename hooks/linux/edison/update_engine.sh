@@ -10,14 +10,20 @@ mount -w -o remount /
 
 # DANGER ZONE
 
-echo "Fetching new versions..."
+echo "Resetting..."
 cd /fabmo/engine
 git reset --hard HEAD
+echo "Fetching tags..."
 git fetch origin --tags
+echo "Checking out master..."
 git checkout master
+
+echo "Fetching master branch..."
+git fetch master
+
+echo "Fetching release branches..."
 git fetch origin release:release
 git fetch origin rc:rc
-git pull
 
 echo "Updating to version $1..."
 git checkout $1
