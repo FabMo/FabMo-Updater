@@ -19,7 +19,7 @@ echo "Checking out master..."
 git checkout master
 
 echo "Fetching master branch..."
-git fetch master
+git fetch
 
 echo "Fetching release branches..."
 git fetch origin release:release
