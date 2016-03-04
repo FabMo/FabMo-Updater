@@ -13,13 +13,12 @@ mount -w -o remount /
 echo "Resetting..."
 cd /fabmo/engine
 git reset --hard HEAD
-echo "Fetching tags..."
-git fetch origin --tags
+
 echo "Checking out master..."
 git checkout master
 
-echo "Fetching master branch..."
-git fetch
+echo "Fetching master branch and tags..."
+git fetch origin --tags
 
 echo "Fetching release branches..."
 git fetch origin release:release
@@ -27,6 +26,7 @@ git fetch origin rc:rc
 
 echo "Updating to version $1..."
 git checkout $1
+git merge
 sync
 
 echo "Installing dependencies..."
@@ -62,4 +62,4 @@ sync
 echo "Restarting the engine..."
 systemctl start fabmo
 
-sleep 10
+sleep 15
