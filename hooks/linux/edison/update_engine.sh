@@ -18,7 +18,7 @@ echo "Checking out master..."
 git checkout master
 
 echo "Fetching master branch and tags..."
-git fetch origin --tags
+git pull origin --tags
 
 echo "Fetching release branches..."
 git fetch origin release:release
@@ -26,7 +26,6 @@ git fetch origin rc:rc
 
 echo "Updating to version $1..."
 git checkout $1
-git merge
 sync
 
 echo "Installing dependencies..."
