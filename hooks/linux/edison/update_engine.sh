@@ -17,7 +17,7 @@ git reset --hard HEAD
 echo "Checking out master..."
 git checkout master
 
-echo "Fetching master branch and tags..."
+echo "Pulling master branch and tags..."
 git pull origin --tags
 
 echo "Fetching release branches..."
