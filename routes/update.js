@@ -1,5 +1,6 @@
 var log = require('../log').logger('routes');
 var updater = require('../updater');
+var upload = require('./upload').upload;
 
 var getVersions = function(req, res, next) {
     updater.getVersions(function(err, versions) {
@@ -93,6 +94,23 @@ var getTasks = function(req, res, next) {
  	});
 }
 
+var doFMU = function(req, res, next) {
+	log.info("Doing FMU");
+	upload(req, res, next, function(err, upload) {
+        log.info("Upload complete");
+        var uploads = upload.files
+
+        if(uploads.length > 1) {
+            log.warn("Got an upload of " + uploads.length + ' files for a submitted job when only one is allowed.')
+        }       
+        res.json( {
+        	status : 'success',
+        	data : {
+        		status : 'complete'
+        	}
+        });
+    });
+}
 
 module.exports = function(server) {
   server.get('/update/versions', getVersions);
@@ -102,4 +120,6 @@ module.exports = function(server) {
   server.post('/update/firmware', updateFirmware);
   server.post('/install/engine', installEngine);
   server.post('/update/factory', factoryReset);
+
+  server.post('/update/fmu', doFMU);
 };

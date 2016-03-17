@@ -14,6 +14,7 @@ var fs = require('fs');
 var GenericNetworkManager = require('./network/manager').NetworkManager;
 var doshell = require('./util').doshell;
 var uuid = require('node-uuid');
+var moment = require('moment');
 
 var TASK_TIMEOUT = 10800000; // 3 hours
 
@@ -114,6 +115,16 @@ Updater.prototype.updateFirmware = function(callback) {
         callback(new Error("Cannot update the firmware when in the " + updater.status.state + " state."));
     } else {
     	hooks.updateFirmware(config.updater.get('firmware_file'), callback);
+    }
+}
+
+Updater.prototype.setTime = function(time, callback) {
+    if(this.status.state != 'idle') {
+        callback(new Error("Cannot set the system time while in the " + updater.status.state + " state."));
+    } else {
+        var m = moment.unix(time/1000.0);
+        time_string = m.utc().format('YYYY-MM-DD HH:mm:ss');
+        hooks.setTime('"' + time_string + '"', callback);
     }
 }
 

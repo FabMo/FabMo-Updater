@@ -24,7 +24,6 @@ var spawn = function(name) {
 	out = fs.openSync('/tmp/factory_reset.log', 'a');
 	err = fs.openSync('/tmp/factory_reset.log', 'a');
 
-
 	var child = cp.spawn(hook.file, [], {
 		detached:true,
 		stdio: ['ignore', out, err]
@@ -207,4 +206,8 @@ exports.updateUpdater = function(callback) {
 	updater.setState('updating');
 
 	spawn('update_updater');
+}
+
+exports.setTime = function(time_string, callback) {
+	execute('set_time', time_string, callback);
 }

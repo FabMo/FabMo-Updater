@@ -107,7 +107,7 @@ function updateNetworks(callback) {
 		$('#network-ssid').val(network.ssid);
 		$('#network-key').focus();
 	    }
-	    var ssid = row.insertCell(0);
+	   var ssid = row.insertCell(0);
             var security = row.insertCell(1);
             var strength = row.insertCell(2);
             ssid.innerHTML = network.ssid || '<No SSID>';
@@ -361,9 +361,24 @@ $("#btn-factory-reset").click( function(evt) {
 
   $("#form-join-network").submit(function(evt) {
     evt.preventDefault();
-    var ssid = $('#network-ssid').val();
-    var key = $('#network-key').val();
-    updater.connectToWifi(ssid, key);
+      var ssid = $('#network-ssid').val();
+      var key = $('#network-key').val();
+      showModal({
+    title : 'Change Networks?',
+    message : 'Do you wish to join the network "' + ssid + '"? You will be <em>disconnected from the updater</em> and will need to reconnect to the target wireless network.',
+    icon : 'fa-question-circle',
+    okText : 'Yes',
+    cancelText : 'No',
+    ok : function() {
+
+      updater.connectToWifi(ssid, key);
+      dismissModal();
+    },
+    cancel : function() { 
+      dismissModal(); 
+    }
+  });
+
   });
 
   //
@@ -375,6 +390,27 @@ $("#btn-factory-reset").click( function(evt) {
 
   // Console clear
   $('#btn-console-clear').click(function() {clearConsole()});
+
+  $('#btn-update-fmu').click(function() {
+    jQuery('#file').trigger('click');
+  });
+
+ $('#file').change(function(evt) {
+    $('.progressbar').removeClass('hide');
+    var files = [];
+    for(var i=0; i<evt.target.files.length; i++) {
+      files.push({file:evt.target.files[i]});
+    }
+    updater.submitFMU(files, {}, function(err, data) {
+      setTimeout(function() {
+        $('.progressbar').addClass('hide');
+        $('.progressbar .fill').width(0);
+      }, 750);
+    }, function(progress) {
+      var pg = (progress*100).toFixed(0) + '%';
+      $('.progressbar .fill').width(pg);
+    });
+  });
 
   // Pull available update versions
   updateVersions();
@@ -398,6 +434,6 @@ $("#btn-factory-reset").click( function(evt) {
     setOS(config.os);
   });
 
-
+ 
 
 });

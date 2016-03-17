@@ -34,6 +34,10 @@ em {
  * Scaffolding
  */
 
+.hide {
+	visibility: hidden;
+}
+
 #container {
     display: flex;
     height: 100vh;
@@ -188,6 +192,34 @@ em {
 .loglevel-websocket { color: #E85377; }
 .loglevel-shell { color: #A491FD; }
 
+.progressbar {
+    border: 1px solid #444;
+    /*font-size: 14px;
+	background-color: #444;*/
+    color: white;
+    background-color: #aaaaaa;
+   /* padding: 0.5em 1em;*/
+    text-align: left;
+    text-decoration: none;
+    display: inline-block;
+    border-radius: 0.25em;
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none; 
+    -moz-user-select: none;    
+    -ms-user-select: none;     
+    user-select: none;
+    width: 20em;
+    height: 1em; 
+}
+
+.progressbar .fill {
+	background-color: #2E3865;
+	width: 0%;
+	height: 100%;
+	position: relative;
+	transition: all 0.3s ease 0s;
+}
 /*
  * Forms
  */

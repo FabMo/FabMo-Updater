@@ -11,6 +11,11 @@
     <link rel="stylesheet" href="css/style.css">    
 </head>
 <body>
+
+<form style="display:none;" id="fileform">
+  <input type="file" id="file" multiple>
+</form>
+
 <div id="container">
   <div id="menu">
     <ul class="items">
@@ -64,6 +69,13 @@
       <h1>Updater Updates</h1>
       <p>Occasionally, the software updater needs to be updated too.  Click the button below to do that. <em>A failed updater update cannot be recovered without a factory reset.  Proceed with caution.</em></p>
       <button id="btn-update-updater-latest" class="btn-purple"><i class="fa fa-github fa-lg"></i>  Update to Latest Development Version</button>
+
+      <h1>FMU Update</h1>
+      <p>Click the button below to apply an update from a .fmu file.</p>
+      <button id="btn-update-fmu" class="btn-green"><i class="fa fa-file fa-lg"></i>  Update With .fmu File...</button>
+      <span class="progressbar hide">
+        <div class="fill"></div>
+      </span>
       </div>
     </div>
 

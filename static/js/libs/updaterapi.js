@@ -111,6 +111,10 @@ UpdaterAPI.prototype.getConfig = function(callback) {
 	this._get('/config', callback, callback, 'config');
 }
 
+UpdaterAPI.prototype.submitFMU = function(fmu, options, callback, progress) {
+	this._postUpload('/update/fmu', fmu, {}, callback, callback, null, progress);
+}
+
 // Updates
 UpdaterAPI.prototype.getVersions = function(callback) {
 	this._get('/update/versions', callback, callback, 'versions');
@@ -227,7 +231,144 @@ function makeFormData(obj, default_name, default_type) {
 
 UpdaterAPI.prototype._url = function(path) { return this.base_url + '/' + path.replace(/^\//,''); }
 
+UpdaterAPI.prototype._postUpload = function(url, data, metadata, errback, callback, key, progress) {
+	//var url = this._url(url);
+	var callback = callback || function() {};
+	var errback = errback || function() {};
 
+	// The POST Upload is done in two pieces.  First is a metadata post which transmits
+	// an array of json objects that describe the files in question.
+	// Following the metadata is a multipart request for each uploaded file.
+	// So for N files, you have N+1 requests, the first for the metadata, and then N remaining for the files themselves.
+	if(!Array.isArray(data)) {
+		data = [data];
+	}
+	var meta = {
+		files : [],
+		meta : metadata
+	}
+
+	var files = [];
+	data.forEach(function(item) {
+		files.push(item.file);
+		delete item.file;
+		meta.files.push(item);
+	});
+
+	var onMetaDataUploadComplete = function(err, k) {
+		if(err) {
+			return errback(err);
+		}
+		var requests = [];
+		var countdown = files.length;
+		files.forEach(function(file, index) {
+			var fd = new FormData();
+			fd.append('key', k);
+			fd.append('index', index);
+			fd.append('file', file);
+			var onFileUploadComplete = function(err, data) {
+				if(err) {
+					// Bail out here too - fail on any one file upload failure
+					requests.forEach(function(req) {
+						req.abort();
+					});
+					return errback(err);
+				}
+				console.log(data);
+				if(data.status === 'complete') {
+					if(key) {
+						callback(null, data.data[key]);						
+					} else {
+						callback(null, data.data);
+					}
+				}
+			}.bind(this);
+			var request = this._postup(url, fd, onFileUploadComplete, onFileUploadComplete, null, null, progress);
+			requests.push(request);
+		}.bind(this));
+	}.bind(this);
+	this._post(url, meta, onMetaDataUploadComplete, onMetaDataUploadComplete, 'key');
+}
+
+
+UpdaterAPI.prototype._postup = function(url, formdata, errback, callback, key, redirect, progback) {
+	if(!redirect) {
+		var url = this._url(url);		
+	}
+	var callback = callback || function() {};
+	var errback = errback || function() {};
+
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', url);
+
+	xhr.upload.addEventListener('progress', function(evt) {
+		progback(evt.loaded/evt.total);
+	});
+    xhr.addEventListener('readystatechange', function(e) {
+      if( this.readyState === 4 ) {
+        // the transfer has completed and the server closed the connection.
+      }
+    });
+
+	xhr.addEventListener('readystatechange', function(evt) {
+		  if( xhr.readyState != 4 ) {
+		  	return;
+		  }
+		console.log(xhr.status)
+		console.log(xhr)
+		console.log(evt)
+		switch(xhr.status) {
+			case 200:
+				console.log(xhr);
+				var response = JSON.parse(xhr.responseText);
+				console.log(response);
+				switch(response.status) {
+					case 'success':
+					console.log("calling BACK")
+						if(key) {
+							callback(null, response.data[key]);
+						} else {
+							callback(null, response.data);
+						}
+						break;
+
+					case 'fail':
+						if(key) {
+							errback(response.data[key]);
+						} else {
+							errback(response.data);
+						}
+						break;
+					default:
+						errback(response.message);
+						break;
+				}
+			break;
+
+			case 300:
+				// TODO infinite loop issue here?
+				try {
+					var response = JSON.parse(xhr.responseText);
+					if(response.url) {
+						this._post(response.url, formdata, errback, callback, key, true);
+					} else {
+						console.error("Bad redirect in FabMo API");
+					}
+				} catch(e) {
+					console.error(e);
+				}
+				break;
+
+			default:
+			console.log(xhr);
+				console.error("Got a bad response from server: " + xhr.status);
+				break;
+		}
+    }.bind(this));
+
+	xhr.send(formdata);
+	return xhr;
+}
 UpdaterAPI.prototype._post = function(url, data, errback, callback, key) {
 	var url = this._url(url);
 	var callback = callback || function() {};
