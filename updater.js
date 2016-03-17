@@ -25,6 +25,7 @@ var Updater = function() {
         'online' : false,
         'task' : null
     }
+    this.hasAccurateTime = false;
     this.tasks = {};
     this.networkManager = network.Generic;
     events.EventEmitter.call(this);
@@ -122,9 +123,15 @@ Updater.prototype.setTime = function(time, callback) {
     if(this.status.state != 'idle') {
         callback(new Error("Cannot set the system time while in the " + updater.status.state + " state."));
     } else {
+        if(this.hasAccurateTime) {
+            log.warn("Not accepting an externally provided time.  Local time is trusted.");
+            return;
+        }
         var m = moment.unix(time/1000.0);
         time_string = m.utc().format('YYYY-MM-DD HH:mm:ss');
-        hooks.setTime('"' + time_string + '"', callback);
+        hooks.setTime('"' + time_string + '"', function() {
+            this.hasAccurateTime = true;
+        }.bind(this));
     }
 }
 
