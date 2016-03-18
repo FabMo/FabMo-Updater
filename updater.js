@@ -119,6 +119,14 @@ Updater.prototype.updateFirmware = function(callback) {
     }
 }
 
+Updater.prototype.doFMU = function(filename, callback) {
+    if(this.status.state != 'idle') {
+        callback(new Error("Cannot apply FMU update when in the " + updater.status.state + " state."));
+    } else {
+        hooks.doFMU(filename, callback);
+    }
+}
+
 Updater.prototype.setTime = function(time, callback) {
     if(this.status.state != 'idle') {
         callback(new Error("Cannot set the system time while in the " + updater.status.state + " state."));

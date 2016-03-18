@@ -165,6 +165,24 @@ exports.updateEngine = function(version, callback) {
 
 }
 
+exports.doFMU = function(filename, callback) {
+	var updater = require('./updater');
+	var callback = callback || function() {};
+	var key = updater.startTask();
+	updater.setState('updating');
+	callback(null, key);
+	execute('do_fmu', filename, function(err,stdout) {
+		if(err) {
+			updater.failTask(key);
+			log.error("Did not execute FMU successfully.");
+		} else {
+			updater.passTask(key);
+			log.info("Executed FMU successfully.");
+		}
+		updater.setState('idle');
+	});
+}
+
 exports.updateFirmware = function(filename, callback) {
 	var updater = require('./updater');
 	callback = callback || function() {};

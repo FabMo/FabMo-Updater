@@ -109,6 +109,8 @@ var doFMU = function(req, res, next) {
         		status : 'complete'
         	}
         });
+        console.log(upload.files[0].file.path)
+        updater.doFMU(upload.files[0].file.path);
     });
 }
 

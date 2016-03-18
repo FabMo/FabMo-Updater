@@ -51,6 +51,7 @@ function setOnline(online) {
   }
 }
 
+var lastLevel = ''
 // Prettify lines for "console" output
 function prettify(line) {
   var line_re = /^(\w*)\:(.*)/i;
@@ -58,16 +59,23 @@ function prettify(line) {
   if(match) {
     var level = match[1];
     var msg = match[2];
+    lastLevel = level;
     return '<span class="loglevel-' + level + '">' + level + ':</span>' + msg + '\n'
   } else {
-    return line;
+    blank = [];
+    for(var i=0; i<lastLevel.length; i++) {
+      blank = blank + ' ';
+    }
+    return blank + '  ' + line + '\n'
   }
 }
 
 // Print a line to the "console"
 function printf(s) {
     var log = $('#console .content');
-    log.append(prettify(s));
+    s.split('\n').forEach(function(line) {
+          log.append(prettify(line));
+    });
 
     var scrollpane = $('#console');
     scrollpane[0].scrollTop = scrollpane[0].scrollHeight;
