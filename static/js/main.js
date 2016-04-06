@@ -166,7 +166,7 @@ function launchDashboard() {
     okText : 'Yes',
     cancelText : 'No',
     ok : function() {
-      window.open(updater.getEngineURL());
+      window.open(updater.getEngineURL(), "_self");
     },
     cancel : function() { 
       dismissModal(); 
