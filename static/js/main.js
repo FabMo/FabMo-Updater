@@ -414,6 +414,8 @@ $("#btn-factory-reset").click( function(evt) {
         $('.progressbar').addClass('hide');
         $('.progressbar .fill').width(0);
       }, 750);
+      $('#file').val(null);
+
     }, function(progress) {
       var pg = (progress*100).toFixed(0) + '%';
       $('.progressbar .fill').width(pg);

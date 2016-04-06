@@ -95,9 +95,10 @@ var getTasks = function(req, res, next) {
 }
 
 var doFMU = function(req, res, next) {
-	log.info("Doing FMU");
 	upload(req, res, next, function(err, upload) {
         log.info("Upload complete");
+		log.info("Doing FMU");
+        
         var uploads = upload.files
 
         if(uploads.length > 1) {

@@ -25,7 +25,6 @@ function createUpload(metadata, callback) {
         files : metadata.files,
         callback : callback
     }
-    console.log(UPLOAD_INDEX)
     setUploadTimeout(key, UPLOAD_TIMEOUT);
     return key;
 }
