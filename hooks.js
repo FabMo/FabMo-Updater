@@ -229,3 +229,11 @@ exports.updateUpdater = function(callback) {
 exports.setTime = function(time_string, callback) {
 	execute('set_time', time_string, callback);
 }
+
+exports.getUniqueID = function(callback) {
+	execute('get_unique_id', null, function(err, data) {
+		if(err) { return callback(err); }
+		var id = data.trim();
+		callback(null, id);
+	});
+}

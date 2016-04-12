@@ -115,7 +115,7 @@ Updater.prototype.updateFirmware = function(callback) {
     if(this.status.state != 'idle') {
         callback(new Error("Cannot update the firmware when in the " + updater.status.state + " state."));
     } else {
-    	hooks.updateFirmware(config.updater.get('firmware_file'), callback);
+        hooks.updateFirmware(config.updater.get('firmware_file'), callback);
     }
 }
 
@@ -147,22 +147,27 @@ function UpdaterConfigFirstTime(callback) {
     log.info('Configuring for the first time...');
     switch(config.platform) {
         case 'linux':
-		var confFile = '/etc/wpa_supplicant/wpa_supplicant.conf';
-		try {
-			var text = fs.readFileSync(confFile, 'utf8');
-			if(text.match(/device_name=Edison/)) {
-				log.info("Intel Edison Platform Detected");
-				var id = '';
-				for(var i=0; i<8; i++) {
-					id += (Math.floor(Math.random()*15)).toString(16);
-				}
-				log.info("Random ID Generated: " + id);
-				var hostname = 'FabMo-' + id;
-				config.updater.set('platform', 'edison');
-				config.updater.set('name', hostname);
-				callback();
-			}
-		} catch(e) {}
+            var confFile = '/etc/wpa_supplicant/wpa_supplicant.conf';
+            try {
+                var text = fs.readFileSync(confFile, 'utf8');
+                if(text.match(/device_name=Edison/)) {
+                    log.info("Intel Edison Platform Detected");
+                    hooks.getUniquieID(function(err, id) {
+                        if(err) {
+                            var id = '';
+                            log.error("There was a problem generating the factory ID:");
+                            log.error(err);
+                            for(var i=0; i<8; i++) {
+                                id += (Math.floor(Math.random()*15)).toString(16);
+                            }                        
+                        }
+                        var hostname = 'FabMo-' + id;
+                        config.updater.set('platform', 'edison');
+                        config.updater.set('name', hostname);
+                        callback();
+                    })
+                }
+            } catch(e) {}
         break;
 
         case 'darwin':
@@ -273,10 +278,10 @@ Updater.prototype.start = function(callback) {
 
         }.bind(this),
         
-	function test(callback) {
-		callback();
-	}.bind(this)	
-	],
+    function test(callback) {
+        callback();
+    }.bind(this)    
+    ],
 
         function(err, results) {
             if(err) {
