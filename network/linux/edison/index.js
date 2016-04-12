@@ -152,7 +152,7 @@ EdisonNetworkManager.prototype.runStation = function() {
               log.info('Found ' + new_networks + ' new networks. (' + new_network_names.join(',') + ')')
           }
         } else {
-          console.warn(err);
+          log.warn(err);
         }
         if(data.length === 0 && this.scan_retries > 0) {
           log.warn("No networks?!  Retrying...");
@@ -168,7 +168,6 @@ EdisonNetworkManager.prototype.runStation = function() {
 
     case 'check_network':
       this.getInfo(function(err, data) {
-        console.log(data);
         var networkOK = true;
         if(!err) {
           if(data.ipaddress === '?') {
@@ -185,6 +184,11 @@ EdisonNetworkManager.prototype.runStation = function() {
         }
         if(networkOK) {
           this.state = 'idle';          
+          this.network_history[data.ssid] = {
+            ipaddress : data.ipaddress,
+            ssid : data.ssid,
+            last_seen : Date.now()
+          }
           setImmediate(this.run.bind(this));
         } else {
           log.warn("Network health in question...");
@@ -317,6 +321,10 @@ EdisonNetworkManager.prototype.turnWifiOn=function(callback){
 
 EdisonNetworkManager.prototype.turnWifiOff=function(callback){
   callback(new Error('Not available on the edison wifi manager.'));
+}
+
+EdisonNetworkManager.prototype.getWifiHistory=function(callback){
+  callback(null, this.network_history);
 }
 
 EdisonNetworkManager.prototype.turnWifiHotspotOn=function(callback){

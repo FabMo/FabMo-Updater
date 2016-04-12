@@ -138,6 +138,15 @@ getNetworkIdentity = function(req, res, next) {
     });
 }
 
+getWifiHistory = function(req, res, next) {
+    network.getWifiHistory(function(err, data) {
+        res.json({
+            status : 'success',
+            data : {history : data}
+        });
+    });
+}
+
 isOnline = function(req, res, next) {
     var network = require('../updater').networkManager;
 
@@ -168,6 +177,7 @@ module.exports = function(server) {
     server.post('/network/wifi/connect', connectWifi);
     server.post('/network/wifi/disconnect',disconnectWifi);
     server.post('/network/wifi/forget',forgetWifi);
+    server.get('/network/wifi/history', getWifiHistory);
     server.get('/network/identity',getNetworkIdentity);
     server.post('/network/identity',setNetworkIdentity);
     server.get('/network/online', isOnline);

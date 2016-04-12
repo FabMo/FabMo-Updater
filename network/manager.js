@@ -37,6 +37,11 @@ GenericNetworkManager.prototype.turnWifiHotspotOff=function(callback){
   callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
 }
 
+GenericNetworkManager.prototype.getWifiHistory=function(callback){
+  log.warn('Unimplemented: getWifiHistory');
+  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+}
+
 GenericNetworkManager.prototype.setIdentity=function(identity, callback){
   log.warn('Unimplemented: setIdentity(' + JSON.stringify(identity) + ')');
   callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
