@@ -152,7 +152,8 @@ function UpdaterConfigFirstTime(callback) {
                 var text = fs.readFileSync(confFile, 'utf8');
                 if(text.match(/device_name=Edison/)) {
                     log.info("Intel Edison Platform Detected");
-                    hooks.getUniquieID(function(err, id) {
+                    config.updater.set('platform', 'edison');
+                    hooks.getUniqueID(function(err, id) {
                         if(err) {
                             var id = '';
                             log.error("There was a problem generating the factory ID:");
@@ -162,12 +163,13 @@ function UpdaterConfigFirstTime(callback) {
                             }                        
                         }
                         var hostname = 'FabMo-' + id;
-                        config.updater.set('platform', 'edison');
                         config.updater.set('name', hostname);
                         callback();
                     })
                 }
-            } catch(e) {}
+            } catch(e) {
+	    	log.error(e);
+	    }
         break;
 
         case 'darwin':
