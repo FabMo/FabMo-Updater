@@ -185,8 +185,8 @@ EdisonNetworkManager.prototype.runStation = function() {
         if(networkOK) {
           this.state = 'idle';          
           this.network_history[data.ssid] = {
-            ipaddress : data.ipaddress,
             ssid : data.ssid,
+            ipaddress : data.ipaddress,
             last_seen : Date.now()
           }
           setImmediate(this.run.bind(this));

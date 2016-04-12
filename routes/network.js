@@ -141,6 +141,9 @@ getNetworkIdentity = function(req, res, next) {
 getWifiHistory = function(req, res, next) {
     var network = require('../updater').networkManager;
     network.getWifiHistory(function(err, data) {
+        if(err) {
+            return res.json({'status':'error', 'message' : err.message });
+        }
         res.json({
             status : 'success',
             data : {history : data}
@@ -154,9 +157,8 @@ isOnline = function(req, res, next) {
     network.isOnline(function(err, online) {
         if(err) {
             return res.json({'status':'error', 'message' : err.message });
-        } else {
-            return res.json({'status':'success', 'data':{'online' : online}});
         }
+        return res.json({'status':'success', 'data':{'online' : online}});
     });
 }
 
