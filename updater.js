@@ -56,7 +56,7 @@ Updater.prototype.passTask = function(key) { this.finishTask(key, 'success'); }
 Updater.prototype.failTask = function(key) { this.finishTask(key, 'failed'); }
 
 Updater.prototype.setState = function(state) {
-    this.status.state = state;
+    this.status.state = state || this.status.state;
     this.status.online = this.networkManager.isOnline(function(online) {
         this.status.online = online;
         this.emit('status',this.status);
@@ -201,9 +201,9 @@ Updater.prototype.start = function(callback) {
             hooks.getUniqueID(function(err, id) {
                 if(err) {
                     log.error("Could not read the unique machine ID!");
-                    config.updater.set('unique_id', config.updater.get('hostname'));
+                    config.updater.set('id', config.updater.get('hostname'));
                 } else {
-                    config.updater.set('unique_id', id);                    
+                    config.updater.set('id', id);                    
                 }
                 callback();
             });
@@ -242,7 +242,7 @@ Updater.prototype.start = function(callback) {
                 }.bind(this));                
             }.bind(this);
             onlineCheck();
-            setInterval(onlineCheck,10000);
+            setInterval(onlineCheck,3000);
             return callback(null);
         }.bind(this),
 

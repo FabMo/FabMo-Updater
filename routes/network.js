@@ -152,7 +152,6 @@ getWifiHistory = function(req, res, next) {
 
 isOnline = function(req, res, next) {
     var network = require('../updater').networkManager;
-
     network.isOnline(function(err, online) {
         if(err) {
             return res.json({'status':'error', 'message' : err.message });

@@ -5,55 +5,61 @@ var GenericNetworkManager = function() {
 	this.os = '???';
 }
 
+function fail(instance, callback) {
+    callback(new Error('Function unavailable on ' + instance.os + '/' + instance.platform));
+}
+
 GenericNetworkManager.prototype.init = function() {}
 
 GenericNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
   log.warn('Unimplemented: getAvailableWifiNetworks');
-  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+  fail(this, callback);
 }
 
 GenericNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback) {
-    log.warn('Unimplemented: connectToAWifiNetwork(' + ssid + ',' + key + ')');
-	  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+  log.warn('Unimplemented: connectToAWifiNetwork(' + ssid + ',' + key + ')');
+  fail(this, callback);
+
 }
 
 GenericNetworkManager.prototype.turnWifiOn=function(callback){
   log.warn('Unimplemented: turnWifiOn');
-  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+  fail(this, callback);
 }
 
 GenericNetworkManager.prototype.turnWifiOff=function(callback){
   log.warn('Unimplemented: turnWifiOff');
-  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+  fail(this, callback);
 }
 
 GenericNetworkManager.prototype.turnWifiHotspotOn=function(callback){
   log.warn('Unimplemented: turnWIfiHotspotOn');
-  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+  fail(this, callback);
 }
 
 GenericNetworkManager.prototype.turnWifiHotspotOff=function(callback){
   log.warn('Unimplemented: turnWIfiHotspotOff');
-  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+  fail(this, callback);
 }
 
 GenericNetworkManager.prototype.getWifiHistory=function(callback){
   log.warn('Unimplemented: getWifiHistory');
-  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+  fail(this, callback);
 }
 
 GenericNetworkManager.prototype.setIdentity=function(identity, callback){
   log.warn('Unimplemented: setIdentity(' + JSON.stringify(identity) + ')');
-  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+  fail(this, callback);
 }
 
 GenericNetworkManager.prototype.isOnline=function(callback) {
-  callback(true);
+  log.warn('Unimplemented: isOnline()');
+  fail(this, callback);
 }
 
 GenericNetworkManager.prototype.getStatus=function(callback) {
   log.warn('Unimplemented: getStatus()');
-  callback(new Error('Function unavailable on ' + this.os + '/' + this.platform));
+  fail(this, callback);
 }
 
 exports.NetworkManager = GenericNetworkManager;
