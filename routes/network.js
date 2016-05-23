@@ -14,7 +14,7 @@ scan = function(req, res, next) {
 };
 
 connectWifi = function(req, res, next) {
-ssid = req.params.ssid
+    ssid = req.params.ssid
     key = req.params.key
         var network = require('../updater').networkManager;
     if(ssid) {
@@ -122,7 +122,6 @@ setNetworkIdentity = function(req,res,next){
     var password = req.params.password;
 
     var network = require('../updater').networkManager;
-
     network.setIdentity({'name' : name, 'password' : password}, function(err, data) {
         if(err) {
             return res.json({'status':'error', 'message' : err.message});                            
@@ -134,7 +133,7 @@ setNetworkIdentity = function(req,res,next){
 getNetworkIdentity = function(req, res, next) {
     res.json({
         status : 'success',
-        data : {name : config.updater.get('name')}
+        data : {name : config.updater.get('name'), id : config.updater.get('id')}
     });
 }
 

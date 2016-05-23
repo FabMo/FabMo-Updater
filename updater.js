@@ -197,6 +197,17 @@ Updater.prototype.start = function(callback) {
             log.info("Loading configuration...");
             config.configureUpdater(callback);
         },
+        function get_unique_id(callback) {
+            hooks.getUniqueID(function(err, id) {
+                if(err) {
+                    log.error("Could not read the unique machine ID!");
+                    config.updater.set('unique_id', config.updater.get('hostname'));
+                } else {
+                    config.updater.set('unique_id', id);                    
+                }
+                callback();
+            });
+        }.bind(this),
 
         function first_time_configure(callback) {
             if(!config.updater.userConfigLoaded) {
