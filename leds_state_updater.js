@@ -46,7 +46,7 @@ var updateLedsState = function(){
             ledsPatterns.goGreen();
             break;
         case 'running':
-            ledsPatterns.fadeRed(10);
+            ledsPatterns.fadeRed(30);
             break;
         case 'manual':
             ledsPatterns.goBlue();
@@ -61,7 +61,7 @@ var updateLedsState = function(){
             ledsPatterns.blinkRandomlyRed(10);
             break;
         default:
-            ledsPatterns.fadeWhite(10);
+            ledsPatterns.fadeWhite(30);
             break;
     }
     }else{
