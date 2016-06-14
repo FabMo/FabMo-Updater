@@ -85,6 +85,14 @@ var getHook = function(name) {
 
 // Exported hooks
 
+exports.unlock = function(callback) {
+	execute('lock', null, callback);
+}
+
+exports.unlock = function(callback) {
+	execute('unlock', null, callback);
+}
+
 exports.startService = function(callback) {
 	execute('start_service', null, callback);
 }
