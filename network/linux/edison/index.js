@@ -500,7 +500,7 @@ EdisonNetworkManager.prototype.setGateway=function(gateway, callback) {
 
 EdisonNetworkManager.prototype.applyNetworkConfig=function(){
   this.applyWifiConfig();
-  this.applyEthernetConfig();
+//  this.applyEthernetConfig();
 }
 
 EdisonNetworkManager.prototype.applyEthernetConfig=function(){
@@ -509,7 +509,7 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
   ifconfig.status(ethernetInterface,function(err,status){
     if(status.up && status.running){
         self.stopDHCPServer(ethernetInterface,function(err){if(err)log.warn(err);});
-        log.info:"ethernet is in "+ethernet_config.mode+" mode";
+        log.info("ethernet is in "+ethernet_config.mode+" mode");
       switch(ethernet_config.mode) {
         case 'static':
           self.disableDHCP(ethernetInterface,function(err){
@@ -561,28 +561,24 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
 
 EdisonNetworkManager.prototype.runEthernet = function(){
   var self = this;
-  function checkEthernetstate(){
+  function checkEthernetState(){
     var oldState = this.ethernetState;
     ifconfig.status(ethernetInterface,function(err,status){
       if(!err && status.up && status.running){
-        self.ethernetState = "plugged";
+        this.ethernetState = "plugged";
       }else{
         if(err) log.warn(err);
-        self.ethernetState = "unplugged";
+        this.ethernetState = "unplugged";
       }
-      if(self.ethernetState!==oldState && self.ethernetState !==
-"unplugged")
+      if(this.ethernetState!==oldState && this.ethernetState !=="unplugged"){
         log.info("ethernet cable was plugged");
-        self.applyEthernetConfig();
-    });
+        this.applyEthernetConfig();
+      }
+    }.bind(this));
   }
-  checkEthernetstate();
-  setInterval(checkEthernetstate,ETHERNET_SCAN_INTERVAL);
+checkEthernetState.bind(this)();
+  setInterval(checkEthernetState.bind(this),ETHERNET_SCAN_INTERVAL);
 
 }
-
-
-
-
 
 exports.NetworkManager = EdisonNetworkManager;
