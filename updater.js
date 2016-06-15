@@ -197,6 +197,13 @@ Updater.prototype.start = function(callback) {
             log.info("Loading configuration...");
             config.configureUpdater(callback);
         },
+        function first_time_configure(callback) {
+            if(!config.updater.userConfigLoaded) {
+                UpdaterConfigFirstTime(callback);
+            } else {
+                callback();
+            }
+        },
         function get_unique_id(callback) {
             hooks.getUniqueID(function(err, id) {
                 if(err) {
@@ -208,15 +215,6 @@ Updater.prototype.start = function(callback) {
                 callback();
             });
         }.bind(this),
-
-        function first_time_configure(callback) {
-            if(!config.updater.userConfigLoaded) {
-                UpdaterConfigFirstTime(callback);
-            } else {
-                callback();
-            }
-        },
-
         function setup_network(callback) {
             try {
                 this.networkManager = network.createNetworkManager();
