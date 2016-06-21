@@ -22,8 +22,8 @@ $('.menu-item').click(function() {
         $('#' + this.dataset.id).addClass('active');
         $('.menu-item').removeClass('active');
         $(this).addClass('active');
-        break;      
-    } 
+        break;
+    }
 });
 
 function setOS(os) {
@@ -73,10 +73,10 @@ function prettify(line) {
 // Print a line to the "console"
 function printf(s) {
     var log = $('#console .content');
-    s.split('\n').forEach(function(line) {
-          log.append(prettify(line));
+    lines = s.split('\n');
+    lines.forEach(function(line) {
+      log.append(prettify(line));
     });
-
     var scrollpane = $('#console');
     scrollpane[0].scrollTop = scrollpane[0].scrollHeight;
 }
@@ -93,7 +93,7 @@ function updateNetworks(callback) {
             $('#message-no-networks').show();
             return callback(err);
         }
-    
+
         // Clear the existing networks
         var table = document.getElementById('network-table');
         var rows = table.rows.length;
@@ -111,11 +111,11 @@ function updateNetworks(callback) {
         // Add the newly defined ones
         networks.forEach(function(network) {
             var row = table.insertRow(table.rows.length);
-	    row.onclick = function(evt) {
-		$('#network-ssid').val(network.ssid);
-		$('#network-key').focus();
-	    }
-	   var ssid = row.insertCell(0);
+      row.onclick = function(evt) {
+    $('#network-ssid').val(network.ssid);
+    $('#network-key').focus();
+      }
+     var ssid = row.insertCell(0);
             var security = row.insertCell(1);
             var strength = row.insertCell(2);
             ssid.innerHTML = network.ssid || '<No SSID>';
@@ -132,7 +132,7 @@ function updateVersions() {
     menu1 = $("#update-version");
     versions.forEach(function(entry) {
       menu1.append('<option value="' + entry.version + '">' + entry.version + '</option>');
-      //menu2.append('<option value="' + entry.version + '">' + entry.version + '</option>');    
+      //menu2.append('<option value="' + entry.version + '">' + entry.version + '</option>');
     });
     menu1.append('<option value="rc">Release Candidate</option>');
 
@@ -153,8 +153,8 @@ function launchSimpleUpdater() {
     ok : function() {
       window.open('/do_update');
     },
-    cancel : function() { 
-      dismissModal(); 
+    cancel : function() {
+      dismissModal();
     }
   })
 }
@@ -168,8 +168,8 @@ function launchDashboard() {
     ok : function() {
       window.open(updater.getEngineURL(), "_self");
     },
-    cancel : function() { 
-      dismissModal(); 
+    cancel : function() {
+      dismissModal();
     }
   })
 }
@@ -197,7 +197,7 @@ function setState(state) {
 
 function showModal(options) {
   var options = options || {};
-  
+
   if(modalShown) {
     return;
   }
@@ -215,14 +215,14 @@ function showModal(options) {
   } else {
     $('#modal-text').hide();
   }
-  
+
   // Buttons
   if(options.ok || options.cancel) {
     $('#modal-buttons').show();
   } else {
-    $('#modal-buttons').hide();    
+    $('#modal-buttons').hide();
   }
-  
+
   if(options.ok) {
     $('#btn-modal-ok').html(options.okText || 'Ok').show();
     $('#btn-modal-ok').click(function(evt) {
@@ -255,7 +255,7 @@ function dismissModal() {
   $('#btn-modal-ok').off('click');
   $('#btn-modal-cancel').off('click');
   modalShown = false;
-  $('#modal').hide();  
+  $('#modal').hide();
 }
 
 $(document).ready(function() {
@@ -283,12 +283,12 @@ $(document).ready(function() {
   //
   // Updates
   //
-  $("#btn-update-latest").click( function(evt) { 
+  $("#btn-update-latest").click( function(evt) {
     evt.preventDefault();
     updater.updateEngine('master');
   });
 
-  $("#btn-update-updater-latest").click( function(evt) { 
+  $("#btn-update-updater-latest").click( function(evt) {
     evt.preventDefault();
     updater.updateUpdater('master');
   });
@@ -298,13 +298,13 @@ $(document).ready(function() {
     updater.updateEngine($("#update-version").val());
   });
 
-  $("#btn-update-firmware").click( function(evt) { 
+  $("#btn-update-firmware").click( function(evt) {
     evt.preventDefault();
     updater.updateFirmware();
   });
 
 
-$("#btn-reinstall").click( function(evt) { 
+$("#btn-reinstall").click( function(evt) {
     evt.preventDefault();
     showModal({
       title : 'Reinstall Engine?',
@@ -315,13 +315,13 @@ $("#btn-reinstall").click( function(evt) {
       ok : function() {
         updater.installEngine()
       },
-      cancel : function() { 
-        dismissModal(); 
+      cancel : function() {
+        dismissModal();
       }
     });
   });
 
-$("#btn-factory-reset").click( function(evt) { 
+$("#btn-factory-reset").click( function(evt) {
     evt.preventDefault();
     showModal({
       title : 'Factory Reset?',
@@ -333,13 +333,13 @@ $("#btn-factory-reset").click( function(evt) {
         updater.factoryReset();
         dismissModal();
       },
-      cancel : function() { 
-        dismissModal(); 
+      cancel : function() {
+        dismissModal();
       }
     });
   });
 
-  // 
+  //
   // Network Management
   //
   $("#btn-network-ap-mode").click(function() {updater.enableHotspot()});
@@ -382,8 +382,8 @@ $("#btn-factory-reset").click( function(evt) {
       updater.connectToWifi(ssid, key);
       dismissModal();
     },
-    cancel : function() { 
-      dismissModal(); 
+    cancel : function() {
+      dismissModal();
     }
   });
 
@@ -394,7 +394,7 @@ $("#btn-factory-reset").click( function(evt) {
   //
   $("#btn-start-engine").click(function() {updater.startEngine()});
   $("#btn-stop-engine").click(function() {updater.stopEngine()});
-  
+
 
   // Console clear
   $('#btn-console-clear').click(function() {clearConsole()});
@@ -441,9 +441,8 @@ $("#btn-factory-reset").click( function(evt) {
     $('.label-engine-git').text(config.engine_git_repos);
     $('.label-updater-git').text(config.updater_git_repos);
     $('.label-platform').text(config.os + '/' + config.platform);
+    $('.label-os-version').text(config.os_version);
     setOS(config.os);
   });
-
- 
 
 });

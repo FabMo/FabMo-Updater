@@ -94,7 +94,7 @@ Updater.prototype.factoryReset = function(callback) {
     } else {
         callback(); // Go ahead and callback because the factory reset is going to cause the process to bail.
         hooks.factoryReset();
-    }    
+    }
 }
 
 
@@ -104,7 +104,7 @@ Updater.prototype.updateUpdater = function(version, callback) {
     } else {
         callback(); // Go ahead and callback because the updater update is going to cause the process to bail.
         hooks.updateUpdater();
-    }    
+    }
 }
 
 Updater.prototype.getVersions = function(callback) {
@@ -160,7 +160,7 @@ function UpdaterConfigFirstTime(callback) {
                             log.error(err);
                             for(var i=0; i<8; i++) {
                                 id += (Math.floor(Math.random()*15)).toString(16);
-                            }                        
+                            }
                         }
                         var hostname = 'FabMo-' + id;
                         config.updater.set('name', hostname);
@@ -189,111 +189,122 @@ function UpdaterConfigFirstTime(callback) {
 Updater.prototype.start = function(callback) {
 
     async.series([
-       function setup_application(callback) {
-            log.info('Checking updater data directory tree...');
-            config.createDataDirectories(callback);
-        },
-        function configure(callback) {
-            log.info("Loading configuration...");
-            config.configureUpdater(callback);
-        },
-        function get_unique_id(callback) {
-            hooks.getUniqueID(function(err, id) {
-                if(err) {
-                    log.error("Could not read the unique machine ID!");
-                    config.updater.set('id', config.updater.get('hostname'));
-                } else {
-                    config.updater.set('id', id);                    
-                }
-                callback();
-            });
-        }.bind(this),
+     function setup_application(callback) {
+          log.info('Checking updater data directory tree...');
+          config.createDataDirectories(callback);
+      },
+      function configure(callback) {
+          log.info("Loading configuration...");
+          config.configureUpdater(callback);
+      },
+      function get_unique_id(callback) {
+          hooks.getUniqueID(function(err, id) {
+              if(err) {
+                  log.error("Could not read the unique machine ID!");
+                  config.updater.set('id', config.updater.get('hostname'));
+              } else {
+                  config.updater.set('id', id);
+              }
+              callback();
+          });
+      }.bind(this),
 
-        function first_time_configure(callback) {
-            if(!config.updater.userConfigLoaded) {
-                UpdaterConfigFirstTime(callback);
-            } else {
-                callback();
-            }
-        },
+      function get_os_version(callback) {
+        hooks.getOSVersion(function(err, version) {
+          if(err) {
+            config.updater.set('os_version','unknown');
+            return callback();
+          }
+          config.updater.set('os_version', version);
+          callback();
+        });
+      }.bind(this),
 
-        function setup_network(callback) {
-            try {
-                this.networkManager = network.createNetworkManager();
-            } catch(e) {
-                log.warn(e);
-                this.networkManager = new GenericNetworkManager();
-                //return callback(null);
-            }
-            log.info("Setting up the network...");
-            try {
-                this.networkManager.init();
-                log.info("Network manager started.")
-            } catch(e) {
-                log.error(e);
-                log.error('Problem starting network manager:' + e);
-            }
+      function first_time_configure(callback) {
+          if(!config.updater.userConfigLoaded) {
+              UpdaterConfigFirstTime(callback);
+          } else {
+              callback();
+          }
+      },
 
-            var onlineCheck = function() {
-                this.networkManager.isOnline(function(online) {
-                    if(online != this.status.online) {
-                        this.setOnline(online);
-                    }
-                }.bind(this));                
-            }.bind(this);
-            onlineCheck();
-            setInterval(onlineCheck,3000);
-            return callback(null);
-        }.bind(this),
+      function setup_network(callback) {
+          try {
+              this.networkManager = network.createNetworkManager();
+          } catch(e) {
+              log.warn(e);
+              this.networkManager = new GenericNetworkManager();
+              //return callback(null);
+          }
+          log.info("Setting up the network...");
+          try {
+              this.networkManager.init();
+              log.info("Network manager started.")
+          } catch(e) {
+              log.error(e);
+              log.error('Problem starting network manager:' + e);
+          }
 
-        function start_server(callback) {
-            log.info("Setting up the webserver...");
-            var server = restify.createServer({name:"FabMo Updater"});
-            this.server = server;
+          var onlineCheck = function() {
+              this.networkManager.isOnline(function(online) {
+                  if(online != this.status.online) {
+                      this.setOnline(online);
+                  }
+              }.bind(this));
+          }.bind(this);
+          onlineCheck();
+          setInterval(onlineCheck,3000);
+          return callback(null);
+      }.bind(this),
 
-            // Allow JSON over Cross-origin resource sharing 
-            log.info("Configuring cross-origin requests...");
-            server.use(
-                function crossOrigin(req,res,next){
-                    res.header("Access-Control-Allow-Origin", "*");
-                    res.header("Access-Control-Allow-Headers", "X-Requested-With");
-                    return next();
-                }
-            );
+      function start_server(callback) {
+          log.info("Setting up the webserver...");
+          var server = restify.createServer({name:"FabMo Updater"});
+          this.server = server;
 
-            server.on('uncaughtException', function(req, res, route, err) {
-                log.uncaught(err);
-                answer = {
-                    status:"error",
-                    message:err
-                };
-                res.json(answer)
-            });
+          // Allow JSON over Cross-origin resource sharing
+          log.info("Configuring cross-origin requests...");
+          server.use(
+              function crossOrigin(req,res,next){
+                  res.header("Access-Control-Allow-Origin", "*");
+                  res.header("Access-Control-Allow-Headers", "X-Requested-With");
+                  return next();
+              }
+          );
 
-            // Configure local directory for uploading files
-            log.info("Cofiguring upload directory...");
-            server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
-            server.pre(restify.pre.sanitizePath());
+          server.on('uncaughtException', function(req, res, route, err) {
+              log.uncaught(err);
+              answer = {
+                  status:"error",
+                  message:err
+              };
+              res.json(answer)
+          });
 
-            log.info("Enabling gzip for transport...");
-            server.use(restify.gzipResponse());
-            
-            // Import the routes module and apply the routes to the server
-            log.info("Loading routes...");
-            server.io = socketio.listen(server.server);
-            var routes = require('./routes')(server);
+          // Configure local directory for uploading files
+          log.info("Cofiguring upload directory...");
+          server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
+          server.pre(restify.pre.sanitizePath());
 
-            // Kick off the server listening for connections
-            server.listen(config.updater.get('server_port'), "0.0.0.0", function() {
-                log.info(server.name+ ' listening at '+ server.url);
-                callback(null, server);
-            });
+          log.info("Enabling gzip for transport...");
+          server.use(restify.gzipResponse());
 
-        }.bind(this),
-        
-    function test(callback) {
-        callback();
-    }.bind(this)    
+          // Import the routes module and apply the routes to the server
+          log.info("Loading routes...");
+          server.io = socketio.listen(server.server);
+          var routes = require('./routes')(server);
+
+          // Kick off the server listening for connections
+          server.listen(config.updater.get('server_port'), "0.0.0.0", function() {
+              log.info(server.name+ ' listening at '+ server.url);
+              callback(null, server);
+          });
+
+      }.bind(this),
+
+      function test(callback) {
+          callback();
+      }.bind(this)
     ],
 
         function(err, results) {
