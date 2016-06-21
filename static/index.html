@@ -25,13 +25,13 @@
           <i id="network-id-icon" class="fa fa-question"></i> <span class="label-network-id">&lt;name&gt;</span>
           </a>
       </li>
+      <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> Info</a></li>
       <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download"></i> Software Updates</a></li>
       <li class="menu-item" data-id="view-firmware"><a href="#"><i class="fa fa-gears"></i> Firmware Updates</a></li>
       <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-wifi"></i> Network</a></li>
       <li class="menu-item" data-id="view-system"><a href="#"><i class="fa fa-wrench"></i> System</a></li>
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
       <li class="menu-item" data-id="goto-dashboard"><a href="#"><i class="fa fa-tachometer"></i> Goto Dashboard</a></li>
-      <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> Info</a></li>
       <li class="menu-item" data-id="view-factory"><a href="#"><i class="fa fa-industry"></i> Factory Reset</a></li>
       <li class="menu-item" data-id="view-fmu"><a href="#"><i class="fa fa-file"></i> FMU Update</a></li>
       <li class="menu-item" data-id="view-console"><a href="#"><i class="fa fa-terminal"></i> Console</a></li>
@@ -45,13 +45,40 @@
     </ul>
   </div>
   <div id="content">
+
+    <!--
+
+      SYSTEM info
+
+    -->
+    <div class="content-pane active" id="view-info">
+    <h1>&nbsp;<span class="fa fa-info-circle"></span> System Information</h1>
+    <table>
+<!--      <thead>
+        <tr>
+          <th class="info-key-header">Key</th> <th>Value</th>
+        </tr>
+      </thead> -->
+      <tbody>
+        <tr><td class="info-key">Machine ID:</td> <td class="cell-value"><span class="info-value label-machine-id"/></td></tr>
+        <tr><td class="info-key">Network ID:</td> <td><span class="info-value label-network-id"></span></td></tr>
+        <tr><td class="info-key">Network Mode:</td> <td><span class="info-value label-network-mode"></span></td></tr>
+        <tr><td class="info-key">Engine Repository:</td> <td><span class="info-value label-engine-git"></span></td></tr>
+        <tr><td class="info-key">Updater Repository:</td> <td><span class="info-value label-updater-git"></span></td></tr>
+        <tr><td class="info-key">Platform:</td> <td><span class="info-value label-platform"/></td></tr>
+        <tr><td class="info-key">OS Version:</td> <td><span class="info-value label-os-version"/></td></tr>
+      </tbody>
+      </table>
+    </div>
+
+
     <!--
 
       ENGINE UPDATES
 
     -->
     <div class="content-pane" id="view-updates">
-      <h1>Engine Updates</h1>
+      <h1><span class="fa fa-download"></span> Software Updates</h1>
       <p id="message-noupdate-ap">You cannot perform software updates because you do not have a reliable internet connection.  Please wait a moment, or use the network manager to join a wireless network.</p>
       <div id="update-controls">
       <h2>Stable Version</h2>
@@ -79,7 +106,7 @@
 
     -->
     <div class="content-pane" id="view-firmware">
-      <h1>Firmware Updates</h1>
+      <h1><span class="fa fa-cogs"></span> Firmware Updates</h1>
       <p>The button below will force a firmware update on the G2 motion system.  Firmware installed in this way will be taken from your engine installation so you are sure to be using the firmware that is qualified for use with the version of the engine that you are running.</p>
       <p><em>Firmware installation can be a risky operation.  Do not proceed unless you are sure you need to update!</em></p>
       <button id="btn-update-firmware" class="btn-blue"><i class="fa fa-gears"></i> Update Firmware</button>
@@ -92,7 +119,7 @@
 
     -->
     <div class="content-pane" id="view-network">
-    <h1>Network</h1>
+    <h1><i class="fa fa-wifi"></i> Network</h1>
     <p>Below is a list of available wireless networks.  Enter an SSID and key at the bottom of the table to join a network.  You can click a network in the list to fill in that network's SSID.  <em>Note that when you join a network, you will lose your connection to the updater and will need to reconnect from the chosen network.</em></p>
     <div id="message-no-networks">
       <h3>No wireless networks are currently visible.</h3>
@@ -130,7 +157,7 @@
 
     -->
     <div class="content-pane" id="view-system">
-      <h1>System</h1>
+      <h1><i class="fa fa-wrench"></i> System</h1>
       <h2>System Identity</h2>
       <p>The name selected here will be used both as the system hostname as well as the SSID when in AP mode.  The password will be used both as the root password as well as the network key for AP mode.  <em>You do not need to enter both values.  Only non-blank values will be changed.</em></p>
       <form class="form-horizontal" id="form-network-id">
@@ -149,35 +176,11 @@
 
     <!--
 
-      SYSTEM info
-
-    -->
-    <div class="content-pane active" id="view-info">
-    <h1>System Information</h1>
-    <table>
-      <thead>
-        <tr>
-          <th class="info-key-header">Key</th> <th>Value</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td class="info-key">System ID:</td> <td><span class="info-value label-network-id"></span></td></tr>
-        <tr><td class="info-key">Network Mode:</td> <td><span class="info-value label-network-mode"></span></td></tr>
-        <tr><td class="info-key">Engine Repository:</td> <td><span class="info-value label-engine-git"></span></td></tr>
-        <tr><td class="info-key">Updater Repository:</td> <td><span class="info-value label-updater-git"></span></td></tr>
-        <tr><td class="info-key">Platform:</td> <td><span class="info-value label-platform"/></td></tr>
-        <tr><td class="info-key">OS Version:</td> <td><span class="info-value label-os-version"/></td></tr>
-      </tbody>
-      </table>
-    </div>
-
-    <!--
-
       FACTORY RESET
 
     -->
     <div class="content-pane" id="view-factory">
-      <h1>Factory Reset</h1>
+      <h1><i class="fa fa-industry"></i> Factory Reset</h1>
       <p>The button below will reset all system software to its factory state.  This is not a reversible operation, and you will lose all software settings, history and user data.  <em>Do not proceed unless you know what you are doing.</em></p>
       <p>When a factory reset is performed, you will temporarily lose contact with the updater.  Please be patient.  Factory updates take about 5 minutes, and you may need to refresh this page to restore your connection.  The system will try to re-establish the current wireless configuration after the reset, but after a system power-cycle, all wireless settings will be forgotten.  The system will be in AP mode and you will need to reconnect and re-enter wireless credentials.</p>
       <p>In other words, a factory reset is a little weird, and you really shouldn't do it unless you're absolutely sure you have to.</p>
@@ -191,7 +194,7 @@
 
     -->
     <div class="content-pane" id="view-fmu">
-      <h1>FMU Update</h1>
+      <h1><i class="fa fa-file"></i> FMU Update</h1>
       <p>Click the button below to apply an update from a .fmu file.</p>
       <button id="btn-update-fmu" class="btn-green"><i class="fa fa-file fa-lg"></i>  Update With .fmu File...</button>
       <span class="progressbar hide">

@@ -442,6 +442,8 @@ $("#btn-factory-reset").click( function(evt) {
     $('.label-updater-git').text(config.updater_git_repos);
     $('.label-platform').text(config.os + '/' + config.platform);
     $('.label-os-version').text(config.os_version);
+    $('.label-machine-id').text(config.id);
+
     setOS(config.os);
   });
 
