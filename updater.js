@@ -226,7 +226,7 @@ Updater.prototype.start = function(callback) {
             callback();
           });
         }.bind(this),
-        
+
         function setup_network(callback) {
             try {
                 this.networkManager = network.createNetworkManager();
@@ -304,7 +304,6 @@ Updater.prototype.start = function(callback) {
     function test(callback) {
         callback();
     }.bind(this)
->>>>>>> cb44ce3310c362cf92dea4ad17b607c88c0036c2
     ],
 
         function(err, results) {
