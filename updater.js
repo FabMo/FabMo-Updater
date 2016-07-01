@@ -245,7 +245,7 @@ Updater.prototype.start = function(callback) {
             }
 
             var onlineCheck = function() {
-                this.networkManager.isOnline(function(online) {
+                this.networkManager.isOnline(function(err, online) {
                     if(online != this.status.online) {
                         this.setOnline(online);
                     }
