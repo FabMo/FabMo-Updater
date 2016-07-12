@@ -1,3 +1,4 @@
 #!/bin/sh
 
-/usr/lib/fabmo/factory_reset.sh
+echo "Factory reset unsupported on generic platform."
+exit 1
