@@ -54,6 +54,10 @@ DarwinNetworkManager.prototype.init = function() {
 	this.run();
 }
 
+DarwinNetworkManager.prototype.isOnline = function(callback) {
+  callback(null, true);
+}
+
 DarwinNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
   callback(null, this.networks);
 }

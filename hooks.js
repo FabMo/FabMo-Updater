@@ -14,7 +14,7 @@ var execute = function(name, args, callback) {
 		callback(err, stdout);
 	}
 	return cp.exec(hook.file + ' ' + (args || ''), function(err, stdout, stderr) {
-				log.shell(stdout);	
+				log.shell(stdout);
 				hook_func(err, stdout, stderr, callback);
 			});
 }
@@ -235,5 +235,14 @@ exports.getUniqueID = function(callback) {
 		if(err) { return callback(err); }
 		var id = data.trim();
 		callback(null, id);
+	});
+}
+
+exports.getOSVersion = function(callback) {
+	execute('get_os_version', null, function(err, data) {
+		if(err) { return callback(err); }
+		// For now, this will work on Mac OS and Linux, @todo move cleanup to the script
+		var v = data.replace(/ProductName:|ProductVersion:|BuildVersion:/gi, '').replace(/\t/gi,'').replace(/\n/gi,' ').trim();
+		callback(null, v);
 	});
 }

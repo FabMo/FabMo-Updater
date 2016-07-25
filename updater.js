@@ -56,7 +56,7 @@ Updater.prototype.passTask = function(key) { this.finishTask(key, 'success'); }
 Updater.prototype.failTask = function(key) { this.finishTask(key, 'failed'); }
 
 Updater.prototype.setState = function(state) {
-    this.status.state = state;
+    this.status.state = state || this.status.state;
     this.status.online = this.networkManager.isOnline(function(online) {
         this.status.online = online;
         this.emit('status',this.status);
@@ -94,7 +94,7 @@ Updater.prototype.factoryReset = function(callback) {
     } else {
         callback(); // Go ahead and callback because the factory reset is going to cause the process to bail.
         hooks.factoryReset();
-    }    
+    }
 }
 
 
@@ -104,7 +104,7 @@ Updater.prototype.updateUpdater = function(version, callback) {
     } else {
         callback(); // Go ahead and callback because the updater update is going to cause the process to bail.
         hooks.updateUpdater();
-    }    
+    }
 }
 
 Updater.prototype.getVersions = function(callback) {
@@ -160,7 +160,7 @@ function UpdaterConfigFirstTime(callback) {
                             log.error(err);
                             for(var i=0; i<8; i++) {
                                 id += (Math.floor(Math.random()*15)).toString(16);
-                            }                        
+                            }
                         }
                         var hostname = 'FabMo-' + id;
                         config.updater.set('name', hostname);
@@ -197,7 +197,6 @@ Updater.prototype.start = function(callback) {
             log.info("Loading configuration...");
             config.configureUpdater(callback);
         },
-
         function first_time_configure(callback) {
             if(!config.updater.userConfigLoaded) {
                 UpdaterConfigFirstTime(callback);
@@ -205,6 +204,28 @@ Updater.prototype.start = function(callback) {
                 callback();
             }
         },
+        function get_unique_id(callback) {
+            hooks.getUniqueID(function(err, id) {
+                if(err) {
+                    log.error("Could not read the unique machine ID!");
+                    config.updater.set('id', config.updater.get('hostname'));
+                } else {
+                    config.updater.set('id', id);
+                }
+                callback();
+            });
+        }.bind(this),
+
+        function get_os_version(callback) {
+          hooks.getOSVersion(function(err, version) {
+            if(err) {
+              config.updater.set('os_version','unknown');
+              return callback();
+            }
+            config.updater.set('os_version', version);
+            callback();
+          });
+        }.bind(this),
 
         function setup_network(callback) {
             try {
@@ -224,14 +245,14 @@ Updater.prototype.start = function(callback) {
             }
 
             var onlineCheck = function() {
-                this.networkManager.isOnline(function(online) {
+                this.networkManager.isOnline(function(err, online) {
                     if(online != this.status.online) {
                         this.setOnline(online);
                     }
-                }.bind(this));                
+                }.bind(this));
             }.bind(this);
             onlineCheck();
-            setInterval(onlineCheck,10000);
+            setInterval(onlineCheck,3000);
             return callback(null);
         }.bind(this),
 
@@ -240,7 +261,7 @@ Updater.prototype.start = function(callback) {
             var server = restify.createServer({name:"FabMo Updater"});
             this.server = server;
 
-            // Allow JSON over Cross-origin resource sharing 
+            // Allow JSON over Cross-origin resource sharing
             log.info("Configuring cross-origin requests...");
             server.use(
                 function crossOrigin(req,res,next){
@@ -266,7 +287,7 @@ Updater.prototype.start = function(callback) {
 
             log.info("Enabling gzip for transport...");
             server.use(restify.gzipResponse());
-            
+
             // Import the routes module and apply the routes to the server
             log.info("Loading routes...");
             server.io = socketio.listen(server.server);
@@ -279,10 +300,10 @@ Updater.prototype.start = function(callback) {
             });
 
         }.bind(this),
-        
+
     function test(callback) {
         callback();
-    }.bind(this)    
+    }.bind(this)
     ],
 
         function(err, results) {

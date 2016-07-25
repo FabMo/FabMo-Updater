@@ -9,6 +9,7 @@
 	"name" : "FabMo",
 	"password" : "go2fabmo",
 	"firmware_file" : "/fabmo/engine/firmware/g2.bin",
+	"os_version" : "unknown",
 	"network" : {
 		"mode" : "ap",
 		"wifi_networks" : []

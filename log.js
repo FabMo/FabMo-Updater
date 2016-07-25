@@ -1,5 +1,5 @@
-/** 
- * log.js is a "Poor man's" logging module.  It provides basic colorized logging using named 
+/**
+ * log.js is a "Poor man's" logging module.  It provides basic colorized logging using named
  * loggers with selectable log levels.
  */
 var process = require('process');
@@ -27,14 +27,14 @@ function setGlobalLevel(lvl){
 	{
 		if (lvl >= 0 && lvl <= 4)
 		{
-			// assign the log level to the string equivalent of the integer 
+			// assign the log level to the string equivalent of the integer
 			Object.keys(LOG_LEVELS).forEach(function(key) {
 	  			LOG_LEVELS[key] = Object.keys(LEVELS).filter(function(key) {return (LEVELS[key] === lvl);})[0];
 	  		});
 		}
 		else if (Object.keys(LEVELS).indexOf(lvl) >= 0) // if a string
 		{
-			//  assign the log level to the string that is given 
+			//  assign the log level to the string that is given
 			Object.keys(LOG_LEVELS).forEach(function(key) {
 	  			LOG_LEVELS[key] = lvl;
 	  		});
@@ -68,7 +68,6 @@ Logger.prototype.write = function(level, msg) {
 	if(my_level == undefined) {
 		my_level = LOG_LEVELS['info'];
 	}
-	
 	if((LEVELS[level] || 0) >= (LEVELS[my_level] || 0)) {
 		buffer_msg = level + ': ' + msg + ' ['+this.name+']';
 		if(colors) {
@@ -123,7 +122,7 @@ Logger.prototype.uncaught = function(err) {
 	} else {
 		console.log("UNCAUGHT EXCEPTION");
 		console.log(err.stack);
-	}	
+	}
 }
 
 // Factory function for producing a new, named logger object
@@ -160,6 +159,6 @@ exports.suppress = suppress;
 exports.unsuppress = unsuppress;
 exports.logger = logger;
 exports.setGlobalLevel = setGlobalLevel;
-exports.getLogBuffer = getLogBuffer; 
+exports.getLogBuffer = getLogBuffer;
 exports.clearLogBuffer = clearLogBuffer;
 exports.on = on;

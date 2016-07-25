@@ -30,7 +30,7 @@ h2 {
 em {
 	color: #900;
 }
-/* 
+/*
  * Scaffolding
  */
 
@@ -105,7 +105,7 @@ em {
 	margin-left: 1.5em;
 	color: white;
 	text-decoration: none;
-	cursor: inherit;	
+	cursor: inherit;
 }
 
 .menu-item.active {
@@ -117,7 +117,7 @@ em {
 }
 
 .menu-item.active:hover {
-	background-color: #666666;	
+	background-color: #666666;
 }
 
 /* Non-clickable Menu Items */
@@ -205,12 +205,12 @@ em {
     border-radius: 0.25em;
     cursor: pointer;
     -webkit-touch-callout: none;
-    -webkit-user-select: none; 
-    -moz-user-select: none;    
-    -ms-user-select: none;     
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
     width: 20em;
-    height: 1em; 
+    height: 1em;
 }
 
 .progressbar .fill {
@@ -274,10 +274,10 @@ button {
     transition: all 0.3s ease 0s;
     cursor: pointer;
     -webkit-touch-callout: none;
-    -webkit-user-select: none; 
-    -moz-user-select: none;    
-    -ms-user-select: none;     
-    user-select: none;  
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 button.disabled {
 	pointer-events: none;
@@ -344,6 +344,10 @@ td {
 	color: #2e3865;
 	text-align: right;
 	padding-right: 4em;
+	white-space: nowrap
+}
+.cell-value {
+	width: 100%;
 }
 .info-value {
 	font-style: italic;

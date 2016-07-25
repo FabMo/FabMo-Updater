@@ -1,5 +1,33 @@
 #!/bin/bash
 
+function fail
+{
+	cd /fabmo/engine
+	git reset --hard HEAD
+	sync
+	mount -r -o remount /
+	systemctl start fabmo
+	echo "$1" 1>&2
+	exit 1
+}
+
+function save_version_info
+{
+	echo "Saving version information..."
+	cd /fabmo/engine
+	set +e
+	git describe
+	INVALID_VERSION=$?
+	set -e
+	if [ $INVALID_VERSION -eq 0 ]; then
+		VERSION=`git describe`
+		echo "{\"number\" : \"$VERSION\" }" > /fabmo/engine/version.json
+	else
+		rm /fabmo/engine/version.json || true
+	fi
+	sync
+}
+
 set -e
 
 echo "Stopping the engine..."
@@ -12,42 +40,31 @@ mount -w -o remount /
 
 echo "Resetting..."
 cd /fabmo/engine
-git reset --hard HEAD
+git reset --hard HEAD || fail "Could not reset the repository"
 
 echo "Checking out master..."
-git checkout master
+git checkout master || fail "Could not checkout master"
 
 echo "Pulling master branch and tags..."
-git pull origin --tags
+git pull origin --tags || "Could not get remote tags"
 
 echo "Fetching release branches..."
-git fetch origin release:release
-git fetch origin rc:rc
+git fetch origin release:release || fail "Could not get remote releases"
+git fetch origin rc:rc || fail "Could not get release candidate branch"
 
 echo "Updating to version $1..."
-git checkout $1
+git checkout $1 || fail "Could not checkout version [$1]"
 sync
 
 echo "Installing dependencies..."
-npm install --production
+npm install --production || fail "Could not install dependencies with npm"
 sync
 
-echo "Saving version information..."
-set +e
-git describe
-INVALID_VERSION=$?
-set -e
-if [ $INVALID_VERSION -eq 0 ]; then
-	VERSION=`git describe`
-	echo "{\"number\" : \"$VERSION\" }" > /fabmo/engine/version.json
-else
-	rm /fabmo/engine/version.json || true
-fi
-sync
+save_version_info
 
 sleep 3
 echo "Remounting root partition read only"
-mount -r -o remount /
+mount -r -o remount / || shutdown
 #echo u > /proc/sysrq-trigger
 #sleep 1
 #mount -w -o remount /home
