@@ -25,7 +25,7 @@ var onConnect = function(socket) {
   });
 
   socket.on('status', function(data) {
-    socket.emit('status', machine.status);
+    socket.emit('status', updater.status);
   });
 
   socket.on('ping', function(data) {
