@@ -41,7 +41,7 @@ red_random_pattern = function(leds,timer){
 }
 
 
-//red_fading(leds,5);
-//red_random_pattern(leds,1);    
-//go_green(leds);
-go_red(leds);
+exports.red_fading=red_fading;
+exports.red_random_pattern=red_random_pattern;
+exports.go_red=go_red;
+exports.go_green=go_green;
