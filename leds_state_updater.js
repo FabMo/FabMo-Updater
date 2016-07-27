@@ -1,10 +1,20 @@
 var ledsPatterns = require("./leds_patterns.js");
 var io = require("socket.io-client");
 var socket = io("http://localhost:80");
+var config = require ("./config");
+
+var updaterState = 'ap';
 
 var engineState = undefined;
-var ledLockedByUpdater = false; // give priority to the updater for led control.
+var ledsLockedByUpdater = false; // give priority to the updater for led control.
 
+setTimeout(function(){
+    network_config = config.updater.get('network');
+    if(network_config.mode!==updaterState){
+        updaterState = network_config.mode;
+	ledsLockedByUpdater = true;        
+    }
+},1000);
 
 socket.on('connect', function(){
     console.log('engine connected !');
@@ -26,6 +36,7 @@ socket.on('disconnect', function(){
 });
 
 var updateLedsState = function(){
+    if(!ledsLockedByUpdater){
     switch (engineState) {
         case 'idle':
             ledsPatterns.goGreen();
@@ -48,6 +59,16 @@ var updateLedsState = function(){
         default:
             ledsPatterns.fadeWhite(10);
             break;
+    }
+    }else{
+        switch(updaterState){
+            case 'ap':
+                break;
+            case 'station':
+                break;
+            default:
+                break;  
+        }
     }
 }
 
