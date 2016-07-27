@@ -12,12 +12,12 @@ fadeRed = function(timer){
   },timer);
 }
 
-goGreen = function({
+goGreen = function(){
   clearInterval(interval);
   leds.setAll(31,0,255,0);
 }
 
-goRed = function({
+goRed = function(){
   clearInterval(interval);
   leds.setAll(31,255,0,0);
 }

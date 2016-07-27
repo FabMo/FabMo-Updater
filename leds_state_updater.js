@@ -1,6 +1,6 @@
 var ledsPatterns = require("./leds_patterns.js");
 var io = require("socket.io-client");
-var socket = io("http://localhost:9876");
+var socket = io("http://localhost:80");
 
 
 var engineState = undefined;
@@ -13,17 +13,15 @@ socket.on('connect', function(){
 
 socket.on('status', function(status){
     console.log(status.state);
-    if(status.state!==engineState)(
+    if(status.state!==engineState){
         engineState= status.state;
         updateLedsState();
-    )
+    }
 });
 
 socket.on('disconnect', function(){
     console.log("disconnected !");
 });
-
-updateLedsState();
 
 var updateLedsState = function(){
     switch (engineState) {
@@ -50,3 +48,5 @@ var updateLedsState = function(){
             break;
     }
 }
+
+updateLedsState();
