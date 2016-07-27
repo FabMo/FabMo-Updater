@@ -79,6 +79,35 @@ fadeWhite = function(timer){
     },timer);
 };
 
+flashWhite = function(timer){
+    clearInterval(interval);
+    var on = true;
+    interval = setInterval(function(){
+	if(on)
+            leds.setAll(0,0,0,0);
+        else
+            leds.setAll(31,255,255,255);
+        on!=on;           
+    },timer);
+};
+
+waveWhite = function(timer){
+  clearInterval(interval);
+  interval = setInterval(function(){
+    leds.flush();
+    ledNum1 = Math.round((Math.random()*leds.ledCount)%leds.ledCount)-1;
+    ledNum2 = Math.round((Math.random()*leds.ledCount)%leds.ledCount)-1;
+    ledNum3 = Math.round((Math.random()*leds.ledCount)%leds.ledCount)-1;
+
+    cmd = {};
+    cmd[ledNum1]={brightness:31,r:255,g:255,b:255};
+    cmd[ledNum2]={brightness:8,r:255,g:255,b:255};
+    cmd[ledNum3]={brightness:2,r:255,g:255,b:255};
+    leds.setMany(cmd);
+
+  },timer);
+
+};
 
 exports.fadeRed = fadeRed;
 exports.blinkRandomlyRed = blinkRandomlyRed ;
@@ -89,3 +118,6 @@ exports.goBlue = goBlue;
 exports.goYellow = goYellow;
 exports.blinkRandomly = blinkRandomly;
 exports.fadeWhite = fadeWhite;
+
+exports.flashWhite = flashWhite;
+exports.waveWhite = waveWhite;

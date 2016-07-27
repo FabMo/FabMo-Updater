@@ -63,8 +63,18 @@ var updateLedsState = function(){
     }else{
         switch(updaterState){
             case 'ap':
+		setTimeout(function(){ 
+                    ledsLockedByUpdater = false;
+                    updateLedsState();                    
+                },3000);
+		ledsPatterns.flashWhite(100);
                 break;
             case 'station':
+		setTimeout(function(){ 
+                    ledsLockedByUpdater = false;
+                    updateLedsState();                    
+                },3000);
+		ledsPatterns.waveWhite(100);
                 break;
             default:
                 break;  
