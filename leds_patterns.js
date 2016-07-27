@@ -47,7 +47,7 @@ goBlue = function(){
 
 goYellow = function(){
     clearInterval(interval);
-    leds.setAll(31,0,255,255);
+    leds.setAll(31,255,255,0);
 };
 
 blinkRandomly = function(timer){
