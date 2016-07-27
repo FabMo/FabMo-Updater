@@ -3,26 +3,27 @@ var io = require("socket.io-client");
 var socket = io("http://localhost:80");
 var config = require ("./config");
 
-var updaterState = 'ap';
+var updaterState = undefined;
 
 var engineState = undefined;
 var ledsLockedByUpdater = false; // give priority to the updater for led control.
 
-setTimeout(function(){
+setInterval(function(){
     network_config = config.updater.get('network');
     if(network_config.mode!==updaterState){
         updaterState = network_config.mode;
-	ledsLockedByUpdater = true;        
+	ledsLockedByUpdater = true;
+	updateLedsState();        
     }
-},1000);
+},2000);
 
 socket.on('connect', function(){
-    console.log('engine connected !');
+    //console.log('engine connected !');
     socket.emit('status'); // initial status request
 });
 
 socket.on('status', function(status){
-    console.log(status.state);
+    //console.log(status.state);
     if(status.state!==engineState){
         engineState= status.state;
         updateLedsState();
@@ -30,7 +31,7 @@ socket.on('status', function(status){
 });
 
 socket.on('disconnect', function(){
-    console.log("disconnected !");
+    //console.log("disconnected !");
     engineState = undefined;
     ledsPatterns.fadeWhite(2);
 });
@@ -61,6 +62,7 @@ var updateLedsState = function(){
             break;
     }
     }else{
+	//console.log(updaterState);
         switch(updaterState){
             case 'ap':
 		setTimeout(function(){ 

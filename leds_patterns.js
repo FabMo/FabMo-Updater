@@ -87,7 +87,7 @@ flashWhite = function(timer){
             leds.setAll(0,0,0,0);
         else
             leds.setAll(31,255,255,255);
-        on!=on;           
+        on=!on;           
     },timer);
 };
 
