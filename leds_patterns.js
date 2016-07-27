@@ -26,9 +26,9 @@ blinkRandomlyRed = function(timer){
   clearInterval(interval);
   interval = setInterval(function(){
     leds.flush();
-    ledNum1 = Math.round((Math.random()*leds.led_count)%leds.led_count)-1;
-    ledNum2 = Math.round((Math.random()*leds.led_count)%leds.led_count)-1;
-    ledNum3 = Math.round((Math.random()*leds.led_count)%leds.led_count)-1;
+    ledNum1 = Math.round((Math.random()*leds.ledCount)%leds.ledCount)-1;
+    ledNum2 = Math.round((Math.random()*leds.ledCount)%leds.ledCount)-1;
+    ledNum3 = Math.round((Math.random()*leds.ledCount)%leds.ledCount)-1;
 
     cmd = {};
     cmd[ledNum1]={brightness:31,r:255,g:0,b:0};
@@ -54,9 +54,9 @@ blinkRandomly = function(timer){
     clearInterval(interval);
     interval = setInterval(function(){
       leds.flush();
-      ledNum1 = Math.round((Math.random()*leds.led_count)%leds.led_count)-1;
-      ledNum2 = Math.round((Math.random()*leds.led_count)%leds.led_count)-1;
-      ledNum3 = Math.round((Math.random()*leds.led_count)%leds.led_count)-1;
+      ledNum1 = Math.round((Math.random()*leds.ledCount)%leds.ledCount)-1;
+      ledNum2 = Math.round((Math.random()*leds.ledCount)%leds.ledCount)-1;
+      ledNum3 = Math.round((Math.random()*leds.ledCount)%leds.ledCount)-1;
 
       randomOctet = function(){return  Math.round((Math.random()*256)%256)-1;}
 

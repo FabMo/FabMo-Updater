@@ -21,6 +21,7 @@ socket.on('status', function(status){
 
 socket.on('disconnect', function(){
     console.log("disconnected !");
+    engineState = undefined;
     ledsPatterns.fadeWhite(2);
 });
 
@@ -30,7 +31,7 @@ var updateLedsState = function(){
             ledsPatterns.goGreen();
             break;
         case 'running':
-            ledsPatterns.fadeRed(2);
+            ledsPatterns.fadeRed(10);
             break;
         case 'manual':
             ledsPatterns.goBlue();
@@ -39,13 +40,13 @@ var updateLedsState = function(){
             ledsPatterns.goYellow();
             break;
         case 'dead':
-            ledsPatterns.blinkRandomly(8);
+            ledsPatterns.blinkRandomly(10);
             break;
         case 'armed':
-            ledsPatterns.blinkRandomlyRed(8);
+            ledsPatterns.blinkRandomlyRed(10);
             break;
         default:
-            ledsPatterns.fadeWhite(2);
+            ledsPatterns.fadeWhite(10);
             break;
     }
 }

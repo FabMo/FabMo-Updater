@@ -16,6 +16,9 @@ var doshell = require('./util').doshell;
 var uuid = require('node-uuid');
 var moment = require('moment');
 
+//start led state updater
+require('./leds_state_updater');
+
 var TASK_TIMEOUT = 10800000; // 3 hours
 
 var Updater = function() {
