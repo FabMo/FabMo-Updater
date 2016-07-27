@@ -2,12 +2,12 @@ var ledsPatterns = require("./leds_patterns.js");
 var io = require("socket.io-client");
 var socket = io("http://localhost:80");
 
-
 var engineState = undefined;
 var ledLockedByUpdater = false; // give priority to the updater for led control.
 
 
 socket.on('connect', function(){
+    console.log('engine connected !');
     socket.emit('status'); // initial status request
 });
 
@@ -21,6 +21,7 @@ socket.on('status', function(status){
 
 socket.on('disconnect', function(){
     console.log("disconnected !");
+    ledsPatterns.fadeWhite(2);
 });
 
 var updateLedsState = function(){
@@ -29,7 +30,7 @@ var updateLedsState = function(){
             ledsPatterns.goGreen();
             break;
         case 'running':
-            ledsPatterns.fadeRed(10);
+            ledsPatterns.fadeRed(2);
             break;
         case 'manual':
             ledsPatterns.goBlue();
@@ -38,13 +39,13 @@ var updateLedsState = function(){
             ledsPatterns.goYellow();
             break;
         case 'dead':
-            ledsPatterns.blinkRandomly(10);
+            ledsPatterns.blinkRandomly(8);
             break;
         case 'armed':
-            ledsPatterns.blinkRandomlyRed(10);
+            ledsPatterns.blinkRandomlyRed(8);
             break;
         default:
-            ledsPatterns.fadeWhite(10);
+            ledsPatterns.fadeWhite(2);
             break;
     }
 }
