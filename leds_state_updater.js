@@ -7,13 +7,16 @@ var updaterState = undefined;
 
 var engineState = undefined;
 var ledsLockedByUpdater = false; // give priority to the updater for led control.
-
 setInterval(function(){
-    network_config = config.updater.get('network');
-    if(network_config.mode!==updaterState){
-        updaterState = network_config.mode;
-	ledsLockedByUpdater = true;
-	updateLedsState();        
+    try{
+        network_config = config.updater.get('network');
+        if(network_config.mode!==updaterState){
+            updaterState = network_config.mode;
+	    ledsLockedByUpdater = true;
+            updateLedsState();        
+        }
+    }catch(ex){
+        console.log(ex);
     }
 },2000);
 
