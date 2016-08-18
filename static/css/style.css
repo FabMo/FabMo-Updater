@@ -30,6 +30,16 @@ h2 {
 em {
 	color: #900;
 }
+
+.info-up {
+	color: #5daa35;
+	font-weight: bolder;
+}
+
+.info-down {
+	color: #9c210c;
+	font-weight: bolder;
+}
 /*
  * Scaffolding
  */
@@ -415,3 +425,4 @@ td {
 .update-controls {
 	display: none;
 }
+

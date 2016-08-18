@@ -1,6 +1,6 @@
 var PING_TIMEOUT = 1000;
 
-var UpdaterAPI = function(base_url) {
+var UpdaterAPI = function() {
 	this.events = {
 		'status' : [],
 		'disconnect' : [],
@@ -8,16 +8,17 @@ var UpdaterAPI = function(base_url) {
 		'log' : []
 	};
 	var url = window.location.origin;
+	var port = location.port || (location.protocol === 'https:' ? '443' : '80');
+	
 	this.base_url = url.replace(/\/$/,'');
+	this.engine_url = location.protocol + '//' + location.hostname + ":" +  (port-1)
 
 	this.status = {};
 	this._initializeWebsocket();
 }
 
 UpdaterAPI.prototype.getEngineURL = function() {
-	a = document.createElement('a');
-	a.href = this.base_url;
-	return a.protocol + '//' + a.hostname + ':' + (parseInt(a.port || 80)-1)
+	return this.engine_url;
 }
 
 UpdaterAPI.prototype._initializeWebsocket = function() {
@@ -109,6 +110,14 @@ UpdaterAPI.prototype.getTasks = function(callback) {
 
 UpdaterAPI.prototype.getConfig = function(callback) {
 	this._get('/config', callback, callback, 'config');
+}
+
+UpdaterAPI.prototype.getEngineInfo = function(callback) {
+	this._get('/info', callback, callback, 'info', true); // Engine
+}
+
+UpdaterAPI.prototype.getEngineStatus = function(callback) {
+	this._get('/status', callback, callback, 'status', true); // Engine
 }
 
 UpdaterAPI.prototype.submitFMU = function(fmu, options, callback, progress) {
@@ -230,6 +239,7 @@ function makeFormData(obj, default_name, default_type) {
 }
 
 UpdaterAPI.prototype._url = function(path) { return this.base_url + '/' + path.replace(/^\//,''); }
+UpdaterAPI.prototype._engine_url = function(path) { return this.engine_url + '/' + path.replace(/^\//,''); }
 
 UpdaterAPI.prototype._postUpload = function(url, data, metadata, errback, callback, key, progress) {
 	//var url = this._url(url);
@@ -453,8 +463,9 @@ UpdaterAPI.prototype._del = function(url, data, errback, callback, key) {
 }
 
 
-UpdaterAPI.prototype._get = function(url, errback, callback, key) {
-	var url = this._url(url);
+UpdaterAPI.prototype._get = function(url, errback, callback, key, engine) {
+	var url = engine ? this._engine_url(url) : this._url(url);
+	console.log(url)
 	var callback = callback || function() {}
 	var errback = errback || function() {}
 
