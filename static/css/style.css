@@ -347,8 +347,7 @@ td {
 }
 
 .info-key-header {
-	padding-right: 4em;
-	text-align: right;
+	font-weight: bolder;
 }
 .info-key {
 	color: #2e3865;
