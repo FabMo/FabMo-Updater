@@ -260,7 +260,9 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
     if(err) {
         log.error(err);
     }
-    callback(err, result);
+    doshell('route add default gw 192.168.42.1', function(s) {
+        callback(err, result);
+    });
   });
 }
 
