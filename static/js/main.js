@@ -437,14 +437,44 @@ $("#btn-factory-reset").click( function(evt) {
   });
 
   updater.getConfig(function(err, config) {
+    var updater_version_number = 'unavailable';
+    try{
+      updater_version_number = config.version.number || config.version.hash.substring(0,8) + '-' + config.version.type      
+    } catch(e) {}
+    
+    $('.label-updater-version').text(updater_version_number)
     $('.label-network-mode').text(config.network.mode);
     $('.label-engine-git').text(config.engine_git_repos);
     $('.label-updater-git').text(config.updater_git_repos);
     $('.label-platform').text(config.os + '/' + config.platform);
     $('.label-os-version').text(config.os_version);
     $('.label-machine-id').text(config.id);
-
     setOS(config.os);
+  });
+
+  updater.getEngineInfo(function(err, info) {
+    if(err) {
+      $('.label-engine-version').text('unavailable');
+      $('.label-fw-build').text('unavailable');
+      $('.label-fw-config').text('unavailable');
+      $('.label-fw-version').text('unavailable');
+
+    } else {
+      var engine_version_number = info.version.number || info.version.hash.substring(0,8) + '-' + info.version.type
+      $('.label-fw-build').text(info.firmware.build);
+      $('.label-fw-config').text(info.firmware.config);
+      $('.label-fw-version').text(info.firmware.version);
+      $('.label-engine-version').text(engine_version_number);
+
+    }
+  });
+
+  updater.getEngineStatus(function(err, status) {
+    if(err) {
+            $('.label-engine-status').removeClass('info-up').addClass('info-down').text("DOWN");      
+    } else {
+            $('.label-engine-status').removeClass('info-down').addClass('info-up').text(status.state);      
+    }
   });
 
 });

@@ -15,6 +15,7 @@ var GenericNetworkManager = require('./network/manager').NetworkManager;
 var doshell = require('./util').doshell;
 var uuid = require('node-uuid');
 var moment = require('moment');
+var argv = require('minimist')(process.argv);
 
 var TASK_TIMEOUT = 10800000; // 3 hours
 
@@ -31,6 +32,33 @@ var Updater = function() {
     events.EventEmitter.call(this);
 };
 util.inherits(Updater, events.EventEmitter);
+
+Updater.prototype.getVersion = function(callback) {
+    require('./util').doshell('git rev-parse --verify HEAD', function(data) {
+        this.version = {};
+        this.version.hash = (data || "").trim();
+        this.version.number = "";
+        this.version.debug = ('debug' in argv);
+        fs.readFile('version.json', 'utf8', function(err, data) {
+            if(err) {
+                this.version.type = 'dev';
+                return callback(null, this.version);
+            }
+            try {
+                data = JSON.parse(data);
+                if(data.number) {
+                    this.version.number = data.number;
+                    this.version.type = 'release';
+                }
+            } catch(e) {
+                this.version.type = 'dev';
+                this.version.number
+            } finally {
+                callback(null, this.version);
+            }
+        }.bind(this))
+    });
+}
 
 Updater.prototype.startTask = function() {
     var id = uuid.v1();
@@ -211,6 +239,16 @@ Updater.prototype.start = function(callback) {
                     config.updater.set('id', config.updater.get('hostname'));
                 } else {
                     config.updater.set('id', id);
+                }
+                callback();
+            });
+        }.bind(this),
+        function get_version(callback) {
+            this.getVersion(function(err, version) {
+                if(!err) {
+                    config.updater.set('version', version);                    
+                } else {
+                    config.updater.set('version', {});
                 }
                 callback();
             });
