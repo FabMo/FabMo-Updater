@@ -3,6 +3,7 @@ var async = require('async');
 var process = require('process');
 var PLATFORM = process.platform;
 var log = require('./log').logger('updater');
+var detection_service = require('./detection_daemon');
 var config = require('./config');
 var util = require('./util');
 var socketio = require('socket.io')
@@ -225,6 +226,11 @@ Updater.prototype.start = function(callback) {
             log.info("Loading configuration...");
             config.configureUpdater(callback);
         },
+        function launchDetectionService(callback) {
+            log.info("Launching Detection Service...");
+            detection_service();
+            callback();
+        },
         function first_time_configure(callback) {
             if(!config.updater.userConfigLoaded) {
                 UpdaterConfigFirstTime(callback);
@@ -246,7 +252,7 @@ Updater.prototype.start = function(callback) {
         function get_version(callback) {
             this.getVersion(function(err, version) {
                 if(!err) {
-                    config.updater.set('version', version);                    
+                    config.updater.set('version', version);
                 } else {
                     config.updater.set('version', {});
                 }
