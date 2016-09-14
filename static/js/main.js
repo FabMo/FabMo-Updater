@@ -461,17 +461,17 @@ $("#btn-factory-reset").click( function(evt) {
 
     } else {
       var engine_version_number = info.version.number || info.version.hash.substring(0,8) + '-' + info.version.type
-      $('.label-fw-build').text(info.firmware.build);
-      $('.label-fw-config').text(info.firmware.config);
-      $('.label-fw-version').text(info.firmware.version);
-      $('.label-engine-version').text(engine_version_number);
+      $('.label-fw-build').text(info.firmware.build || 'unavailable');
+      $('.label-fw-config').text(info.firmware.config || 'unavailable');
+      $('.label-fw-version').text(info.firmware.version || 'unavailable');
+      $('.label-engine-version').text(engine_version_number || 'unavailable');
 
     }
   });
 
   updater.getEngineStatus(function(err, status) {
     if(err) {
-            $('.label-engine-status').removeClass('info-up').addClass('info-down').text("DOWN");      
+            $('.label-engine-status').removeClass('info-up').addClass('info-down').text("down");      
     } else {
             $('.label-engine-status').removeClass('info-down').addClass('info-up').text(status.state);      
     }

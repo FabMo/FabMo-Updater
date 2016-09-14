@@ -40,6 +40,22 @@ em {
 	color: #9c210c;
 	font-weight: bolder;
 }
+
+.info-key-header {
+	color: #2e3865;
+	font-weight: bold;
+	text-align: right;
+	padding-right: 4em;
+	white-space: nowrap
+}
+
+.info-key {
+	color: #2e3865;
+	text-align: right;
+	padding-right: 4em;
+	white-space: nowrap
+}
+
 /*
  * Scaffolding
  */
@@ -339,22 +355,15 @@ tr:nth-child(even) {
 	background-color: #eeeeee;
 }
 
-tr:hover {
+/*tr:hover {
 	background-color: #dddddd;
-}
+}*/
+
 td {
 	padding: 0.25em;
 }
 
-.info-key-header {
-	font-weight: bolder;
-}
-.info-key {
-	color: #2e3865;
-	text-align: right;
-	padding-right: 4em;
-	white-space: nowrap
-}
+
 .cell-value {
 	width: 100%;
 }
