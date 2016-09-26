@@ -4,7 +4,7 @@ var log = require('./log').logger('hooks');
 var cp = require('child_process');
 var byline = require('byline');
 var fs = require('fs');
-
+var Q = require('q');
 var keys = {};
 
 var execute = function(name, args, callback) {
@@ -170,17 +170,22 @@ exports.doFMU = function(filename, callback) {
 	var callback = callback || function() {};
 	var key = updater.startTask();
 	updater.setState('updating');
-	callback(null, key);
+	
+	var deferred = Q.defer();
 	execute('do_fmu', filename, function(err,stdout) {
 		if(err) {
 			updater.failTask(key);
 			log.error("Did not execute FMU successfully.");
+			deferred.reject(err);
 		} else {
 			updater.passTask(key);
 			log.info("Executed FMU successfully.");
+			deferred.resolve(key);
 		}
 		updater.setState('idle');
 	});
+	callback(null, key);	
+	return deferred.promise;
 }
 
 exports.updateFirmware = function(filename, callback) {

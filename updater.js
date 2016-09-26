@@ -1,6 +1,7 @@
 var restify = require('restify');
 var async = require('async');
 var process = require('process');
+var path = require('path');
 var PLATFORM = process.platform;
 var log = require('./log').logger('updater');
 var config = require('./config');
@@ -16,6 +17,7 @@ var doshell = require('./util').doshell;
 var uuid = require('node-uuid');
 var moment = require('moment');
 var argv = require('minimist')(process.argv);
+var Q = require('q');
 
 var TASK_TIMEOUT = 10800000; // 3 hours
 
@@ -292,6 +294,29 @@ Updater.prototype.start = function(callback) {
             onlineCheck();
             setInterval(onlineCheck,3000);
             return callback(null);
+        }.bind(this),
+
+        function run_startup_fmus(callback) {
+            log.info("Running startup FMUs")
+            fs.readdir(path.join(config.getDataDir(), 'fmus'), function(err, files) {
+                fmu_files = files.map(function(filename) { 
+                    return path.join(config.getDataDir(),'fmus', filename);
+                });
+                result = fmu_files.reduce(function (prev, filename) {
+                    return prev.then(function() {
+                        return hooks.doFMU(filename);
+                    }).then(function() {
+                        fs.unlink(filename);
+                    });
+                }, Q());
+
+                result.then(function() {
+                    callback();
+                }).fail(function(err) {
+                    log.error(err);
+                    callback();
+                });
+            });
         }.bind(this),
 
         function start_server(callback) {
