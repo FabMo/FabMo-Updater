@@ -5,6 +5,8 @@ var cp = require('child_process');
 var byline = require('byline');
 var fs = require('fs');
 var Q = require('q');
+
+// Task keys
 var keys = {};
 
 var execute = function(name, args, callback) {

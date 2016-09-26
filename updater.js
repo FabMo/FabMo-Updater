@@ -297,11 +297,18 @@ Updater.prototype.start = function(callback) {
         }.bind(this),
 
         function run_startup_fmus(callback) {
-            log.info("Running startup FMUs")
+            log.info("Checking for startup FMUs...")
             fs.readdir(path.join(config.getDataDir(), 'fmus'), function(err, files) {
-                fmu_files = files.map(function(filename) { 
+                files = files.map(function(filename) { 
                     return path.join(config.getDataDir(),'fmus', filename);
                 });
+                fmu_files = files.filter(function(filename) { return filename.match(/.*\.fmu$/);})
+                if(fmu_files.length == 0) {
+                    log.info("No startup FMUs.");
+                    return callback();
+                } else {
+                    log.info(fmu_files.length + " startup FMU" + (fmu_files.length > 1 ? "s" : "") + " to run...");
+                }
                 result = fmu_files.reduce(function (prev, filename) {
                     return prev.then(function() {
                         return hooks.doFMU(filename);
