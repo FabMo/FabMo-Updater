@@ -220,14 +220,12 @@ exports.updateFirmware = function(filename, callback) {
 exports.factoryReset = function(callback) {
 	var updater = require('./updater');
 	updater.setState('updating');
-
 	spawn('factory_reset');
 }
 
 exports.updateUpdater = function(callback) {
 	var updater = require('./updater');
 	updater.setState('updating');
-
 	spawn('update_updater');
 }
 
