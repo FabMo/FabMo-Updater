@@ -4,6 +4,7 @@ var fmpOperations = require('./fmp_operations');
 var child_process = require('child_process');
 var os = require('os');
 var async = require('async');
+var path = require('path');
 
 var TEMP_DIRECTORY = os.tmpdir();
 
@@ -34,6 +35,7 @@ function loadManifest(filename) {
 				}
 			});
 
+			manifest.cwd = path.resolve(path.dirname(filename));
 			// Resolve promise, deliver manifest
 			deferred.resolve(manifest);
 
@@ -71,7 +73,7 @@ function executeOperation(operation) {
 	try {
 		// Double check to make sure this operation is defined
 		if(!(operation.op in fmpOperations)) {
-			throw new Error('Operation "' + operation + '" found in the manifest is unknown.');
+			throw new Error('Operation "' + operation.op + '" found in the manifest is unknown.');
 		}		
 		// Execute the operation (return the operations promise to complete)
 		return fmpOperations[operation.op](operation);
@@ -84,17 +86,19 @@ function executeOperation(operation) {
 function executeUpdate(manifest) {
 	deferred = Q.defer();
 	async.eachSeries(
-		manifest.operations, 
+		manifest.operations,
 		function(operation, callback) {
+			operation.cwd = manifest.cwd;
 			executeOperation(operation)
 				.then(function() {callback();})
 				.catch(callback)
 		},
 		function(err) {
-			if(err) { return Q.reject(err); }
-			return Q.resolve();
+			if(err) { return deferred.reject(err); }
+			return deferred.resolve();
 		}
 	);
+	return deferred.promise
 }
 
 exports.loadManifest = loadManifest;

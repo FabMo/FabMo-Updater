@@ -1,6 +1,22 @@
 var Q = require('q');
 var fs = require('fs-extra');
 var async = require('async');
+var glob = require('glob');
+var child_process = require('child_process');
+var path = require('path');
+
+// Denodeified functions
+var ensureDir = Q.nfbind(fs.ensureDir)
+
+var getExpandCommand = function(path) {
+	if(path.match(/.tar.gz$/i)) {
+		return 'tar -xvzf '
+	}
+	if(path.match(/.tar.bz2$/i)) {
+		return 'tar -xvjf '
+	}
+	throw new Error(path + ' is an unknown archive type.');
+}
 
 var deleteFiles = function(operation) {
 	var deferred = Q.defer();
@@ -16,11 +32,8 @@ var deleteFiles = function(operation) {
 				console.log(path)
 				// Glob wildcards into individual paths
 				glob(path, {}, function(err, files) {
-					console.log('globbed')
 					if(err) {
-					console.log(err); 
 					callback(err); }
-					console.log(files);
 					// Iterate over individual file paths
 					async.each(
 						files, 
@@ -34,7 +47,6 @@ var deleteFiles = function(operation) {
 						},
 						// If any removal fails 
 						function(err) {
-							console.log('failed removal')
 							callback(err);
 						}
 					);
@@ -43,7 +55,7 @@ var deleteFiles = function(operation) {
 			// If any path processing operation fails (globbing or removing files)
 			function(err) {
 				if(err) { return deferred.reject(err); }
-				return deferred.resolve(e);
+				return deferred.resolve();
 			}
 		);
 	} catch(e) {
@@ -52,4 +64,38 @@ var deleteFiles = function(operation) {
 	return deferred.promise;
 }
 
+var expandArchive = function(operation) {
+	var deferred = Q.defer();
+	try {
+		if (!operation.src) {
+			throw new Error('No source archive specified for expandArchive');
+		}
+		if (!operation.dest) {
+			throw new Error('No destination specified for expandArchive');
+		}
+
+		// Make sure that the directory we're expanding into exists
+		ensureDir(operation.dest)
+			.then(function() {
+				// Get the appropriate expansion command
+				var expandCommand = getExpandCommand(operation.src);
+
+				// Call to shell to expand source archive into destination directory
+				var sourceFile = path.join(operation.cwd, operation.src);
+				child_process.exec(expandCommand + sourceFile, {cwd : operation.dest}, function(err, stdout, stderr) {
+					if(err) { return deferred.reject(err); }
+					deferred.resolve();
+				});
+
+			})
+			.catch(function(err) {
+				deferred.reject(err);
+			});
+	} catch(e) {
+		deferred.reject(e);
+	}
+	return deferred.promise;
+
+}
 exports.deleteFiles = deleteFiles;
+exports.expandArchive = expandArchive;

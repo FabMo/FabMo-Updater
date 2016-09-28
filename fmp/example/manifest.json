@@ -8,11 +8,9 @@
 	"updaterNeeded" : "1.4.0",
 	"operations" : [
 		{
-			"op" : "deleteFiles",
-			"paths" : [
-				"/tmp/a",
-				"/tmp/b"
-			]
+			"op" : "expandArchive",
+			"src" : "ab.tar.gb",
+			"dest" : "/tmp"
 		}
 	]
 }
