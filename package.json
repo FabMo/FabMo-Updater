@@ -9,6 +9,7 @@
     "byline": "4.2.1",
     "colors": "1.1.x",
     "escape-regexp-component": "1.0.2",
+    "fs-extra": "^0.30.0",
     "glob": "5.0.14",
     "is-online": "5.1.0",
     "mime": "1.2.11",
