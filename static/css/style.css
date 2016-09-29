@@ -62,6 +62,7 @@ em {
 
 .hide {
 	visibility: hidden;
+	display: none;
 }
 
 #container {
@@ -244,7 +245,7 @@ em {
 	width: 0%;
 	height: 100%;
 	position: relative;
-	transition: all 0.3s ease 0s;
+	transition: width 0.3s ease 0s;
 }
 /*
  * Forms

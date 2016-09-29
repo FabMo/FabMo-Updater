@@ -120,8 +120,8 @@ UpdaterAPI.prototype.getEngineStatus = function(callback) {
 	this._get('/status', callback, callback, 'status', true); // Engine
 }
 
-UpdaterAPI.prototype.submitFMU = function(fmu, options, callback, progress) {
-	this._postUpload('/update/fmu', fmu, {}, callback, callback, null, progress);
+UpdaterAPI.prototype.submitManualUpdate = function(fmu, options, callback, progress) {
+	this._postUpload('/update/manual', fmu, {}, callback, callback, null, progress);
 }
 
 // Updates

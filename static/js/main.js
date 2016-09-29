@@ -399,7 +399,7 @@ $("#btn-factory-reset").click( function(evt) {
   // Console clear
   $('#btn-console-clear').click(function() {clearConsole()});
 
-  $('#btn-update-fmu').click(function() {
+  $('#btn-update-manual').click(function() {
     jQuery('#file').trigger('click');
   });
 
@@ -409,12 +409,12 @@ $("#btn-factory-reset").click( function(evt) {
     for(var i=0; i<evt.target.files.length; i++) {
       files.push({file:evt.target.files[i]});
     }
-    updater.submitFMU(files, {}, function(err, data) {
+    updater.submitManualUpdate(files, {}, function(err, data) {
       setTimeout(function() {
         $('.progressbar').addClass('hide');
+        $('#file').val(null);
         $('.progressbar .fill').width(0);
       }, 750);
-      $('#file').val(null);
 
     }, function(progress) {
       var pg = (progress*100).toFixed(0) + '%';

@@ -18,6 +18,7 @@ var uuid = require('node-uuid');
 var moment = require('moment');
 var argv = require('minimist')(process.argv);
 var Q = require('q');
+var fmp = require('./fmp');
 
 var TASK_TIMEOUT = 10800000; // 3 hours
 
@@ -154,6 +155,23 @@ Updater.prototype.doFMU = function(filename, callback) {
         callback(new Error("Cannot apply FMU update when in the " + updater.status.state + " state."));
     } else {
         hooks.doFMU(filename, callback);
+    }
+}
+
+Updater.prototype.doFMP = function(filename, callback) {
+    if(this.status.state != 'idle') {
+        callback(new Error("Cannot apply FMP update when in the " + updater.status.state + " state."));
+    } else {
+        var key = this.startTask();
+        this.setState('updating');
+        fmp.installUpdate(filename)
+            .then(function() {
+                this.passTask(key);
+                this.setState('idle');
+            }.bind(this))
+            .catch(function(err) {
+                this.failTask(key);
+            });
     }
 }
 

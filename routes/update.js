@@ -94,24 +94,34 @@ var getTasks = function(req, res, next) {
  	});
 }
 
-var doFMU = function(req, res, next) {
+var doManualUpdate = function(req, res, next) {
 	upload(req, res, next, function(err, upload) {
         log.info("Upload complete");
-		log.info("Doing FMU");
+		log.info("Processing Manual Update");
         
         var uploads = upload.files
-
         if(uploads.length > 1) {
-            log.warn("Got an upload of " + uploads.length + ' files for a submitted job when only one is allowed.')
-        }       
-        res.json( {
-        	status : 'success',
-        	data : {
-        		status : 'complete'
-        	}
-        });
-        console.log(upload.files[0].file.path)
-        updater.doFMU(upload.files[0].file.path);
+            log.warn("Got an upload of " + uploads.length + ' files for a manual update when only one is allowed.')
+        }    
+        var filePath = upload.files[0].file.path;
+        var fileName = upload.files[0].file.name;
+        try {
+	        if (fileName.match(/.*\.fmu/i)) {
+		        updater.doFMU(filePath);
+	        } else if (fileName.match(/.*\.fmp/i)) {
+	        	updater.doFMP(filePath);
+	        } else {
+	        	throw new Error('Unknown file type for ' + filePath);
+	        }
+	    	res.json( {
+        		status : 'success',
+        		data : {
+        			status : 'complete'
+        		}
+        	});
+	    } catch(err) {
+	    	res.json({status : 'error', message : err});
+	    }
     });
 }
 
@@ -124,5 +134,6 @@ module.exports = function(server) {
   server.post('/install/engine', installEngine);
   server.post('/update/factory', factoryReset);
 
-  server.post('/update/fmu', doFMU);
+  server.post('/update/manual', doManualUpdate);
+
 };

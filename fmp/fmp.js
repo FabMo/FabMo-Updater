@@ -9,8 +9,6 @@ var log = require('../log').logger('fmp');
 var config = require('../config');
 
 var TEMP_DIRECTORY = os.tmpdir();
-var OS = config.platform;
-var PLATFORM = config.updater.get('platform');
 
 function loadManifest(filename) {
 	var deferred = Q.defer()
@@ -140,6 +138,10 @@ function setToken(manifest) {
 
 function stopService(service, callback) {
 	log.info('Stopping service ' + service)
+
+	var config = require('../config');
+	var OS = config.platform;
+
 	switch(OS) {
 		case 'linux':
 			child_process.exec('systemctl stop ' + service, {}, function(err, stdout, stderr) {
@@ -156,6 +158,10 @@ function stopService(service, callback) {
 
 function startService(service, callback) {
 	log.info('Starting service ' + service)
+
+	var config = require('../config');
+	var OS = config.platform;
+
 	switch(OS) {
 		case 'linux':
 			child_process.exec('systemctl start  ' + service, {}, function(err, stdout, stderr) {
@@ -207,6 +213,10 @@ function startServices(manifest) {
 function unlock(manifest) {
 	var deferred = Q.defer();
 	log.info('Unlocking the disk')
+	
+	var config = require('../config');
+	var OS = config.platform;
+
 	switch(OS) {
 		case 'linux':
 			child_process.exec('mount -w -o remount /', {}, function(err, stdout, stderr) {
@@ -225,6 +235,10 @@ function unlock(manifest) {
 function lock(manifest) {
 	var deferred = Q.defer();
 	log.info('Locking the disk')
+
+	var config = require('../config');
+	var OS = config.platform;
+
 	switch(OS) {
 		case 'linux':
 			child_process.exec('mount -r -o remount /', {}, function(err, stdout, stderr) {
