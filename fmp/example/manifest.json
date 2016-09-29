@@ -4,12 +4,13 @@
 	"os" : "linux",
 	"platform" : "generic",
 	"version" : "1.2.3",
-	"services" : [],
+	"services" : ["fabmo", "fabmo-updater"],
 	"updaterNeeded" : "1.4.0",
+	"token" : "/fabmo/engine/.update_token",
 	"operations" : [
 		{
 			"op" : "expandArchive",
-			"src" : "ab.tar.gb",
+			"src" : "engine.tar.bz",
 			"dest" : "/tmp"
 		}
 	]
