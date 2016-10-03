@@ -63,7 +63,7 @@ $(document).ready(function() {
 				if(status.updates.length == 0) {
 					return setState('success', {
 						title : 'Your system is up to date!',
-						message : 'No new updates are available.  <a href="' + document.referrer + '">Click here to exit the updater.</a>'
+						message : 'No new updates are available.<br /><a href="' + document.referrer + '">Click here to exit the updater.</a>'
 					})
 				}
 				updater.applyUpdate(function(err, data) {
