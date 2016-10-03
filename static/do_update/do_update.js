@@ -1,6 +1,6 @@
 var updater = new UpdaterAPI();
 var updateTask = null;
-
+var seenStatus = false;
 function setState(state, options) {
 	options = options || {};
 	var icon = $('#icon');
@@ -54,13 +54,19 @@ function succeed() {
 }
 
 $(document).ready(function() {
-	setState('idle')
+	setState('idle');
+
 	updater.on('status', function(status) {
 		if(!updateTask) {
 			// First status report, no update task has been started
 			if(status.state === 'idle') {
-			// Updater is not otherwise busy
-				updater.updateEngine('release', function(err, data) {
+				if(status.updates.length == 0) {
+					return setState('success', {
+						title : 'Your system is up to date!',
+						message : 'No new updates are available.  <a href="' + document.referrer + '">Click here to exit the updater.</a>'
+					})
+				}
+				updater.applyUpdate(function(err, data) {
 					if(err) {
 						return fail(err);
 					}
