@@ -103,7 +103,7 @@ function unpackUpdate(filename) {
 			fs.mkdir(updateDir, function(err) {
 				if(err) { return deferred.reject(); }
 				// Unpack the actual file into the newly created directory
-				child_process.exec('tar -xvjf ' + path.resolve(filename), {cwd : updateDir}, function(err, stdout, stderr) {
+				child_process.exec('tar -xzf ' + path.resolve(filename), {cwd : updateDir}, function(err, stdout, stderr) {
 					if(err) { return deferred.reject(err); }
 					deferred.resolve(path.resolve(updateDir, 'manifest.json'));
 				});
@@ -309,7 +309,7 @@ function installPackage(package) {
 	.then(clearToken)
 	.then(executeOperations)
 	.then(setToken)
-	.then(lock)
+	.finally(lock)
 	.then(startServices)
 }
 
@@ -352,7 +352,7 @@ function downloadPackage(package) {
       		});  // close() is async, call cb after close completes.
     	});
 	}).on('error', function(err) { // Handle errors
-    	fs.unlink(dest); // Delete the file async. (But we don't check the result)
+    	fs.unlink(filename); // Delete the file async. (But we don't check the result)
     	deferred.reject(err);
   	});
 
@@ -389,6 +389,7 @@ function checkForAvailablePackage(options) {
 				try {
 					var newerPackageAvailable = compareVersions(engineUpdates[0].version, engineVersion.number) > 0;
 				} catch(e) {
+					return deferred.resolve(engineUpdates[0]);
 					log.warn(e);
 				}
 

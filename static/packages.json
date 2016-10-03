@@ -1,36 +1,12 @@
 {
 	"packages" : [
-		{
-			"product" : "FabMo-Engine",
-			"os" : "linux",
-			"platform" : "edison",
-			"version" : "v1.2.3",
-			"changelog" : " * Item 1\n * Item 2\n *Item 3"
- 		},
-
  		{
 			"product" : "FabMo-Engine",
 			"os" : "linux",
 			"platform" : "edison",
-			"version" : "v1.2.4",
-			"changelog" : " * Item 1\n * Item 2\n *Item 3"
- 		},
-
- 		{
-			"product" : "FabMo-Engine",
-			"os" : "linux",
-			"platform" : "edison",
-			"version" : "v1.3.0",
-			"changelog" : " * Item 1\n * Item 2\n *Item 3"
- 		},
-
- 		{
-			"product" : "FabMo-Engine",
-			"os" : "linux",
-			"platform" : "edison",
-			"version" : "v2.0.0",
-			"changelog" : " * Item 1\n * Item 2\n * Item 3",
-			"url" : "http://localhost:9877/example.fmp"
+			"version" : "v1.2.2",
+			"changelog" : " * Temporarily remove Bonjour support",
+			"url" : "http://localhost:81/example.fmp"
 
  		}
 

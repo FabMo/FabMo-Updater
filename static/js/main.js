@@ -181,16 +181,21 @@ function setState(state) {
     $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + state);
     var icon = $('#updater-status-icon');
     var classes = 'fa-circle-o fa-spin fa-spinner fa-chain-broken'
+    var update_button = $('#btn-update-apply');
     switch(state) {
         case 'idle':
-            icon.removeClass(classes).addClass('fa-circle-o');
+		console.log("removing class");
+            update_button.removeClass('disabled');
+	    icon.removeClass(classes).addClass('fa-circle-o');
             break;
 
         case 'disconnected':
+	    update_button.addClass('disabled');
             icon.removeClass(classes).addClass('fa-chain-broken');
             break;
 
         case 'updating':
+	    update_button.addClass('disabled');
             icon.removeClass(classes).addClass('fa-spin fa-spinner');
             break;
     }
@@ -269,7 +274,7 @@ $(document).ready(function() {
   updater.on('status', function(status) {
     setState(status.state);
     setOnline(status.online);
-    
+     
     if(status.updates && status.updates.length > 0) {
       var update = status.updates[0];
       $('#message-changelog').text(update.changelog);

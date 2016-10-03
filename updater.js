@@ -212,7 +212,7 @@ Updater.prototype.runPackageCheck = function() {
 
 Updater.prototype.applyPreparedUpdates = function(callback) {
     if(this.status.state != 'idle') {
-        return callback(new Error("Cannot apply updates when in the " + updater.status.state + " state."));
+        return callback(new Error("Cannot apply updates when in the " + this.status.state + " state."));
     }
 
     if( this.status.updates.length === 0) {
@@ -228,10 +228,11 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
                 this.setState('idle');
             }.bind(this))
             .catch(function(err) {
-                this.stats.updates = [];
                 log.error(err);
+                this.status.updates = [];
                 this.failTask(key);
-            }.bind(this)).done();
+            	this.setState('idle');
+	    }.bind(this)).done();
     } catch(err) {
         callback(err);
     }

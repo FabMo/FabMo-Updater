@@ -267,7 +267,7 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
         this.emit('network', {'mode' : 'station'});
         callback(err, result);
     }.bind(this));
-  });
+  }.bind(this));
 }
 
 EdisonNetworkManager.prototype.unjoinAP = function() {

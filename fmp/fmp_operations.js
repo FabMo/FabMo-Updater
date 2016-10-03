@@ -10,11 +10,14 @@ var log = require('../log').logger('fmp');
 var ensureDir = Q.nfbind(fs.ensureDir)
 
 var getExpandCommand = function(path) {
+	if(path.match(/.tar$/i)) {
+		return 'tar -xf '
+	}
 	if(path.match(/.tar.gz$/i)) {
-		return 'tar -xvzf '
+		return 'tar -xzf '
 	}
 	if(path.match(/.tar.bz2?$/i)) {
-		return 'tar -xvjf '
+		return 'tar -xjf '
 	}
 	throw new Error(path + ' is an unknown archive type.');
 }
