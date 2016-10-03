@@ -207,6 +207,11 @@ UpdaterAPI.prototype.factoryReset = function(callback) {
 	this._post('/update/factory', {}, callback, callback);
 }
 
+// Factory Reset
+UpdaterAPI.prototype.applyPreparedUpdates = function(callback) {
+	this._post('/update/apply', {}, callback, callback);
+}
+
 function makeFormData(obj, default_name, default_type) {
 	if (obj instanceof jQuery){ //if it's a form
 		var file = (obj.find('input:file'))[0].files[0];

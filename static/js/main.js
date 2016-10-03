@@ -268,6 +268,17 @@ $(document).ready(function() {
   updater.on('status', function(status) {
     setState(status.state);
     setOnline(status.online);
+    
+    if(status.updates && status.updates.length > 0) {
+      var update = status.updates[0];
+      $('#message-changelog').text(update.changelog);
+      $('#update-button-text').text('Update to ' + update.version);
+      $('#message-updates').removeClass('hide');
+      $('#message-noupdates').addClass('hide');      
+    } else {
+      $('#message-updates').addClass('hide');
+      $('#message-noupdates').removeClass('hide');      
+    }
     dismissModal();
   });
 
@@ -303,6 +314,10 @@ $(document).ready(function() {
     updater.updateFirmware();
   });
 
+  $("#btn-update-apply").click( function(evt) {
+    evt.preventDefault();
+    updater.applyPreparedUpdates();
+  });
 
 $("#btn-reinstall").click( function(evt) {
     evt.preventDefault();

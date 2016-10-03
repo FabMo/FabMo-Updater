@@ -88,7 +88,14 @@
     -->
     <div class="content-pane" id="view-updates">
       <h1><span class="fa fa-download"></span> Software Updates</h1>
-      <p id="message-noupdate-ap">You cannot perform software updates because you do not have a reliable internet connection.  Please wait a moment, or use the network manager to join a wireless network.</p>
+      <p id="message-noupdates">There are no software updates available.</p>
+      <div id="message-updates" class="hide">
+        <p>A software update is available!<p>
+        <p><pre id="message-changelog"></pre></p>
+        <button id="btn-update-apply" class="btn-green"><i class="fa fa-tags fa-lg"></i>  <span id="update-button-text">Update</span></button>
+      </div>
+
+      <!--<p id="message-noupdate-ap">You cannot perform software updates because you do not have a reliable internet connection.  Please wait a moment, or use the network manager to join a wireless network.</p>
       <div id="update-controls">
       <h2>Stable Version</h2>
       <p>To update to a stable release of the engine, choose one from the list below and click update.</p>
@@ -106,7 +113,8 @@
       <h1>Updater Updates</h1>
       <p>Occasionally, the software updater needs to be updated too.  Click the button below to do that. <em>A failed updater update cannot be recovered without a factory reset.  Proceed with caution.</em></p>
       <button id="btn-update-updater-latest" class="btn-purple"><i class="fa fa-github fa-lg"></i>  Update to Latest Development Version</button>
-      </div>
+      </div> -->
+
     </div>
 
     <!--

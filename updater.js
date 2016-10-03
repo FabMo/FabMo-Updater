@@ -27,7 +27,8 @@ var Updater = function() {
     this.status = {
         'state' : 'idle',
         'online' : false,
-        'task' : null
+        'task' : null,
+        'updates' : []
     }
     this.hasAccurateTime = false;
     this.tasks = {};
@@ -97,6 +98,19 @@ Updater.prototype.setState = function(state) {
 Updater.prototype.setOnline = function(online) {
     this.status.online = online;
     this.emit('status', this.status);
+}
+
+Updater.prototype.addAvailablePackage = function(package) {
+    this.status.updates.forEach(function(update) {
+        try {
+            if(update.local_filename === package.local_filename) {
+                return;
+            }
+        } catch(e) {}
+
+    });
+
+    this.status.updates.push(package);
 }
 
 Updater.prototype.stop = function(callback) {
@@ -175,6 +189,34 @@ Updater.prototype.doFMP = function(filename, callback) {
     }
 }
 
+Updater.prototype.applyPreparedUpdates = function(callback) {
+    if(this.status.state != 'idle') {
+        return callback(new Error("Cannot apply updates when in the " + updater.status.state + " state."));
+    }
+
+    if( this.status.updates.length === 0) {
+        return callback(new Error("No updates to apply."));
+    }
+    var key = this.startTask();
+    this.setState('updating');
+    try {
+        fmp.installPackage(this.status.updates[0])
+            .then(function() {
+                this.status.updates = [];
+                this.passTask(key);
+                this.setState('idle');
+            }.bind(this))
+            .catch(function(err) {
+                this.stats.updates = [];
+                log.error(err);
+                this.failTask(key);
+            }.bind(this)).done();
+    } catch(err) {
+        callback(err);
+    }
+    return callback();
+}
+
 Updater.prototype.setTime = function(time, callback) {
     if(this.status.state != 'idle') {
         callback(new Error("Cannot set the system time while in the " + updater.status.state + " state."));
@@ -234,6 +276,8 @@ function UpdaterConfigFirstTime(callback) {
         break;
     }
 };
+
+
 Updater.prototype.start = function(callback) {
 
     async.series([
@@ -388,10 +432,26 @@ Updater.prototype.start = function(callback) {
             });
 
         }.bind(this),
+        
+    function check_for_updates(callback) {
+            fmp.checkForAvailablePackage({product : 'FabMo-Engine'})
+            .then(fmp.downloadPackage)
+            .then(function(package) {
+                log.info("Adding package to the list of available updates.")
+                if(package) {
+                    return this.addAvailablePackage(package);
+                }
+            }.bind(this))
+            .catch(function(err) {
+                log.error(err);
+            });
+            callback();
+        }.bind(this),
 
     function test(callback) {
         callback();
     }.bind(this)
+
     ],
 
         function(err, results) {

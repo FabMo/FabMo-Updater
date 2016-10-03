@@ -7,9 +7,56 @@ var async = require('async');
 var path = require('path');
 var log = require('../log').logger('fmp');
 var config = require('../config');
+var request = require('request');
+var engine = require('../engine');
+var http = require('http');
+var fs = require('fs-extra');
 
 var TEMP_DIRECTORY = os.tmpdir();
 
+// Compare two semantic version strings, which can be of the form 1.2.3, v1.2.3, V 1.2.3, etc.
+// Returns 1 for a > b, 0 for equal, and -1 for a < b
+function compareVersions(a,b) {
+	try {
+		a = a.replace(/v|\s/ig, '').split('.').map(function(x) {return parseInt(x,10)});
+		b = b.replace(/v|\s/ig, '').split('.').map(function(x) {return parseInt(x,10)});		
+		if (a.length !== 3 || b.length !== 3) {
+			throw new Error()
+		}
+	} catch(err) {
+		log.error(err);
+		throw new Error('Invalid version number format')
+	}
+	if(a[0] === b[0]) {
+		if(a[1] === b[1]) {
+			if(a[2] === b[2]) {
+				return 0
+			} else {
+				return a[2] > b[2] ? 1 : -1;
+			}
+		} else {
+			return a[1] > b[1] ? 1 : -1;
+		}
+	} else {
+		return a[0] > b[0] ? 1 : -1;
+	}
+}
+
+// Return a promise that fulfills with a registry object loaded from the provided URL
+function fetchUpdateRegistry(url) {
+	var deferred = Q.defer();
+	request(url, function (error, response, body) {
+	  if (!error && response.statusCode == 200) {
+	  	var registry = JSON.parse(body);
+	    return deferred.resolve(registry)
+	  }
+	  	deferred.reject(error);
+	});
+	return deferred.promise;
+}
+
+// Given the filename for a package manifest, return a promise that fulfills with the manifest object
+// Basic checks are performed on the manifest to determine whether or not it is legitimate
 function loadManifest(filename) {
 	var deferred = Q.defer()
 	fs.readFile(filename, 'utf8', function (err, data) {
@@ -49,6 +96,7 @@ function loadManifest(filename) {
 	return deferred.promise;
 }
 
+// Given the unpac
 function unpackUpdate(filename) {
 	log.info('Unpacking update from '  + filename);
 	var deferred = Q.defer();
@@ -254,8 +302,12 @@ function lock(manifest) {
 	return deferred.promise;
 }
 
-function installUpdate(filename) {
-	return unpackUpdate(filename)
+function installPackage(package) {
+	if(!package || !package.local_filename) {
+		return Q();
+	}
+	log.info('Installing package ' + package.local_filename);
+	return unpackUpdate(package.local_filename)
 	.then(loadManifest)
 	.then(stopServices)
 	.then(unlock)
@@ -266,4 +318,92 @@ function installUpdate(filename) {
 	.then(startServices)
 }
 
-exports.installUpdate = installUpdate;
+function filterPackagesByProduct(registry, product) {
+	var packages =  registry.packages.filter(function(package) {
+		return (package.product === product);
+	})
+	return packages.sort(function(a,b) {
+		return compareVersions(a.version, b.version);
+	}).reverse();
+}
+
+function downloadPackage(package) {
+	
+	// Deal with insane package
+	if(!package) {return Q();}
+	if(!package.url) {
+		log.warn('No url specified in download package');
+		return Q();
+	}
+
+	var deferred = Q.defer();
+	var filename = "/opt/fabmo/update.fmp";
+	var file = fs.createWriteStream(filename);
+	log.info('Starting download of ' + package.url);
+	var request = http.get(package.url, function(response) {
+	  response.pipe(file);
+	  file.on('finish', function() {
+      	file.close(function(err) {
+	  		log.info('File download complete.')
+      		if(err) { return deferred.reject(err); }
+      			package.local_filename = filename;
+      			deferred.resolve(package);
+      		});  // close() is async, call cb after close completes.
+    	});
+	}).on('error', function(err) { // Handle errors
+    	fs.unlink(dest); // Delete the file async. (But we don't check the result)
+    	deferred.reject(err);
+  	});
+
+	return deferred.promise;
+}
+
+// Check the package source for an available update that is appropriate for the provided constraints
+function checkForAvailablePackage(options) {
+	var updateSources = config.updater.get('engine_package_sources');
+	var updateSource = updateSources[0];
+	var OS = config.updater.get('os');
+	var options = options || {};
+
+	log.info("Checking online sources for available package updates");
+	return fetchUpdateRegistry(updateSource)
+		.then(function(registry) {
+			var deferred = Q.defer();
+
+			// Cut down the list of packages to only ones for the specified product
+			engineUpdates = filterPackagesByProduct(registry, options.product);
+		
+			// If no updates are available for the product, end the process
+			if(engineUpdates.length == 0) {
+				return deferred.resolve();
+			}
+
+			// Read the version manifest for the currently installed engine
+			engine.getVersion(function(err, engineVersion) {
+				if(err) {
+					deferred.reject(err);
+				}
+
+				// Determine if the newest package listed in the package registry is newer than the installed version
+				var newerPackageAvailable = false;
+				try {
+					var newerPackageAvailable = compareVersions(engineUpdates[0].version, engineVersion.number) > 0;
+				} catch(e) {
+					log.warn(e);
+				}
+
+				// If so, return it, or return nothing if not
+				if(newerPackageAvailable) {
+					log.info("A newer package update is available!");
+					return deferred.resolve(engineUpdates[0]);
+				}
+				return deferred.resolve();
+			});
+			return deferred.promise;
+		});
+}
+
+
+exports.installPackage = installPackage;
+exports.checkForAvailablePackage = checkForAvailablePackage;
+exports.downloadPackage = downloadPackage;

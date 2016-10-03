@@ -125,6 +125,22 @@ var doManualUpdate = function(req, res, next) {
     });
 }
 
+var applyPreparedUpdates = function(req, res, next) {
+	updater.applyPreparedUpdates(function(err, data) {
+		if(err) {
+			return res.json({status : 'error', message : err});
+		}
+
+		var answer = {
+		    status : "success",
+		   	  data : {'task' : data}
+		};
+
+		res.json(answer);
+	});
+
+}
+
 module.exports = function(server) {
   server.get('/update/versions', getVersions);
   server.get('/tasks', getTasks);
@@ -135,5 +151,6 @@ module.exports = function(server) {
   server.post('/update/factory', factoryReset);
 
   server.post('/update/manual', doManualUpdate);
+  server.post('/update/apply', applyPreparedUpdates);
 
 };

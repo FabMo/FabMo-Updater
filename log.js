@@ -115,6 +115,13 @@ Logger.prototype.error = function(msg) {
 	}
 };
 
+Logger.prototype.stack = function(msg) {
+	var stackTrace = new Error().stack;
+	stackTrace = stackTrace.split('\n');
+	stackTrace = stackTrace.slice(2).join('\n');
+	this.write('debug', 'Stack Trace:\n' + stackTrace);
+}
+
 Logger.prototype.uncaught = function(err) {
 	if(colors) {
 		console.log("UNCAUGHT EXCEPTION".red.underline);

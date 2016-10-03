@@ -1,3 +1,5 @@
 var fmp = require('./fmp');
 
-exports.installUpdate = fmp.installUpdate;
+exports.installPackage = fmp.installPackage;
+exports.checkForAvailablePackage = fmp.checkForAvailablePackage;
+exports.downloadPackage = fmp.downloadPackage;
