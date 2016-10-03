@@ -6,6 +6,8 @@ var doshell = require('../../../util').doshell;
 var util = require('util');
 var NetworkManager = require('../../manager').NetworkManager;
 var async = require('async');
+var util = require('util');
+var events = require('events');
 
 var wifi;
 var WIFI_SCAN_INTERVAL = 5000;
@@ -177,6 +179,7 @@ EdisonNetworkManager.prototype.runStation = function() {
             log.info("In master mode..."); 
             this.mode = 'ap';
             this.state = 'idle';
+            this.emit('network', {'mode' : 'ap'})
             setImmediate(this.run.bind(this));
           }
         } else {
@@ -261,8 +264,9 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
         log.error(err);
     }
     doshell('route add default gw 192.168.42.1', function(s) {
+        this.emit('network', {'mode' : 'station'});
         callback(err, result);
-    });
+    }.bind(this));
   });
 }
 

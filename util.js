@@ -7,7 +7,8 @@ var uuid = require('node-uuid');
 var fs = require('fs');
 var escapeRE = require('escape-regexp-component');
 var exec = require('child_process').exec;
-
+var Q = require('q');
+var http = require('http');
 var mime = require('mime');
 var restify = require('restify');
 var errors = restify.errors;
@@ -340,6 +341,27 @@ var getClientAddress = function (req) {
         || req.connection.remoteAddress;
 };
 
+function httpGET(url) {
+    var deferred = Q.defer();
+    try {
+        http.get(url, function(response) {
+          if (!(String(response.statusCode)).match(/^2\d\d$/)) {
+            return deferred.reject(new Error(response.statusCode + ' ' + response.statusMessage));
+          }
+            var body = '';
+            response.on('data', function(d) {
+                body += d;
+            });
+            response.on('end', function() {
+                return deferred.resolve(body);
+            });
+        }); 
+    } catch(err) {
+        deferred.reject(err);
+    }
+    return deferred.promise;
+}
+
 exports.getClientAddress = getClientAddress;
 exports.serveStatic = serveStatic;
 exports.Queue = Queue;
@@ -349,5 +371,6 @@ exports.createUniqueFilename = createUniqueFilename;
 exports.fixJSON = fixJSON;
 exports.extend = extend;
 exports.doshell = doshell;
+exports.httpGET = httpGET;
 
 

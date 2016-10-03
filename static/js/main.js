@@ -126,7 +126,7 @@ function updateNetworks(callback) {
 }
 
 function updateVersions() {
-
+/*
   // The update version menu
   updater.getVersions(function(err, versions) {
     menu1 = $("#update-version");
@@ -140,6 +140,7 @@ function updateVersions() {
     $('#update-version').removeClass('disabled');
     $('#icon-update-version-spinner').hide();
   });
+  */
 
 }
 

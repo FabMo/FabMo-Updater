@@ -189,6 +189,27 @@ Updater.prototype.doFMP = function(filename, callback) {
     }
 }
 
+Updater.prototype.runPackageCheck = function() {
+    return fmp.checkForAvailablePackage({product : 'FabMo-Engine'})
+            .catch(function(err) {
+                log.warn('There was a problem retrieving the list of packages: ' + err)
+            })
+            .then(fmp.downloadPackage)
+            .catch(function(err) {
+                log.warn('There was a problem downloading a package: ' + err)
+            })
+            .then(function(package) {
+                if(package) {
+                    log.info("Adding package to the list of available updates.")
+                    return this.addAvailablePackage(package);
+                }
+                log.info("No new packages are available.")
+            }.bind(this))
+            .catch(function(err) {
+                log.error(err);
+            });
+}
+
 Updater.prototype.applyPreparedUpdates = function(callback) {
     if(this.status.state != 'idle') {
         return callback(new Error("Cannot apply updates when in the " + updater.status.state + " state."));
@@ -334,9 +355,19 @@ Updater.prototype.start = function(callback) {
                 this.networkManager = network.createNetworkManager();
             } catch(e) {
                 log.warn(e);
-                this.networkManager = new GenericNetworkManager();
-                //return callback(null);
+                var OS = config.platform;
+                var PLATFORM = config.updater.get('platform');
+                this.networkManager = new GenericNetworkManager(OS, PLATFORM);
             }
+
+            // Do a package check every time we join a wireless network
+            this.networkManager.on('network', function(evt) {
+                if(evt.mode === 'station') {
+                    log.info('Running package check due to network change');
+                    this.runPackageCheck();
+                }
+            }.bind(this));
+
             log.info("Setting up the network...");
             try {
                 this.networkManager.init();
@@ -345,6 +376,7 @@ Updater.prototype.start = function(callback) {
                 log.error(e);
                 log.error('Problem starting network manager:' + e);
             }
+
 
             var onlineCheck = function() {
                 this.networkManager.isOnline(function(err, online) {
@@ -434,17 +466,7 @@ Updater.prototype.start = function(callback) {
         }.bind(this),
         
     function check_for_updates(callback) {
-            fmp.checkForAvailablePackage({product : 'FabMo-Engine'})
-            .then(fmp.downloadPackage)
-            .then(function(package) {
-                log.info("Adding package to the list of available updates.")
-                if(package) {
-                    return this.addAvailablePackage(package);
-                }
-            }.bind(this))
-            .catch(function(err) {
-                log.error(err);
-            });
+            this.runPackageCheck();
             callback();
         }.bind(this),
 

@@ -11,7 +11,7 @@ var request = require('request');
 var engine = require('../engine');
 var http = require('http');
 var fs = require('fs-extra');
-
+var util = require('../util');
 var TEMP_DIRECTORY = os.tmpdir();
 
 // Compare two semantic version strings, which can be of the form 1.2.3, v1.2.3, V 1.2.3, etc.
@@ -24,7 +24,6 @@ function compareVersions(a,b) {
 			throw new Error()
 		}
 	} catch(err) {
-		log.error(err);
 		throw new Error('Invalid version number format')
 	}
 	if(a[0] === b[0]) {
@@ -44,15 +43,12 @@ function compareVersions(a,b) {
 
 // Return a promise that fulfills with a registry object loaded from the provided URL
 function fetchUpdateRegistry(url) {
-	var deferred = Q.defer();
-	request(url, function (error, response, body) {
-	  if (!error && response.statusCode == 200) {
-	  	var registry = JSON.parse(body);
-	    return deferred.resolve(registry)
-	  }
-	  	deferred.reject(error);
-	});
-	return deferred.promise;
+	log.info('Retrieving a list of packages from ' + url)
+	return util.httpGET(url)
+		.then(function(body) {
+			var p = JSON.parse(body);
+			return p
+		});
 }
 
 // Given the filename for a package manifest, return a promise that fulfills with the manifest object
@@ -338,16 +334,22 @@ function downloadPackage(package) {
 
 	var deferred = Q.defer();
 	var filename = "/opt/fabmo/update.fmp";
-	var file = fs.createWriteStream(filename);
 	log.info('Starting download of ' + package.url);
 	var request = http.get(package.url, function(response) {
+	  // Bail if anything but a 2xx response is recieved
+	  if (!(String(response.statusCode)).match(/^2\d\d$/)) {  
+	  	return deferred.reject(new Error(response.statusCode + ' ' + response.statusMessage));
+	  }
+	  var file = fs.createWriteStream(filename);
 	  response.pipe(file);
 	  file.on('finish', function() {
       	file.close(function(err) {
-	  		log.info('File download complete.')
-      		if(err) { return deferred.reject(err); }
-      			package.local_filename = filename;
-      			deferred.resolve(package);
+      		if(err) { 
+      			return deferred.reject(err); 
+      		}
+	  		log.info('Download of ' + package.url + ' is complete.')
+  			package.local_filename = filename;
+  			deferred.resolve(package);
       		});  // close() is async, call cb after close completes.
     	});
 	}).on('error', function(err) { // Handle errors
@@ -360,12 +362,11 @@ function downloadPackage(package) {
 
 // Check the package source for an available update that is appropriate for the provided constraints
 function checkForAvailablePackage(options) {
-	var updateSources = config.updater.get('engine_package_sources');
-	var updateSource = updateSources[0];
+	var updateSource = config.updater.get('engine_package_source');
 	var OS = config.updater.get('os');
 	var options = options || {};
 
-	log.info("Checking online sources for available package updates");
+	log.info("Checking online source for updates");
 	return fetchUpdateRegistry(updateSource)
 		.then(function(registry) {
 			var deferred = Q.defer();
