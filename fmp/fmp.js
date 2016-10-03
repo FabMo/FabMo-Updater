@@ -7,7 +7,6 @@ var async = require('async');
 var path = require('path');
 var log = require('../log').logger('fmp');
 var config = require('../config');
-var request = require('request');
 var engine = require('../engine');
 var http = require('http');
 var fs = require('fs-extra');
