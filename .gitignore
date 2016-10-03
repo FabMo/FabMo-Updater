@@ -1,3 +1,8 @@
+# Specific files for build
+static/example.fmp
+fmp/example/engine.tar.gz
+fmp/example/example.fmp
+
 # Logs
 logs
 *.log
