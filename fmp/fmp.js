@@ -9,9 +9,11 @@ var log = require('../log').logger('fmp');
 var config = require('../config');
 var engine = require('../engine');
 var http = require('http');
+var https = require('https');
 var fs = require('fs-extra');
 var util = require('../util');
 var TEMP_DIRECTORY = os.tmpdir();
+var request = require('request');
 
 // Compare two semantic version strings, which can be of the form 1.2.3, v1.2.3, V 1.2.3, etc.
 // Returns 1 for a > b, 0 for equal, and -1 for a < b
@@ -334,27 +336,21 @@ function downloadPackage(package) {
 	var deferred = Q.defer();
 	var filename = "/opt/fabmo/update.fmp";
 	log.info('Starting download of ' + package.url);
-	var request = http.get(package.url, function(response) {
-	  // Bail if anything but a 2xx response is recieved
-	  if (!(String(response.statusCode)).match(/^2\d\d$/)) {  
-	  	return deferred.reject(new Error(response.statusCode + ' ' + response.statusMessage));
-	  }
-	  var file = fs.createWriteStream(filename);
-	  response.pipe(file);
-	  file.on('finish', function() {
-      	file.close(function(err) {
-      		if(err) { 
-      			return deferred.reject(err); 
-      		}
-	  		log.info('Download of ' + package.url + ' is complete.')
-  			package.local_filename = filename;
-  			deferred.resolve(package);
-      		});  // close() is async, call cb after close completes.
-    	});
-	}).on('error', function(err) { // Handle errors
-    	fs.unlink(filename); // Delete the file async. (But we don't check the result)
-    	deferred.reject(err);
-  	});
+	var file = fs.createWriteStream(filename);
+	request(package.url)
+		.on('error', function(err) { // Handle errors
+    		deferred.reject(err);
+  		})
+		.pipe(file).on('finish', function() {
+			file.close(function(err) {
+      			if(err) { 
+      				return deferred.reject(err); 
+      			}
+	  			log.info('Download of ' + package.url + ' is complete.')
+  				package.local_filename = filename;
+  				deferred.resolve(package);
+      			});  // close() is async, call cb after close completes.
+    		});
 
 	return deferred.promise;
 }

@@ -30,6 +30,7 @@ var Updater = function() {
         'task' : null,
         'updates' : []
     }
+    this.packageDownloadInProgress = false;
     this.hasAccurateTime = false;
     this.tasks = {};
     this.networkManager = network.Generic;
@@ -111,6 +112,7 @@ Updater.prototype.addAvailablePackage = function(package) {
     });
 
     this.status.updates.push(package);
+    this.emit('status',this.status);
 }
 
 Updater.prototype.stop = function(callback) {
@@ -190,7 +192,12 @@ Updater.prototype.doFMP = function(filename, callback) {
 }
 
 Updater.prototype.runPackageCheck = function() {
-    return fmp.checkForAvailablePackage({product : 'FabMo-Engine'})
+    	if(this.packageDownloadInProgress) {
+		log.warn('Not checking for package updates because this is already in progress')
+		return Q();
+	}
+	this.packageDownloadInProgress = true;
+	return fmp.checkForAvailablePackage({product : 'FabMo-Engine'})
             .catch(function(err) {
                 log.warn('There was a problem retrieving the list of packages: ' + err)
             })
@@ -207,7 +214,10 @@ Updater.prototype.runPackageCheck = function() {
             }.bind(this))
             .catch(function(err) {
                 log.error(err);
-            });
+            })
+	    .finally(function() {
+		this.packageDownloadInProgress = false;
+	    }.bind(this));
 }
 
 Updater.prototype.applyPreparedUpdates = function(callback) {
@@ -364,8 +374,12 @@ Updater.prototype.start = function(callback) {
             // Do a package check every time we join a wireless network
             this.networkManager.on('network', function(evt) {
                 if(evt.mode === 'station') {
-                    log.info('Running package check due to network change');
-                    this.runPackageCheck();
+                    // 30 Second delay is used here to make sure timesyncd has enough time to update network time
+		    // before trying to pull an update (https requests will fail with an inaccurate system time)
+		    setTimeout(function() {
+                        log.info('Running package check due to network change');
+		    	this.runPackageCheck();
+		    }.bind(this), 30000);
                 }
             }.bind(this));
 
@@ -465,12 +479,6 @@ Updater.prototype.start = function(callback) {
             });
 
         }.bind(this),
-        
-    function check_for_updates(callback) {
-            this.runPackageCheck();
-            callback();
-        }.bind(this),
-
     function test(callback) {
         callback();
     }.bind(this)
