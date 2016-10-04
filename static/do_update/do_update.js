@@ -66,7 +66,7 @@ $(document).ready(function() {
 						message : 'No new updates are available.<br /><a href="' + document.referrer + '">Click here to exit the updater.</a>'
 					})
 				}
-				updater.applyUpdate(function(err, data) {
+				updater.applyPreparedUpdates(function(err, data) {
 					if(err) {
 						return fail(err);
 					}

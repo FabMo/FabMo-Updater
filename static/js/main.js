@@ -184,7 +184,6 @@ function setState(state) {
     var update_button = $('#btn-update-apply');
     switch(state) {
         case 'idle':
-		console.log("removing class");
             update_button.removeClass('disabled');
 	    icon.removeClass(classes).addClass('fa-circle-o');
             break;
