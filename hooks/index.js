@@ -13,18 +13,23 @@ var execute = function(name, args, callback) {
 	deferred = Q.defer();
 	callback = callback || function() {};
 	hook = getHook(name);
- 	var hook_func = hook.func || function(err, stdout, stderr, callback) {
-		callback(err, stdout);
-		return deferred.reject(err);
+ 	var hook_func = hook.func || function(err, stdout, stderr, cb) {
+		cb = cb || function() {}
+		cb(err, stdout);
+		if(err) {
+			return deferred.reject(err);
+		}
+		return deferred.resolve(stdout);
 	}
 	cp.exec(hook.file + ' ' + (args || ''), function(err, stdout, stderr) {
-		log.shell(stdout);
+		if(stdout.trim() !== '') {
+			log.shell(stdout);
+		}
 		hook_func(err, stdout, stderr, function(err, data) {
 			if(err) {
 				callback(err);
 				return deferred.reject(err);
 			}
-			console.log(callback)
 			return deferred.resolve(callback(null, data));
 		});
 	});

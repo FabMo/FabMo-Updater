@@ -12,9 +12,8 @@ var http = require('http');
 var https = require('https');
 var fs = require('fs-extra');
 var util = require('../util');
-var TEMP_DIRECTORY = os.tmpdir();
 var request = require('request');
-
+var TEMP_DIRECTORY = '/tmp';
 // Compare two semantic version strings, which can be of the form 1.2.3, v1.2.3, V 1.2.3, etc.
 // Returns 1 for a > b, 0 for equal, and -1 for a < b
 function compareVersions(a,b) {
@@ -63,6 +62,7 @@ function fetchUpdateRegistry(url) {
 // Given the filename for a package manifest, return a promise that fulfills with the manifest object
 // Basic checks are performed on the manifest to determine whether or not it is legitimate
 function loadManifest(filename) {
+	log.info('Loading the package manifest ' + filename);	
 	var deferred = Q.defer()
 	fs.readFile(filename, 'utf8', function (err, data) {
 		if(err) {
@@ -105,13 +105,17 @@ function loadManifest(filename) {
 function unpackUpdate(filename) {
 	log.info('Unpacking update from '  + filename);
 	var deferred = Q.defer();
-	try {		
+	try {	
+		log.info(TEMP_DIRECTORY);	
 		var updateDir = path.resolve(TEMP_DIRECTORY, 'fmp-update');
+		
 		// Trash the update directory if it already exists
+		log.debug('Removing the update directory: ' + updateDir);
 		fs.remove(updateDir, function(err) {
 			// Create a new empty one
+			log.debug('Creating a new update directory: ' + updateDir);
 			fs.mkdir(updateDir, function(err) {
-				if(err) { return deferred.reject(); }
+				if(err) { return deferred.reject(err); }
 				// Unpack the actual file into the newly created directory
 				child_process.exec('tar -xzf ' + path.resolve(filename), {cwd : updateDir}, function(err, stdout, stderr) {
 					if(err) { return deferred.reject(err); }
@@ -210,6 +214,7 @@ function startService(service, callback) {
 
 function stopServices(manifest) {
 	var deferred = Q.defer();
+	log.info('Stopping services');
 	if (manifest.services.length > 0) {
 		async.mapSeries(
 			manifest.services,
@@ -227,6 +232,7 @@ function stopServices(manifest) {
 
 function startServices(manifest) {
 	var deferred = Q.defer();
+	log.info('Starting services');
 	if (manifest.services.length > 0) {
 		async.mapSeries(
 			manifest.services,
@@ -243,10 +249,12 @@ function startServices(manifest) {
 }
 
 function unlock(manifest) {
+	log.info('Unlocking the installation');	
 	return require('../hooks').unlock().then(function() { return manifest; });
 }
 
 function lock(manifest) {
+	log.info('Locking the installation');
 	return require('../hooks').lock().then(function() { return manifest; });
 }
 
