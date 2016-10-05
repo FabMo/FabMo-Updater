@@ -1,3 +1,3 @@
 #!/bin/bash -e
 
-mount -r -o remount /
+mount -w -o remount /

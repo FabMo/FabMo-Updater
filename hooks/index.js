@@ -57,7 +57,7 @@ var getHook = function(name) {
 		log.warn(e);
 	}
 
-	var hook_exec_pattern = __dirname + '/' + OS + '/'  + PLATFORM + '/' + name + '.[a-zA-Z0-9]*';
+	var hook_exec_pattern = __dirname + '/' + OS + '/'  + PLATFORM + '/' + name + '.*([a-zA-Z0-9])';
 	var matches = [];
 
 	try {
@@ -79,7 +79,7 @@ var getHook = function(name) {
 		break;
 
 		default:
-			throw new Error("More than one hook defined for " + name + " on " + PLATFORM + "???");
+			throw new Error("More than one hook defined for " + name + " on " + OS + '/' + PLATFORM + "??? ( " + matches + ' )');
 			break;
 	}
 }

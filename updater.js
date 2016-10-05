@@ -21,7 +21,7 @@ var Q = require('q');
 var fmp = require('./fmp');
 
 var TASK_TIMEOUT = 10800000;    // 3 hours (in milliseconds)
-var PACKAGE_CHECK_DELAY = 1;   // Seconds
+var PACKAGE_CHECK_DELAY = 30;   // Seconds
 
 var Updater = function() 
 {   this.version = null;

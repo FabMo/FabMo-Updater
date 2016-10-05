@@ -112,6 +112,7 @@ Logger.prototype.error = function(msg) {
 		this.write('error', msg.stack);
 	} else {
 		this.write('error', msg);
+		this.stack();
 	}
 };
 
