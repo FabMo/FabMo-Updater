@@ -1,0 +1,13 @@
+{
+	"packages" : [
+ 		{
+			"product" : "FabMo-Engine",
+			"os" : "darwin",
+			"platform" : "generic",
+			"version" : "v99.99.99",
+			"changelog" : "This is an empty package for testing!",
+			"url" : "https://github.com/FabMo/FabMo-Updater/raw/mayhem/fmp/example/empty/empty.fmp"
+ 		}
+
+	]
+}
