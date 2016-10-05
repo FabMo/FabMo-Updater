@@ -1,9 +1,9 @@
 {
 	"product" : "FabMo-Engine",
 	"repository" : "https://github.com/FabMo/FabMo-Engine",
-	"os" : "dawrin",
-	"platform" : "generic",
-	"version" : "999.999.999",
+	"os" : "*",
+	"platform" : "*",
+	"version" : "v99.99.99",
 	"services" : ["fabmo"],
 	"updaterNeeded" : "1.4.0",
 	"token" : "/tmp/updater_test_token",

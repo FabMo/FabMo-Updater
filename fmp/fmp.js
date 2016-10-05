@@ -271,8 +271,10 @@ function filterPackages(registry, options) {
 		for(var key in options) {
 			if(options.hasOwnProperty(key)) {
 				try {
-					if(package[key] !== options[key]) {
-						return false;
+					if(package[key] !== '*') {
+						if(package[key] !== options[key]) {
+							return false;
+						}
 					}
 				} catch(e) {
 					return false;
