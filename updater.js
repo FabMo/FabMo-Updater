@@ -216,7 +216,8 @@ Updater.prototype.runPackageCheck = function() {
                 log.error(err);
             })
 	    .finally(function() {
-		this.packageDownloadInProgress = false;
+		log.info('Package check complete.');
+                this.packageDownloadInProgress = false;
 	    }.bind(this));
 }
 
