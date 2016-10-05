@@ -60,7 +60,6 @@ var getHook = function(name) {
 	var OS = config.platform;
 	var PLATFORM = config.updater.get('platform');
 
-
 	// JS Function for post processing the hook
 	var hook_func = null;
 	try {

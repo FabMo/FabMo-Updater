@@ -95,7 +95,8 @@ function expandArchive(operation) {
 				var expandCommand = getExpandCommand(operation.src);
 
 				// Call to shell to expand source archive into destination directory
-				var sourceFile = path.join(operation.cwd, operation.src);
+				var sourceFile = resolveCwdPath(operation.cwd, operation.src);
+				
 				log.info('Expanding archive '  + sourceFile + ' to ' +  operation.dest);
 				child_process.exec(expandCommand + sourceFile, {cwd : operation.dest}, function(err, stdout, stderr) {
 					if(err) { return deferred.reject(err); }
