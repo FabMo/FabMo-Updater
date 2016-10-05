@@ -229,7 +229,6 @@ exports.doFMU = function(filename, callback) {
 }
 
 exports.installFirmware = function(filename, callback) {
-	log.info('Install FIRMWARE')
 	return execute('update_firmware', filename, callback);
 }
 
