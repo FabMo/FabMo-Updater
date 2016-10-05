@@ -18,7 +18,6 @@ var execute = function(name, args, callback) {
 		deferred.reject(e);
 		return deferred.promise;
 	}
-	log.debug('Executing hook: ' + hook.file);
  	var hook_func = hook.func || function(err, stdout, stderr, cb) {
 		cb = cb || function() {}
 		cb(err, stdout);
@@ -228,7 +227,6 @@ exports.doFMU = function(filename, callback) {
 }
 
 exports.installFirmware = function(filename, callback) {
-	log.info('Install FIRMWARE')
 	return execute('update_firmware', filename, callback);
 }
 
