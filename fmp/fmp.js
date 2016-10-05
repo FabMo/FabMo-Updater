@@ -191,13 +191,13 @@ function stopService(service, callback) {
 	log.info('Stopping service ' + service)
 
 	var hooks = require('../hooks');
-	return hooks.stopService(service)
+	return hooks.stopService(service).then(callback).done();
 }
 
 function startService(service, callback) {
 	log.info('Starting service ' + service)
 	var hooks = require('../hooks');
-	return hooks.startServic(eservice)
+	hooks.startService(service).then(callback).done();
 }
 
 function stopServices(manifest) {
