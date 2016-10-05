@@ -1,3 +1,3 @@
 #!/bin/bash
 
-echo "No service management on darwin OS."
+echo "No service management on darwin os."

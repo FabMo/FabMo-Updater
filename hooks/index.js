@@ -24,6 +24,7 @@ var execute = function(name, args, callback) {
 				callback(err);
 				return deferred.reject(err);
 			}
+			console.log(callback)
 			return deferred.resolve(callback(null, data));
 		});
 	});
@@ -85,20 +86,20 @@ var getHook = function(name) {
 
 // Exported hooks
 
-exports.unlock = function(callback) {
-	execute('lock', null, callback);
+exports.lock = function(callback) {
+	return execute('lock', null, callback);
 }
 
 exports.unlock = function(callback) {
-	execute('unlock', null, callback);
+	return execute('unlock', null, callback);
 }
 
-exports.startService = function(callback) {
-	execute('start_service', null, callback);
+exports.startService = function(service, callback) {
+	return execute('start_service', service, callback);
 }
 
-exports.stopService = function(callback) {
-	execute('stop_service', null, callback);
+exports.stopService = function(service, callback) {
+	return execute('stop_service', service, callback);
 }
 
 exports.reboot = function(callback) {

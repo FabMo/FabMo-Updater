@@ -45,11 +45,19 @@ function compareVersions(a,b) {
 // Return a promise that fulfills with a registry object loaded from the provided URL
 function fetchUpdateRegistry(url) {
 	log.info('Retrieving a list of packages from ' + url)
-	return util.httpGET(url)
-		.then(function(body) {
-			var p = JSON.parse(body);
-			return p
-		});
+	deferred = Q.defer();
+	request(url, function (error, response, body) {
+	  	if(error) {
+	  		return deferred.reject(error);
+	  	}
+	  	if (response.statusCode == 200) {
+	    	var p = JSON.parse(body);
+			return deferred.resolve(p);
+	  	} else {
+	  		return deferred.reject(new Error(response.statusMessage));
+	  	}
+	});
+	return deferred.promise;
 }
 
 // Given the filename for a package manifest, return a promise that fulfills with the manifest object
@@ -235,47 +243,11 @@ function startServices(manifest) {
 }
 
 function unlock(manifest) {
-	var deferred = Q.defer();
-	log.info('Unlocking the disk')
-	
-	var config = require('../config');
-	var OS = config.platform;
-
-	switch(OS) {
-		case 'linux':
-			child_process.exec('mount -w -o remount /', {}, function(err, stdout, stderr) {
-				if(err) { return deferred.reject(err); }
-				deferred.resolve(manifest);
-			});	
-		break;
-
-		default:
-			deferred.resolve(manifest);
-			break;
-	}
-	return deferred.promise;
+	return require('../hooks').unlock().then(function() { return manifest; });
 }
 
 function lock(manifest) {
-	var deferred = Q.defer();
-	log.info('Locking the disk')
-
-	var config = require('../config');
-	var OS = config.platform;
-
-	switch(OS) {
-		case 'linux':
-			child_process.exec('mount -r -o remount /', {}, function(err, stdout, stderr) {
-				if(err) { return deferred.reject(err); }
-				deferred.resolve(manifest);
-			});	
-		break;
-
-		default:
-			deferred.resolve(manifest);
-			break;
-	}
-	return deferred.promise;
+	return require('../hooks').lock().then(function() { return manifest; });
 }
 
 function installPackage(package) {
