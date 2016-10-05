@@ -20,10 +20,11 @@ var argv = require('minimist')(process.argv);
 var Q = require('q');
 var fmp = require('./fmp');
 
-var TASK_TIMEOUT = 10800000; // 3 hours
+var TASK_TIMEOUT = 10800000;    // 3 hours (in milliseconds)
+var PACKAGE_CHECK_DELAY = 30;   // Seconds
 
-var Updater = function() {
-    this.version = null;
+var Updater = function() 
+{   this.version = null;
     this.status = {
         'state' : 'idle',
         'online' : false,
@@ -31,6 +32,7 @@ var Updater = function() {
         'updates' : []
     }
     this.packageDownloadInProgress = false;
+    this.packageCheckHasRun = false;
     this.hasAccurateTime = false;
     this.tasks = {};
     this.networkManager = network.Generic;
@@ -41,8 +43,8 @@ util.inherits(Updater, events.EventEmitter);
 Updater.prototype.getVersion = function(callback) {
     require('./util').doshell('git rev-parse --verify HEAD', function(data) {
         this.version = {};
-        this.version.hash = (data || "").trim();
-        this.version.number = "";
+        this.version.hash = (data || '').trim();
+        this.version.number = '';
         this.version.debug = ('debug' in argv);
         fs.readFile('version.json', 'utf8', function(err, data) {
             if(err) {
@@ -121,7 +123,7 @@ Updater.prototype.stop = function(callback) {
 
 Updater.prototype.updateEngine = function(version, callback) {
     if(this.status.state != 'idle') {
-        callback(new Error("Cannot update the engine when in the " + updater.status.state + " state."));
+        callback(new Error('Cannot update the engine when in the ' + updater.status.state + ' state.'));
     } else {
         hooks.updateEngine(version, callback);
     }
@@ -129,7 +131,7 @@ Updater.prototype.updateEngine = function(version, callback) {
 
 Updater.prototype.installEngine = function(version, callback) {
     if(this.status.state != 'idle') {
-        callback(new Error("Cannot install the engine when in the " + updater.status.state + " state."));
+        callback(new Error('Cannot install the engine when in the ' + updater.status.state + ' state.'));
     } else {
         hooks.installEngine(version, callback);
     }
@@ -137,7 +139,7 @@ Updater.prototype.installEngine = function(version, callback) {
 
 Updater.prototype.factoryReset = function(callback) {
     if(this.status.state != 'idle') {
-        callback(new Error("Cannot factory reset when in the " + updater.status.state + " state."));
+        callback(new Error('Cannot factory reset when in the ' + updater.status.state + ' state.'));
     } else {
         callback(); // Go ahead and callback because the factory reset is going to cause the process to bail.
         hooks.factoryReset();
@@ -147,7 +149,7 @@ Updater.prototype.factoryReset = function(callback) {
 
 Updater.prototype.updateUpdater = function(version, callback) {
     if(this.status.state != 'idle') {
-        callback(new Error("Cannot update the updater when in the " + updater.status.state + " state."));
+        callback(new Error('Cannot update the updater when in the ' + updater.status.state + ' state.'));
     } else {
         callback(); // Go ahead and callback because the updater update is going to cause the process to bail.
         hooks.updateUpdater();
@@ -160,7 +162,7 @@ Updater.prototype.getVersions = function(callback) {
 
 Updater.prototype.updateFirmware = function(callback) {
     if(this.status.state != 'idle') {
-        callback(new Error("Cannot update the firmware when in the " + updater.status.state + " state."));
+        callback(new Error('Cannot update the firmware when in the ' + updater.status.state + ' state.'));
     } else {
         hooks.updateFirmware(config.updater.get('firmware_file'), callback);
     }
@@ -168,7 +170,7 @@ Updater.prototype.updateFirmware = function(callback) {
 
 Updater.prototype.doFMU = function(filename, callback) {
     if(this.status.state != 'idle') {
-        callback(new Error("Cannot apply FMU update when in the " + updater.status.state + " state."));
+        callback(new Error('Cannot apply FMU update when in the ' + updater.status.state + ' state.'));
     } else {
         hooks.doFMU(filename, callback);
     }
@@ -176,7 +178,7 @@ Updater.prototype.doFMU = function(filename, callback) {
 
 Updater.prototype.doFMP = function(filename, callback) {
     if(this.status.state != 'idle') {
-        callback(new Error("Cannot apply FMP update when in the " + updater.status.state + " state."));
+        callback(new Error('Cannot apply FMP update when in the ' + updater.status.state + ' state.'));
     } else {
         var key = this.startTask();
         this.setState('updating');
@@ -192,12 +194,17 @@ Updater.prototype.doFMP = function(filename, callback) {
 }
 
 Updater.prototype.runPackageCheck = function() {
-    	if(this.packageDownloadInProgress) {
-		log.warn('Not checking for package updates because this is already in progress')
-		return Q();
-	}
-	this.packageDownloadInProgress = true;
-	return fmp.checkForAvailablePackage({product : 'FabMo-Engine'})
+    this.packageCheckHasRun = true;
+    if(this.packageDownloadInProgress) {
+        log.warn('Not checking for package updates because this is already in progress')
+        return Q();
+    }
+
+    var OS = config.platform;
+    var PLATFORM = config.updater.get('platform');
+
+    this.packageDownloadInProgress = true;
+    return fmp.checkForAvailablePackage({product : 'FabMo-Engine', platform : PLATFORM, os : OS})
             .catch(function(err) {
                 log.warn('There was a problem retrieving the list of packages: ' + err)
             })
@@ -207,10 +214,10 @@ Updater.prototype.runPackageCheck = function() {
             })
             .then(function(package) {
                 if(package) {
-                    log.info("Adding package to the list of available updates.")
+                    log.info('Adding package to the list of available updates.')
                     return this.addAvailablePackage(package);
                 }
-                log.info("No new packages are available.")
+                log.info('No new packages are available for ' + OS + '/' + PLATFORM + '.');
             }.bind(this))
             .catch(function(err) {
                 log.error(err);
@@ -223,11 +230,11 @@ Updater.prototype.runPackageCheck = function() {
 
 Updater.prototype.applyPreparedUpdates = function(callback) {
     if(this.status.state != 'idle') {
-        return callback(new Error("Cannot apply updates when in the " + this.status.state + " state."));
+        return callback(new Error('Cannot apply updates when in the ' + this.status.state + ' state.'));
     }
 
     if( this.status.updates.length === 0) {
-        return callback(new Error("No updates to apply."));
+        return callback(new Error('No updates to apply.'));
     }
     var key = this.startTask();
     this.setState('updating');
@@ -242,8 +249,8 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
                 log.error(err);
                 this.status.updates = [];
                 this.failTask(key);
-            	this.setState('idle');
-	    }.bind(this)).done();
+                this.setState('idle');
+        }.bind(this)).done();
     } catch(err) {
         callback(err);
     }
@@ -252,10 +259,10 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
 
 Updater.prototype.setTime = function(time, callback) {
     if(this.status.state != 'idle') {
-        callback(new Error("Cannot set the system time while in the " + updater.status.state + " state."));
+        callback(new Error('Cannot set the system time while in the ' + updater.status.state + ' state.'));
     } else {
         if(this.hasAccurateTime) {
-            log.warn("Not accepting an externally provided time.  Local time is trusted.");
+            log.warn('Not accepting an externally provided time.  Local time is trusted.');
             return;
         }
         var m = moment.unix(time/1000.0);
@@ -274,12 +281,12 @@ function UpdaterConfigFirstTime(callback) {
             try {
                 var text = fs.readFileSync(confFile, 'utf8');
                 if(text.match(/device_name=Edison/)) {
-                    log.info("Intel Edison Platform Detected");
+                    log.info('Intel Edison Platform Detected');
                     config.updater.set('platform', 'edison');
                     hooks.getUniqueID(function(err, id) {
                         if(err) {
                             var id = '';
-                            log.error("There was a problem generating the factory ID:");
+                            log.error('There was a problem generating the factory ID:');
                             log.error(err);
                             for(var i=0; i<8; i++) {
                                 id += (Math.floor(Math.random()*15)).toString(16);
@@ -291,8 +298,8 @@ function UpdaterConfigFirstTime(callback) {
                     })
                 }
             } catch(e) {
-	    	log.error(e);
-	    }
+            log.error(e);
+        }
         break;
 
         case 'darwin':
@@ -319,7 +326,7 @@ Updater.prototype.start = function(callback) {
             config.createDataDirectories(callback);
         },
         function configure(callback) {
-            log.info("Loading configuration...");
+            log.info('Loading configuration...');
             config.configureUpdater(callback);
         },
         function first_time_configure(callback) {
@@ -332,7 +339,7 @@ Updater.prototype.start = function(callback) {
         function get_unique_id(callback) {
             hooks.getUniqueID(function(err, id) {
                 if(err) {
-                    log.error("Could not read the unique machine ID!");
+                    log.error('Could not read the unique machine ID!');
                     config.updater.set('id', config.updater.get('hostname'));
                 } else {
                     config.updater.set('id', id);
@@ -374,20 +381,21 @@ Updater.prototype.start = function(callback) {
 
             // Do a package check every time we join a wireless network
             this.networkManager.on('network', function(evt) {
-                if(evt.mode === 'station') {
+                    if(evt.mode === 'station') {
                     // 30 Second delay is used here to make sure timesyncd has enough time to update network time
-		    // before trying to pull an update (https requests will fail with an inaccurate system time)
-		    setTimeout(function() {
+                    // before trying to pull an update (https requests will fail with an inaccurate system time)
+                    log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')        
+                    setTimeout(function() {
                         log.info('Running package check due to network change');
-		    	this.runPackageCheck();
-		    }.bind(this), 30000);
+                    this.runPackageCheck();
+                    }.bind(this), PACKAGE_CHECK_DELAY*1000);
                 }
             }.bind(this));
 
-            log.info("Setting up the network...");
+            log.info('Setting up the network...');
             try {
                 this.networkManager.init();
-                log.info("Network manager started.")
+                log.info('Network manager started.')
             } catch(e) {
                 log.error(e);
                 log.error('Problem starting network manager:' + e);
@@ -407,17 +415,17 @@ Updater.prototype.start = function(callback) {
         }.bind(this),
 
         function run_startup_fmus(callback) {
-            log.info("Checking for startup FMUs...")
+            log.info('Checking for startup FMUs...')
             fs.readdir(path.join(config.getDataDir(), 'fmus'), function(err, files) {
                 files = files.map(function(filename) { 
                     return path.join(config.getDataDir(),'fmus', filename);
                 });
                 fmu_files = files.filter(function(filename) { return filename.match(/.*\.fmu$/);})
                 if(fmu_files.length == 0) {
-                    log.info("No startup FMUs.");
+                    log.info('No startup FMUs.');
                     return callback();
                 } else {
-                    log.info(fmu_files.length + " startup FMU" + (fmu_files.length > 1 ? "s" : "") + " to run...");
+                    log.info(fmu_files.length + ' startup FMU' + (fmu_files.length > 1 ? 's' : '') + ' to run...');
                 }
                 result = fmu_files.reduce(function (prev, filename) {
                     return prev.then(function() {
@@ -437,16 +445,16 @@ Updater.prototype.start = function(callback) {
         }.bind(this),
 
         function start_server(callback) {
-            log.info("Setting up the webserver...");
-            var server = restify.createServer({name:"FabMo Updater"});
+            log.info('Setting up the webserver...');
+            var server = restify.createServer({name:'FabMo Updater'});
             this.server = server;
 
             // Allow JSON over Cross-origin resource sharing
-            log.info("Configuring cross-origin requests...");
+            log.info('Configuring cross-origin requests...');
             server.use(
                 function crossOrigin(req,res,next){
-                    res.header("Access-Control-Allow-Origin", "*");
-                    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+                    res.header('Access-Control-Allow-Origin', '*');
+                    res.header('Access-Control-Allow-Headers', 'X-Requested-With');
                     return next();
                 }
             );
@@ -454,27 +462,27 @@ Updater.prototype.start = function(callback) {
             server.on('uncaughtException', function(req, res, route, err) {
                 log.uncaught(err);
                 answer = {
-                    status:"error",
+                    status:'error',
                     message:err
                 };
                 res.json(answer)
             });
 
             // Configure local directory for uploading files
-            log.info("Cofiguring upload directory...");
+            log.info('Cofiguring upload directory...');
             server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
             server.pre(restify.pre.sanitizePath());
 
-            log.info("Enabling gzip for transport...");
+            log.info('Enabling gzip for transport...');
             server.use(restify.gzipResponse());
 
             // Import the routes module and apply the routes to the server
-            log.info("Loading routes...");
+            log.info('Loading routes...');
             server.io = socketio.listen(server.server);
             var routes = require('./routes')(server);
 
             // Kick off the server listening for connections
-            server.listen(config.updater.get('server_port'), "0.0.0.0", function() {
+            server.listen(config.updater.get('server_port'), '0.0.0.0', function() {
                 log.info(server.name+ ' listening at '+ server.url);
                 callback(null, server);
             });

@@ -1,6 +1,6 @@
 var glob = require('glob');
-var config = require('./config');
-var log = require('./log').logger('hooks');
+var config = require('../config');
+var log = require('../log').logger('hooks');
 var cp = require('child_process');
 var byline = require('byline');
 var fs = require('fs');
@@ -10,15 +10,24 @@ var Q = require('q');
 var keys = {};
 
 var execute = function(name, args, callback) {
+	deferred = Q.defer();
 	callback = callback || function() {};
 	hook = getHook(name);
  	var hook_func = hook.func || function(err, stdout, stderr, callback) {
 		callback(err, stdout);
+		return deferred.reject(err);
 	}
-	return cp.exec(hook.file + ' ' + (args || ''), function(err, stdout, stderr) {
-				log.shell(stdout);
-				hook_func(err, stdout, stderr, callback);
-			});
+	cp.exec(hook.file + ' ' + (args || ''), function(err, stdout, stderr) {
+		log.shell(stdout);
+		hook_func(err, stdout, stderr, function(err, data) {
+			if(err) {
+				callback(err);
+				return deferred.reject(err);
+			}
+			return deferred.resolve(callback(null, data));
+		});
+	});
+	return deferred.promise;
 }
 
 var spawn = function(name) {
@@ -42,12 +51,12 @@ var getHook = function(name) {
 	// JS Function for post processing the hook
 	var hook_func = null;
 	try {
-		hook_func = require('./hooks/' + OS + '/' + PLATFORM)[name];
+		hook_func = require(__dirname + '/' + OS + '/' + PLATFORM)[name];
 	} catch(e) {
 		log.warn(e);
 	}
 
-	var hook_exec_pattern = './hooks/' + OS + '/'  + PLATFORM + '/' + name + '.*';
+	var hook_exec_pattern = __dirname + '/' + OS + '/'  + PLATFORM + '/' + name + '.[a-zA-Z0-9]*';
 	var matches = [];
 
 	try {
@@ -75,6 +84,14 @@ var getHook = function(name) {
 }
 
 // Exported hooks
+
+exports.startService = function(callback) {
+	execute('start_service', null, callback);
+}
+
+exports.stopService = function(callback) {
+	execute('stop_service', null, callback);
+}
 
 exports.reboot = function(callback) {
 	execute('reboot', null, callback);

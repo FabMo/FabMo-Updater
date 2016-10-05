@@ -93,7 +93,7 @@ function loadManifest(filename) {
 	return deferred.promise;
 }
 
-// Given the unpac
+// Given a filename, unpack the update into a temporary directory.  Return a promise that fulfills with the path to the package manifest
 function unpackUpdate(filename) {
 	log.info('Unpacking update from '  + filename);
 	var deferred = Q.defer();
@@ -117,6 +117,7 @@ function unpackUpdate(filename) {
 	return deferred.promise;
 }
 
+// Execute an operation object found in the package manifest.  Return a promise that resolves with the result of the operation.
 function executeOperation(operation) {
 	var deferred = Q.defer();
 	try {
@@ -133,6 +134,7 @@ function executeOperation(operation) {
 	return deferred.promise
 }
 
+// Execute the operations in the provided manifest in sequence. Return a promise that resolves with the package manifest object.
 function executeOperations(manifest) {
 	deferred = Q.defer();
 	var cwd = manifest.cwd
@@ -152,6 +154,8 @@ function executeOperations(manifest) {
 	return deferred.promise
 }
 
+// Delete the token file specified by the provided package manifest.  Do nothing if there is no token file specified.
+// Return a promise that resolves with the manifest object
 function clearToken(manifest) {
 	var deferred = Q.defer();
 
@@ -167,6 +171,8 @@ function clearToken(manifest) {
 	return deferred.promise;
 }
 
+// Create the token file specified by the provided package manifest.  Do nothing if there is no token file specified.
+// Return a promise that resolves with the manifest object
 function setToken(manifest) {
 	var deferred = Q.defer();
 	log.info('Setting update token ' + manifest.token)
@@ -184,41 +190,14 @@ function setToken(manifest) {
 function stopService(service, callback) {
 	log.info('Stopping service ' + service)
 
-	var config = require('../config');
-	var OS = config.platform;
-
-	switch(OS) {
-		case 'linux':
-			child_process.exec('systemctl stop ' + service, {}, function(err, stdout, stderr) {
-				if(err) { return callback(err); }
-				callback();
-			});
-		break;
-
-		default:
-			setImmediate(callback);
-		break;
-	}
+	var hooks = require('../hooks');
+	return hooks.stopService(service).then(callback).done();
 }
 
 function startService(service, callback) {
 	log.info('Starting service ' + service)
-
-	var config = require('../config');
-	var OS = config.platform;
-
-	switch(OS) {
-		case 'linux':
-			child_process.exec('systemctl start  ' + service, {}, function(err, stdout, stderr) {
-				if(err) { return callback(err); }
-				callback();
-			});
-		break;
-
-		default:
-			setImmediate(callback);
-		break;
-	}
+	var hooks = require('../hooks');
+	hooks.startService(service).then(callback).done();
 }
 
 function stopServices(manifest) {
@@ -315,10 +294,23 @@ function installPackage(package) {
 	.then(startServices)
 }
 
-function filterPackagesByProduct(registry, product) {
+function filterPackages(registry, options) {
 	var packages =  registry.packages.filter(function(package) {
-		return (package.product === product);
-	})
+		for(var key in options) {
+			if(options.hasOwnProperty(key)) {
+				try {
+					if(package[key] !== options[key]) {
+						return false;
+					}
+				} catch(e) {
+					return false;
+				}
+			}
+
+		}
+		return true;
+	});
+
 	return packages.sort(function(a,b) {
 		return compareVersions(a.version, b.version);
 	}).reverse();
@@ -367,7 +359,7 @@ function checkForAvailablePackage(options) {
 			var deferred = Q.defer();
 
 			// Cut down the list of packages to only ones for the specified product
-			engineUpdates = filterPackagesByProduct(registry, options.product);
+			engineUpdates = filterPackages(registry, options);
 		
 			// If no updates are available for the product, end the process
 			if(engineUpdates.length == 0) {
