@@ -7,9 +7,17 @@ var util = require('util');
 var NetworkManager = require('../../manager').NetworkManager;
 var async = require('async');
 
+var ifconfig = require('wireless-tools/ifconfig');
+var iwconfig = require('wireless-tools/iwconfig');
+var iwconfig = require('wireless-tools/iwlist');
+var wpa_cli = require('wireless-tools/wpa_cli');
+var udhcpc = require('wireless-tools/udhcpc');
+
 var wifi;
 var WIFI_SCAN_INTERVAL = 5000;
 var WIFI_SCAN_RETRIES = 3;
+
+ethernetInterfaceName = "enp0s17u1u1";
 
 function jedison(cmdline, callback) {
     var callback = callback || function() {}
@@ -38,16 +46,28 @@ var EdisonNetworkManager = function() {
 }
 util.inherits(EdisonNetworkManager, NetworkManager);
 
+// return an object containing {ipaddress:'',mode:''}
 EdisonNetworkManager.prototype.getInfo = function(callback) {
-  jedison('get wifi-info', callback);
+  //jedison('get wifi-info', callback);
+  ifconfig.status('wlan0',function(err,ifstatus){
+      if(err)return callback(err);
+      iwconfig.status('wlan0',function(err,iwstatus){
+        if(err)return callback(err);
+        callback(null,{ipaddress:ifstatus.ipv4_address,mode:iwstatus.mode})
+      })
+  })
 }
 
+// return an object formatted like this :
 EdisonNetworkManager.prototype.getNetworks = function(callback) {
-  jedison('get networks', callback);
+  //jedison('get networks', callback);
+  wpa_cli.scan_results('wlan0', function(err, networks) {
+      console.log(networks);
+    });
 }
 
 EdisonNetworkManager.prototype.scan = function(callback) {
-  jedison('scan', callback);
+  wpa_cli.scan('wlan0', callback);
 }
 
 EdisonNetworkManager.prototype.run = function() {
@@ -82,7 +102,7 @@ EdisonNetworkManager.prototype.run = function() {
       break;
   }
   return;
-} 
+}
   switch(this.mode) {
     case 'ap':
       this.runAP();
@@ -97,8 +117,8 @@ EdisonNetworkManager.prototype.run = function() {
       this.getInfo(function(err, data) {
         if(!err) {
          var old_mode = this.mode;
-         log.info("Wireless mode is '" + data.mode + "'"); 
-         log.debug(JSON.stringify(data)); 
+         log.info("Wireless mode is '" + data.mode + "'");
+         log.debug(JSON.stringify(data));
          if(data.mode == 'managed') {this.mode = 'station';}
          else if(data.mode == 'master') { this.mode = 'ap';}
          else { log.warn('Unknown network mode: ' + data.mode)}
@@ -121,10 +141,10 @@ EdisonNetworkManager.prototype.runStation = function() {
     case 'idle':
       this.scan_retries = WIFI_SCAN_RETRIES;
       // Fall through
-    case 'scan':  
+    case 'scan':
       this.scan(function(err, data) {
         this.state = 'done_scanning';
-        setTimeout(this.run.bind(this), WIFI_SCAN_INTERVAL);        
+        setTimeout(this.run.bind(this), WIFI_SCAN_INTERVAL);
       }.bind(this));
       break;
 
@@ -174,7 +194,7 @@ EdisonNetworkManager.prototype.runStation = function() {
             networkOK = false;
           }
           if(data.mode === 'master') {
-            log.info("In master mode..."); 
+            log.info("In master mode...");
             this.mode = 'ap';
             this.state = 'idle';
             setImmediate(this.run.bind(this));
@@ -183,7 +203,7 @@ EdisonNetworkManager.prototype.runStation = function() {
           networkOK = false;
         }
         if(networkOK) {
-          this.state = 'idle';          
+          this.state = 'idle';
           this.network_history[data.ssid] = {
             ssid : data.ssid,
             ipaddress : data.ipaddress,
@@ -196,7 +216,7 @@ EdisonNetworkManager.prototype.runStation = function() {
               log.error("Network is down.  Going to AP mode.");
               this.network_health_retries = 5;
               this.joinAP();
-              setImmediate(this.run.bind(this)); 
+              setImmediate(this.run.bind(this));
     } else {
              this.network_health_retries--;
              setTimeout(this.run.bind(this),1000);
@@ -230,10 +250,22 @@ EdisonNetworkManager.prototype.joinAP = function() {
 }
 
 EdisonNetworkManager.prototype._joinAP = function(callback) {
-  log.info("Entering AP mode..."); 
+  log.info("Entering AP mode...");
   var network_config = config.updater.get('network');
   network_config.mode = 'ap';
   config.updater.set('network', network_config);
+  this.getInfo(function(err,info){
+      if(err)
+        return callback(err);
+      if(info['mode']==='master')
+        return('System already in AP mode');
+        doshell('systemctl stop wpa_supplicant && sleep 2 && systemctl restart hostapd && sleep 2',function(s) {})
+        fs.writeFile('/etc/wpa_supplicant/wpa_supplicant.conf',)
+
+  })
+
+  // clear_network()
+  // set_ap_boot_flag();
   jedison('join ap', function(err, result) {
     if(!err) {
       log.info("Entered AP mode.");
@@ -251,7 +283,7 @@ EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
 }
 
 EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
-  log.info("Attempting to join wifi network: " + ssid + " with password: " + password); 
+  log.info("Attempting to join wifi network: " + ssid + " with password: " + password);
   var network_config = config.updater.get('network');
   network_config.mode = 'station';
   network_config.wifi_networks = [{'ssid' : ssid, 'password' : password}];
@@ -318,11 +350,13 @@ EdisonNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback
 }
 
 EdisonNetworkManager.prototype.turnWifiOn=function(callback){
-  callback(new Error('Not available on the edison wifi manager.'));
+  //callback(new Error('Not available on the edison wifi manager.'));
+  ifconfig.up('wlan0',callback);
 }
 
 EdisonNetworkManager.prototype.turnWifiOff=function(callback){
-  callback(new Error('Not available on the edison wifi manager.'));
+  //callback(new Error('Not available on the edison wifi manager.'));
+  ifconfig.down('wlan0',callback);
 }
 
 EdisonNetworkManager.prototype.getWifiHistory=function(callback){
@@ -391,5 +425,55 @@ EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
 EdisonNetworkManager.prototype.isOnline = function(callback) {
   setImmediate(callback, null, this.mode === 'station');
 }
+
+
+//Ethernet section
+EdisonNetworkManager.prototype.turnEthernetOn=function(callback) {
+    ifconfig.up(ethernetInterfaceName,callback);
+}
+
+EdisonNetworkManager.prototype.turnEthernetOff=function(callback) {
+    ifconfig.down(ethernetInterfaceName,callback);
+}
+
+// interface specific - static addressing
+EdisonNetworkManager.prototype.enableDHCP=function(interface, callback) {
+    udhcpc.enable({interface: interface},callback)
+}
+
+EdisonNetworkManager.prototype.disableDHCP=function(interface, callback) {
+    udhcpc.disable(interface,callback);
+}
+
+EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
+    udhcpd.enable({interface: interface},callback)
+}
+
+EdisonNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
+    udhcpd.disable(interface,callback);
+}
+
+EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
+    doshell('ifconfig '+interface+' '+ip, function(s) {
+        console.log(s);
+        callback(err, result);
+    });
+}
+
+EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback) {
+    doshell('ifconfig '+interface+' netmask '+netmask, function(s) {
+        console.log(s);
+        callback(err, result);
+    });
+}
+
+EdisonNetworkManager.prototype.setGateway=function(gateway, callback) {
+    doshell('route add default gw '+ gateway, function(s) {
+        console.log(s);
+        callback(err, result);
+    });
+}
+
+
 
 exports.NetworkManager = EdisonNetworkManager;
