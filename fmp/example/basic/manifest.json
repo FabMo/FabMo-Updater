@@ -1,12 +1,12 @@
 {
 	"product" : "FabMo-Engine",
 	"repository" : "https://github.com/FabMo/FabMo-Engine",
-	"os" : "linux",
-	"platform" : "edison",
-	"version" : "1.2.2",
+	"os" : "*",
+	"platform" : "*",
+	"version" : "v99.99.99",
 	"services" : ["fabmo"],
 	"updaterNeeded" : "1.4.0",
-	"token" : "/fabmo/engine/.update_token",
+	"token" : "/tmp/.update_token",
 	"operations" : [
 		{
 			"op" : "deleteFiles",
@@ -16,8 +16,12 @@
 		},
 		{
 			"op" : "expandArchive",
-			"src" : "engine.tar.gz",
+			"src" : "dummy.tar.gz",
 			"dest" : "/fabmo/engine"
-		}
+		},
+        {
+            "op" : "installFirmware",
+            "src" : "g2.bin"
+        }
 	]
 }
