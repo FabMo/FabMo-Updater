@@ -22,6 +22,17 @@ var getExpandCommand = function(path) {
 	throw new Error(path + ' is an unknown archive type.');
 }
 
+var resolveCwdPath = function(cwd, pth) {
+		pth = path.normalize(pth)
+		if (path.resolve(pth) === path.normalize(pth) ) {
+			// Path is absolute (firmware on disk somewhere)
+		} else {
+			// Path is relative (firmware included in package)
+			pth = path.resolve(cwd, pth);
+		}
+		return pth
+}
+
 function deleteFiles(operation) {
 	var deferred = Q.defer();
 	try {
@@ -101,5 +112,45 @@ function expandArchive(operation) {
 	return deferred.promise;
 }
 
+function installFirmware(operation) {
+	if (!operation.src) {
+		throw new Error('No source file specified for installFirmware')
+	}
+
+	var srcPath = resolveCwdPath(operation.cwd, operation.src);
+	log.info('Installing firmware from ' + srcPath);
+
+	return require('../hooks').installFirmware(srcPath);		
+}
+	
+function createDirectories(operation) {
+	var deferred = Q.defer();
+	try {
+		var paths = operation.paths || [];
+		if (operation.path) {
+			paths.push(operation.path);		
+		}
+		// Make sure all the specified directories exist
+		async.each(
+			paths, 
+			function(pth, callback) {
+				log.info('Creating directory ' + pth)
+				fs.ensureDir(pth, callback);
+			}, 
+			// If any path processing operation fails
+			function(err) {
+				if(err) { return deferred.reject(err); }
+				return deferred.resolve();
+			}
+		);
+	} catch(e) {
+		deferred.reject(e);
+	}
+	return deferred.promise;
+}
+
 exports.deleteFiles = deleteFiles;
 exports.expandArchive = expandArchive;
+exports.installFirmware = installFirmware;
+exports.createDirectories = createDirectories;
+exports.createDirectory = createDirectories;

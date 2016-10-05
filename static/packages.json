@@ -2,11 +2,11 @@
 	"packages" : [
  		{
 			"product" : "FabMo-Engine",
-			"os" : "linux",
-			"platform" : "edison",
-			"version" : "v1.2.2",
-			"changelog" : " * Temporarily remove Bonjour support",
-			"url" : "http://localhost:81/example.fmp"
+			"os" : "*",
+			"platform" : "*",
+			"version" : "v99.99.99",
+			"changelog" : "This is a demo update that excercises the capabilities of the fmp software",
+			"url" : "http://localhost:9877/demo.fmp"
 
  		}
 

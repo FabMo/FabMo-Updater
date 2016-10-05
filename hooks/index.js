@@ -10,12 +10,19 @@ var Q = require('q');
 var keys = {};
 
 var execute = function(name, args, callback) {
-	deferred = Q.defer();
+	var deferred = Q.defer();
 	callback = callback || function() {};
-	hook = getHook(name);
+	try {
+		hook = getHook(name);
+	} catch(e) {
+		deferred.reject(e);
+		return deferred.promise;
+	}
+	log.debug('Executing hook: ' + hook.file);
  	var hook_func = hook.func || function(err, stdout, stderr, cb) {
 		cb = cb || function() {}
 		cb(err, stdout);
+
 		if(err) {
 			return deferred.reject(err);
 		}
@@ -38,8 +45,8 @@ var execute = function(name, args, callback) {
 
 var spawn = function(name) {
 	var hook = getHook(name);
-	out = fs.openSync('/tmp/factory_reset.log', 'a');
-	err = fs.openSync('/tmp/factory_reset.log', 'a');
+	var out = fs.openSync('/tmp/factory_reset.log', 'a');
+	var err = fs.openSync('/tmp/factory_reset.log', 'a');
 
 	var child = cp.spawn(hook.file, [], {
 		detached:true,
@@ -219,6 +226,11 @@ exports.doFMU = function(filename, callback) {
 	});
 	callback(null, key);	
 	return deferred.promise;
+}
+
+exports.installFirmware = function(filename, callback) {
+	log.info('Install FIRMWARE')
+	return execute('update_firmware', filename, callback);
 }
 
 exports.updateFirmware = function(filename, callback) {
