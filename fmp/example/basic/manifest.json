@@ -20,8 +20,8 @@
 			"dest" : "/fabmo/engine"
 		},
 		{
-		    "op" : "installFirmware",
-		    "src" : "g2.bin"
+		    	"op" : "installFirmware",
+		    	"src" : "g2.bin"
 		}
 	]
 }
