@@ -10,6 +10,6 @@ dummy.tar.gz:
 	touch engine.file
 	mkdir engine.dir
 	tar -cvzf dummy.tar.gz engine.file engine.dir
-	rm -rf engine.file engine.dir
+	rm -rf dummy.tar.gz engine.file engine.dir
 
 .PHONY: release

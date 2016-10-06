@@ -26,11 +26,13 @@ var PACKAGE_CHECK_DELAY = 1;   // Seconds
 var UPDATE_PRODUCTS = 'FabMo-Engine|FabMo-Updater'
 
 var Updater = function() 
-{   this.version = null;
+{   
+    var task = (argv.task || '').trim();
+    this.version = null;
     this.status = {
-        'state' : 'idle',
+        'state' : ('task' in argv) ? 'updating' : 'idle',
         'online' : false,
-        'task' : null,
+        'task' : task || null,
         'updates' : []
     }
     this.packageDownloadInProgress = false;
@@ -38,6 +40,9 @@ var Updater = function()
     this.hasAccurateTime = false;
     this.tasks = {};
     this.networkManager = network.Generic;
+    if(task) {
+        this.tasks[task] = 'pending';
+    }
     events.EventEmitter.call(this);
 };
 util.inherits(Updater, events.EventEmitter);
@@ -222,7 +227,8 @@ Updater.prototype.runPackageCheck = function(product) {
                     log.info('Adding package to the list of available updates.')
                     log.info('  Product: ' + package.product);
                     log.info('  Version: ' + package.version);
-                    log.info('      URL: ' + package.url)
+                    log.info('      URL: ' + package.url);
+                    log.info('     File: ' + package.local_filename);
                     return this.addAvailablePackage(package);
                 }
                 log.info('No new packages are available for ' + OS + '/' + PLATFORM + '.');
@@ -260,7 +266,7 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
                         return
                     }
                     log.info('Updater cloned, handing update off to clone');
-                    require('./util').eject(process.argv[0], ['server.js', '--selfupdate', package.local_filename]);
+                    require('./util').eject(process.argv[0], ['server.js', '--selfupdate', package.local_filename, '--task', key]);
                 });
             } catch(err) {
                 return callback(err);
@@ -435,6 +441,7 @@ Updater.prototype.start = function(callback) {
                                     this.runPackageCheck('FabMo-Engine')
                                 }                            
                             });
+                            //this.runPackageCheck('FabMo-Engine');
                     }.bind(this), PACKAGE_CHECK_DELAY*1000);
                 }
             }.bind(this));
@@ -541,16 +548,20 @@ Updater.prototype.start = function(callback) {
         if(selfUpdateFile) {
             log.info('Servicing a self update request!');
             log.info('Self update file: ' + selfUpdateFile);
-            fmp.installPackage(selfUpdateFile)
+            fmp.installPackageFromFile(selfUpdateFile)
                 .then(function() {
-                    fs.writeFileSync('/opt/fabmo/updater.log', require('./log').getLogBuffer())
-                    process.exit();
-                })
+                    this.passTask(argv.task);
+                    this.setState('idle');
+                    //process.exit();
+                }.bind(this))
+                .catch(function(err) {
+                    this.failTask(argv.task);
+                    this.setState('idle');
+                });
         }
     }.bind(this)
 
     ],
-
         function(err, results) {
             if(err) {
                 log.error(err);

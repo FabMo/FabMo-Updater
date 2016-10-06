@@ -169,7 +169,9 @@ function executeOperations(manifest) {
 				.catch(callback)
 		},
 		function(err) {
-			if(err) { return deferred.reject(err); }
+			if(err) { 
+				return deferred.reject(err); 
+			}
 			return deferred.resolve(manifest);
 		}
 	);
@@ -197,8 +199,9 @@ function clearToken(manifest) {
 // Return a promise that resolves with the manifest object
 function setToken(manifest) {
 	var deferred = Q.defer();
-	log.info('Setting update token ' + manifest.token)
+	
 	if(manifest.token) {
+		log.info('Setting update token ' + manifest.token)
 		fs.writeFile(manifest.token, "", function(err) {
 	    	if(err) {
 	        	return deferred.reject(err);
@@ -272,10 +275,17 @@ function installPackage(package) {
 	if(!package || !package.local_filename) {
 		return Q();
 	}
-	log.info('Installing package ' + package.local_filename);
-	return unpackPackage(package.local_filename)
+	return installPackageFromFile(package.local_filename);
+}
+
+function installPackageFromFile(filename) {
+	if(!filename) {
+		return Q();
+	}
+	log.info('Installing package ' + filename);
+	return unpackPackage(filename)
 		.then(installUnpackedPackage)
-	
+
 }
 
 function installUnpackedPackage(manifest_filename) {
@@ -285,6 +295,7 @@ function installUnpackedPackage(manifest_filename) {
 		.then(clearToken)
 		.then(executeOperations)
 		.then(setToken)
+		.catch(function(e){log.error(e)})
 		.finally(lock)
 		.then(startServices)
 }
@@ -416,6 +427,7 @@ function checkForAvailablePackage(product) {
 
 
 exports.installPackage = installPackage;
+exports.installUnpackedPackage = installUnpackedPackage;
+exports.installPackageFromFile = installPackageFromFile
 exports.checkForAvailablePackage = checkForAvailablePackage;
 exports.downloadPackage = downloadPackage;
-exports.installUnpackedPackage = installUnpackedPackage;

@@ -151,7 +151,7 @@ function createDirectories(operation) {
 }
 
 function sleep(operation) {
-	deferred = Q.defer();
+	var deferred = Q.defer();
 	if(!operation.seconds) {
 		throw new Error('No time (seconds) specified for sleep operation')
 	}
@@ -159,6 +159,8 @@ function sleep(operation) {
 	setTimeout(function() {
 		deferred.resolve();
 	}, operation.seconds*1000);
+
+	return deferred.promise;
 }
 
 exports.deleteFiles = deleteFiles;
@@ -166,3 +168,4 @@ exports.expandArchive = expandArchive;
 exports.installFirmware = installFirmware;
 exports.createDirectories = createDirectories;
 exports.createDirectory = createDirectories;
+exports.sleep = sleep;
