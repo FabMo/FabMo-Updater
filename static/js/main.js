@@ -185,16 +185,16 @@ function setState(state) {
     switch(state) {
         case 'idle':
             update_button.removeClass('disabled');
-	    icon.removeClass(classes).addClass('fa-circle-o');
+            icon.removeClass(classes).addClass('fa-circle-o');
             break;
 
         case 'disconnected':
-	    update_button.addClass('disabled');
+            update_button.addClass('disabled');
             icon.removeClass(classes).addClass('fa-chain-broken');
             break;
 
         case 'updating':
-	    update_button.addClass('disabled');
+            update_button.addClass('disabled');
             icon.removeClass(classes).addClass('fa-spin fa-spinner');
             break;
     }
@@ -277,7 +277,7 @@ $(document).ready(function() {
     if(status.updates && status.updates.length > 0) {
       var update = status.updates[0];
       $('#message-changelog').text(update.changelog);
-      $('#update-button-text').text('Update to ' + update.version);
+      $('#update-button-text').text('Update ' + update.product + ' to ' + update.version);
       $('#message-updates').removeClass('hide');
       $('#message-noupdates').addClass('hide');      
     } else {

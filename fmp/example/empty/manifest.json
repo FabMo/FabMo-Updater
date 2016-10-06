@@ -7,5 +7,10 @@
 	"services" : ["fabmo"],
 	"updaterNeeded" : "1.4.0",
 	"token" : "/tmp/updater_test_token",
-	"operations" : [] 
+	"operations" : [
+		{
+			"op" : "sleep",
+			"seconds" : 10
+		}
+	] 
 }

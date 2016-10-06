@@ -362,6 +362,15 @@ function httpGET(url) {
     return deferred.promise;
 }
 
+function eject(command, args) {
+    var child = require('child_process').spawn(command, args, {
+      detached: true,
+      stdio: 'ignore'
+    });
+    child.unref();
+    process.exit();
+}
+
 exports.getClientAddress = getClientAddress;
 exports.serveStatic = serveStatic;
 exports.Queue = Queue;
@@ -371,6 +380,5 @@ exports.createUniqueFilename = createUniqueFilename;
 exports.fixJSON = fixJSON;
 exports.extend = extend;
 exports.doshell = doshell;
-exports.httpGET = httpGET;
-
+exports.eject = eject;
 

@@ -41,6 +41,16 @@ function compareVersions(a,b) {
 	}
 }
 
+function compareProducts(a,b) {
+	if(a.product === 'FabMo-Updater') {
+		return b.product === 'FabMo-Updater' ? 0 : -1;
+	}
+	if(b.product === 'FabMo-Updater') {
+		return a.product === 'FabMo-Updater' ? 0 : 1;
+	}
+	return 0;
+}
+
 // Return a promise that fulfills with a registry object loaded from the provided URL
 function fetchUpdateRegistry(url) {
 	log.info('Retrieving a list of packages from ' + url)
@@ -102,7 +112,7 @@ function loadManifest(filename) {
 }
 
 // Given a filename, unpack the update into a temporary directory.  Return a promise that fulfills with the path to the package manifest
-function unpackUpdate(filename) {
+function unpackPackage(filename) {
 	log.info('Unpacking update from '  + filename);
 	var deferred = Q.defer();
 	try {	
@@ -263,15 +273,20 @@ function installPackage(package) {
 		return Q();
 	}
 	log.info('Installing package ' + package.local_filename);
-	return unpackUpdate(package.local_filename)
-	.then(loadManifest)
-	.then(stopServices)
-	.then(unlock)
-	.then(clearToken)
-	.then(executeOperations)
-	.then(setToken)
-	.finally(lock)
-	.then(startServices)
+	return unpackPackage(package.local_filename)
+		.then(installUnpackedPackage)
+	
+}
+
+function installUnpackedPackage(manifest_filename) {
+	return loadManifest(manifest_filename)
+		.then(stopServices)
+		.then(unlock)
+		.then(clearToken)
+		.then(executeOperations)
+		.then(setToken)
+		.finally(lock)
+		.then(startServices)
 }
 
 function filterPackages(registry, options) {
@@ -279,23 +294,33 @@ function filterPackages(registry, options) {
 		for(var key in options) {
 			if(options.hasOwnProperty(key)) {
 				try {
-					if(package[key] !== '*') {
-						if(package[key] !== options[key]) {
-							return false;
-						}
+					allowed = options[key].split('|');
+					var accept = false;
+					for(var i=0; i<allowed.length; i++) {
+						var field = allowed[i];
+						if(field === package[key] || package[key] === '*') {
+							accept = true;
+							break;
+						}			
+					}
+					if(!accept) {
+						return false;
 					}
 				} catch(e) {
 					return false;
 				}
 			}
-
 		}
 		return true;
 	});
-
-	return packages.sort(function(a,b) {
-		return compareVersions(a.version, b.version);
-	}).reverse();
+	return packages
+		.sort(function(a,b) {
+			if(a.product === b.product) {
+				return compareVersions(a.version, b.version);
+			}
+			return compareProducts(a.product, b.product);
+		})
+		.reverse();
 }
 
 function downloadPackage(package) {
@@ -330,9 +355,10 @@ function downloadPackage(package) {
 }
 
 // Check the package source for an available update that is appropriate for the provided constraints
-function checkForAvailablePackage(options) {
+function checkForAvailablePackage(product) {
 	var updateSource = config.updater.get('engine_package_source');
-	var OS = config.updater.get('os');
+	var OS = config.platform;
+	var PLATFORM = config.updater.get('platform');
 	var options = options || {};
 
 	log.info("Checking online source for updates");
@@ -341,15 +367,29 @@ function checkForAvailablePackage(options) {
 			var deferred = Q.defer();
 
 			// Cut down the list of packages to only ones for the specified product
-			engineUpdates = filterPackages(registry, options);
-		
+			updates = filterPackages(registry, {platform : PLATFORM, os : OS, 'product' : product});
+
 			// If no updates are available for the product, end the process
-			if(engineUpdates.length == 0) {
+			if(updates.length == 0) {
 				return deferred.resolve();
 			}
 
+			var getVersion = function(err, callback) {
+				callback(null, {number: 'v0.0.0'});
+			};
+
+			switch(product) {
+				case 'FabMo-Engine':
+					getVersion = engine.getVersion;
+					break;
+				case 'FabMo-Updater':
+					getVersion = require('../updater').getVersion;
+					break;
+				default:
+					break;
+			}
 			// Read the version manifest for the currently installed engine
-			engine.getVersion(function(err, engineVersion) {
+			getVersion(function(err, version) {
 				if(err) {
 					deferred.reject(err);
 				}
@@ -357,16 +397,16 @@ function checkForAvailablePackage(options) {
 				// Determine if the newest package listed in the package registry is newer than the installed version
 				var newerPackageAvailable = false;
 				try {
-					var newerPackageAvailable = compareVersions(engineUpdates[0].version, engineVersion.number) > 0;
+					var newerPackageAvailable = compareVersions(updates[0].version, version.number) > 0;
 				} catch(e) {
-					return deferred.resolve(engineUpdates[0]);
+					return deferred.resolve(updates[0]);
 					log.warn(e);
 				}
 
 				// If so, return it, or return nothing if not
 				if(newerPackageAvailable) {
 					log.info("A newer package update is available!");
-					return deferred.resolve(engineUpdates[0]);
+					return deferred.resolve(updates[0]);
 				}
 				return deferred.resolve();
 			});
@@ -378,3 +418,4 @@ function checkForAvailablePackage(options) {
 exports.installPackage = installPackage;
 exports.checkForAvailablePackage = checkForAvailablePackage;
 exports.downloadPackage = downloadPackage;
+exports.installUnpackedPackage = installUnpackedPackage;

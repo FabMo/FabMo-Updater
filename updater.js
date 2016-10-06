@@ -2,7 +2,6 @@ var restify = require('restify');
 var async = require('async');
 var process = require('process');
 var path = require('path');
-var PLATFORM = process.platform;
 var log = require('./log').logger('updater');
 var config = require('./config');
 var util = require('./util');
@@ -11,7 +10,7 @@ var events = require('events');
 var util = require('util');
 var hooks = require('./hooks');
 var network = require('./network');
-var fs = require('fs');
+var fs = require('fs-extra');
 var GenericNetworkManager = require('./network/manager').NetworkManager;
 var doshell = require('./util').doshell;
 var uuid = require('node-uuid');
@@ -19,9 +18,12 @@ var moment = require('moment');
 var argv = require('minimist')(process.argv);
 var Q = require('q');
 var fmp = require('./fmp');
+var argv = require('minimist')(process.argv);
 
+var PLATFORM = process.platform;
 var TASK_TIMEOUT = 10800000;    // 3 hours (in milliseconds)
 var PACKAGE_CHECK_DELAY = 1;   // Seconds
+var UPDATE_PRODUCTS = 'FabMo-Engine|FabMo-Updater'
 
 var Updater = function() 
 {   this.version = null;
@@ -107,7 +109,7 @@ Updater.prototype.addAvailablePackage = function(package) {
     this.status.updates.forEach(function(update) {
         try {
             if(update.local_filename === package.local_filename) {
-                return;
+                return package;
             }
         } catch(e) {}
 
@@ -115,6 +117,7 @@ Updater.prototype.addAvailablePackage = function(package) {
 
     this.status.updates.push(package);
     this.emit('status',this.status);
+    return package;
 }
 
 Updater.prototype.stop = function(callback) {
@@ -193,18 +196,20 @@ Updater.prototype.doFMP = function(filename, callback) {
     }
 }
 
-Updater.prototype.runPackageCheck = function() {
+Updater.prototype.runPackageCheck = function(product) {
     this.packageCheckHasRun = true;
+
     if(this.packageDownloadInProgress) {
         log.warn('Not checking for package updates because this is already in progress')
         return Q();
     }
 
+    log.info('Checking for updates for ' + product);
     var OS = config.platform;
     var PLATFORM = config.updater.get('platform');
 
     this.packageDownloadInProgress = true;
-    return fmp.checkForAvailablePackage({product : 'FabMo-Engine', platform : PLATFORM, os : OS})
+    return fmp.checkForAvailablePackage(product)
             .catch(function(err) {
                 log.warn('There was a problem retrieving the list of packages: ' + err)
             })
@@ -215,6 +220,9 @@ Updater.prototype.runPackageCheck = function() {
             .then(function(package) {
                 if(package) {
                     log.info('Adding package to the list of available updates.')
+                    log.info('  Product: ' + package.product);
+                    log.info('  Version: ' + package.version);
+                    log.info('      URL: ' + package.url)
                     return this.addAvailablePackage(package);
                 }
                 log.info('No new packages are available for ' + OS + '/' + PLATFORM + '.');
@@ -223,8 +231,8 @@ Updater.prototype.runPackageCheck = function() {
                 log.error(err);
             })
 	    .finally(function() {
-		log.info('Package check complete.');
-                this.packageDownloadInProgress = false;
+		  log.info('Package check complete.');
+          this.packageDownloadInProgress = false;
 	    }.bind(this));
 }
 
@@ -238,23 +246,49 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
     }
     var key = this.startTask();
     this.setState('updating');
-    try {
-        fmp.installPackage(this.status.updates[0])
-            .then(function() {
-                this.status.updates = [];
-                this.passTask(key);
-                this.setState('idle');
-            }.bind(this))
-            .catch(function(err) {
-                log.error(err);
-                this.status.updates = [];
-                this.failTask(key);
-                this.setState('idle');
-        }.bind(this)).done();
-    } catch(err) {
-        callback(err);
+    package = this.status.updates[0];
+
+    switch(package.product) {
+        case 'FabMo-Updater':
+            // Update ourselves
+            try {
+                log.info('Preparing for a self update')
+                log.info('Making shadow copy of updater')
+                fs.copy(__dirname, '/tmp/temp-updater', function(err) {
+                    if(err) {
+                        log.error(err);
+                        return
+                    }
+                    log.info('Updater cloned, handing update off to clone');
+                    require('./util').eject(process.argv[0], ['server.js', '--selfupdate', package.local_filename]);
+                });
+            } catch(err) {
+                return callback(err);
+            }
+
+            break;
+
+        default:
+            // Update anything else
+            try {
+                fmp.installPackage(package)
+                    .then(function() {
+                        this.status.updates = [];
+                        this.passTask(key);
+                        this.setState('idle');
+                    }.bind(this))
+                    .catch(function(err) {
+                        log.error(err);
+                        this.status.updates = [];
+                        this.failTask(key);
+                        this.setState('idle');
+                }.bind(this)).done();
+            } catch(err) {
+                return callback(err);
+            }
+            break;
     }
-    return callback();
+    callback();
 }
 
 Updater.prototype.setTime = function(time, callback) {
@@ -319,6 +353,7 @@ function UpdaterConfigFirstTime(callback) {
 
 
 Updater.prototype.start = function(callback) {
+    var selfUpdateFile = argv.selfupdate || null;
 
     async.series([
        function setup_application(callback) {
@@ -370,12 +405,19 @@ Updater.prototype.start = function(callback) {
         }.bind(this),
 
         function setup_network(callback) {
+
+            var OS = config.platform;
+            var PLATFORM = config.updater.get('platform');
+
             try {
-                this.networkManager = network.createNetworkManager();
+                if(selfUpdateFile) {
+                    this.networkManager = new GenericNetworkManager(OS, PLATFORM);
+                    return callback();
+                } else {
+                    this.networkManager = network.createNetworkManager();                    
+                }
             } catch(e) {
                 log.warn(e);
-                var OS = config.platform;
-                var PLATFORM = config.updater.get('platform');
                 this.networkManager = new GenericNetworkManager(OS, PLATFORM);
             }
 
@@ -387,7 +429,12 @@ Updater.prototype.start = function(callback) {
                     log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')        
                     setTimeout(function() {
                         log.info('Running package check due to network change');
-                    this.runPackageCheck();
+                        this.runPackageCheck('FabMo-Updater')
+                            .then(function(updaterPackage) {
+                                if(!updaterPackage) {
+                                    this.runPackageCheck('FabMo-Engine')
+                                }                            
+                            });
                     }.bind(this), PACKAGE_CHECK_DELAY*1000);
                 }
             }.bind(this));
@@ -415,6 +462,7 @@ Updater.prototype.start = function(callback) {
         }.bind(this),
 
         function run_startup_fmus(callback) {
+            if(selfUpdateFile) { return callback(); }
             log.info('Checking for startup FMUs...')
             fs.readdir(path.join(config.getDataDir(), 'fmus'), function(err, files) {
                 files = files.map(function(filename) { 
@@ -488,8 +536,17 @@ Updater.prototype.start = function(callback) {
             });
 
         }.bind(this),
-    function test(callback) {
-        callback();
+        
+    function self_update(callback) {
+        if(selfUpdateFile) {
+            log.info('Servicing a self update request!');
+            log.info('Self update file: ' + selfUpdateFile);
+            fmp.installPackage(selfUpdateFile)
+                .then(function() {
+                    fs.writeFileSync('/opt/fabmo/updater.log', require('./log').getLogBuffer())
+                    process.exit();
+                })
+        }
     }.bind(this)
 
     ],

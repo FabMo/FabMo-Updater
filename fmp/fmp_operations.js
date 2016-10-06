@@ -150,6 +150,17 @@ function createDirectories(operation) {
 	return deferred.promise;
 }
 
+function sleep(operation) {
+	deferred = Q.defer();
+	if(!operation.seconds) {
+		throw new Error('No time (seconds) specified for sleep operation')
+	}
+
+	setTimeout(function() {
+		deferred.resolve();
+	}, operation.seconds*1000);
+}
+
 exports.deleteFiles = deleteFiles;
 exports.expandArchive = expandArchive;
 exports.installFirmware = installFirmware;
