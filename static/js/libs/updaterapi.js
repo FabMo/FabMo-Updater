@@ -111,6 +111,12 @@ UpdaterAPI.prototype.getTasks = function(callback) {
 UpdaterAPI.prototype.getConfig = function(callback) {
 	this._get('/config', callback, callback, 'config');
 }
+UpdaterAPI.prototype.setConfig = function(cfg_data, callback) {
+	this._post('/config', cfg_data, callback, function(err, data) {
+		callback = callback || function() {};
+		callback(null, cfg_data);
+	});
+}
 
 UpdaterAPI.prototype.getEngineInfo = function(callback) {
 	this._get('/info', callback, callback, 'info', true); // Engine

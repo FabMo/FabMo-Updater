@@ -17,6 +17,9 @@ UpdaterConfig.prototype.update = function(data, callback) {
 
 				default:
 					this._cache[key] = data[key];
+					var o = {}
+					o[key] = data[key];
+					this.emit('change', o);
 				break;				
 			}
 		}

@@ -242,10 +242,19 @@ Updater.prototype.runPackageCheck = function(product) {
             .catch(function(err) {
                 log.error(err);
             })
-	    .finally(function() {
+	    .finally(function() { 
 		  log.info('Package check complete.');
           this.packageDownloadInProgress = false;
 	    }.bind(this));
+}
+
+Updater.prototype.runAllPackageChecks = function() {
+    return this.runPackageCheck('FabMo-Updater')
+        .then(function(updaterPackage) {
+            if(!updaterPackage) {
+                this.runPackageCheck('FabMo-Engine')
+            }                            
+        });
 }
 
 Updater.prototype.applyPreparedUpdates = function(callback) {
@@ -441,13 +450,7 @@ Updater.prototype.start = function(callback) {
                     log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')        
                     setTimeout(function() {
                         log.info('Running package check due to network change');
-                        this.runPackageCheck('FabMo-Updater')
-                            .then(function(updaterPackage) {
-                                if(!updaterPackage) {
-                                    this.runPackageCheck('FabMo-Engine')
-                                }                            
-                            });
-                            //this.runPackageCheck('FabMo-Engine');
+                        this.runAllPackageChecks();
                     }.bind(this), PACKAGE_CHECK_DELAY*1000);
                 }
             }.bind(this));
@@ -549,7 +552,19 @@ Updater.prototype.start = function(callback) {
             });
 
         }.bind(this),
-        
+    
+    function setup_config_events(callback) {
+        log.info('Setup change events');
+        config.updater.on('change', function(evt) {
+            console.log(evt);
+            if(evt.packages_url) {
+                this.runAllPackageChecks();
+            }
+        }.bind(this));
+        log.info("likeaboss")
+        callback();
+    }.bind(this),
+
     function self_update(callback) {
         if(selfUpdateFile) {
             log.info('Servicing a self update request!');

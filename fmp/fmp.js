@@ -383,7 +383,7 @@ function downloadPackage(package) {
 
 // Check the package source for an available update that is appropriate for the provided constraints
 function checkForAvailablePackage(product) {
-	var updateSource = config.updater.get('engine_package_source');
+	var updateSource = config.updater.get('packages_url');
 	var OS = config.platform;
 	var PLATFORM = config.updater.get('platform');
 	var options = options || {};

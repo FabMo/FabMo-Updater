@@ -22,7 +22,16 @@ var getConfig = function(req, res, next) {
   })
 };
 
+var postConfig = function(req, res, next) {
+  config.updater.update(req.params);
+  res.json({
+    status : 'success',
+    data : null
+  });
+};
+
 module.exports = function(server) {
   server.get('/status', getStatus);
-  server.get('/config', getConfig)
+  server.get('/config', getConfig);
+  server.post('/config', postConfig);
 };

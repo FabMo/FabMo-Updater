@@ -3,6 +3,8 @@ var fs = require('fs');
 var path = require('path');
 var PLATFORM = require('process').platform;
 var log = require('../log').logger('config');
+var util = require('util');
+var events = require('events');
 
 // Config is the superclass from which all configuration objects descend
 Config = function(config_name) {
@@ -13,6 +15,8 @@ Config = function(config_name) {
 	this._loaded = false;
 	this.userConfigLoaded = false;
 };
+util.inherits(Config, events.EventEmitter);
+
 
 Config.prototype.get = function(k) {
 	return this._cache[k];

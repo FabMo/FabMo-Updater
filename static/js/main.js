@@ -51,6 +51,44 @@ function setOnline(online) {
   }
 }
 
+var flattenObject = function(ob) {
+  var toReturn = {};
+  for (var i in ob) {
+    if (!ob.hasOwnProperty(i)) continue;
+
+    if ((typeof ob[i]) == 'object') {
+      var flatObject = flattenObject(ob[i]);
+      for (var x in flatObject) {
+        if (!flatObject.hasOwnProperty(x)) continue;
+
+        toReturn[i + '-' + x] = flatObject[x];
+      }
+    } else {
+      toReturn[i] = ob[i];
+    }
+  }
+  return toReturn;
+};
+
+function setConfig(id, value) {
+  var parts = id.split("-");
+  var o = {};
+  var co = o;
+  var i=1;
+
+  do {
+    co[parts[i]] = {};
+    if(i < parts.length-1) {
+      co = co[parts[i]];
+    }
+  } while(i++ < parts.length-1 );
+  co[parts[parts.length-1]] = value;
+  console.log("Setconfig: ", co)
+  updater.setConfig(co, function(err, data) {
+    //update();
+  });
+}
+
 var lastLevel = ''
 // Prettify lines for "console" output
 function prettify(line) {
@@ -265,6 +303,10 @@ function dismissModal() {
 
 $(document).ready(function() {
 
+  $('.config-input').change(function() {
+    setConfig(this.id, this.value);
+  });
+
   // Updater Events
   updater.on('log', function(msg) {
     printf(msg);
@@ -279,10 +321,13 @@ $(document).ready(function() {
       $('#message-changelog').text(update.changelog);
       $('#update-button-text').text('Update ' + update.product + ' to ' + update.version);
       $('#message-updates').removeClass('hide');
-      $('#message-noupdates').addClass('hide');      
+      $('#message-noupdates').addClass('hide');   
+      $('.update-indicator').addClass('updates-available')   
     } else {
       $('#message-updates').addClass('hide');
       $('#message-noupdates').removeClass('hide');      
+      $('.update-indicator').removeClass('updates-available')   
+
     }
     dismissModal();
   });
@@ -456,6 +501,7 @@ $("#btn-factory-reset").click( function(evt) {
     $(".label-network-id").text(id.name);
   });
 
+
   updater.getConfig(function(err, config) {
     var updater_version_number = 'unavailable';
     try{
@@ -470,6 +516,16 @@ $("#btn-factory-reset").click( function(evt) {
     $('.label-os-version').text(config.os_version);
     $('.label-machine-id').text(config.id);
     setOS(config.os);
+
+    config = flattenObject(config);
+    for(key in config) {
+      v = config[key];
+      input = $('#config-' + key);
+      if(input.length) {
+        input.val(String(v));
+      }
+    }
+
   });
 
   updater.getEngineInfo(function(err, info) {

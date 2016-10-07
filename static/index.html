@@ -27,8 +27,8 @@
       </li>
       <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> System Info</a></li>
       <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-wifi"></i> Network</a></li>
-      <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download"></i> Software Updates</a></li>
-      <li class="menu-item" data-id="view-system"><a href="#"><i class="fa fa-wrench"></i> System</a></li>
+      <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download update-indicator"></i><span class="update-indicator"> Software Updates</span></a></li>
+      <li class="menu-item" data-id="view-settings"><a href="#"><i class="fa fa-wrench"></i> Settings</a></li>
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
       <li class="menu-item" data-id="goto-dashboard"><a href="#"><i class="fa fa-tachometer"></i> Goto Dashboard</a></li>
       <li class="menu-item" data-id="view-factory"><a href="#"><i class="fa fa-industry"></i> Factory Reset</a></li>
@@ -168,8 +168,8 @@
       SYSTEM
 
     -->
-    <div class="content-pane" id="view-system">
-      <h1><i class="fa fa-wrench"></i> System</h1>
+    <div class="content-pane" id="view-settings">
+      <h1><i class="fa fa-wrench"></i> Settings</h1>
       <h2>System Identity</h2>
       <p>The name selected here will be used both as the system hostname as well as the SSID when in AP mode.  The password will be used both as the root password as well as the network key for AP mode.  <em>You do not need to enter both values.  Only non-blank values will be changed.</em></p>
       <form class="form-horizontal" id="form-network-id">
@@ -180,10 +180,18 @@
          <button id="btn-network-id" class="btn-green">Set System ID</button>
         </fieldset>
       </form>
+      <!--
       <h2>Engine Control</h2>
       <p>The buttons below can be used to start and stop the engine software.  <em>These operations do not normally need to be performed manually.</em></p>
       <button id="btn-start-engine" class="button btn-green">Start Engine</button>
       <button id="btn-stop-engine" class="button btn-red">Stop Engine</button>
+      -->
+      <h2>Configuration</h2>
+      <p>This is the URL that the updater checks for software update packages.  Package updates retrieved immediately if this value is changed.</p>
+      <fieldset>
+       <label>Packages URL: </label>
+      <input class="config-input long" id="config-packages_url" type="text" placeholder="URL for update packages file" />
+      </fieldset>
     </div>
 
     <!--

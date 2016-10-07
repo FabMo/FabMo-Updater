@@ -3,7 +3,7 @@
 	"engine_dir" : "/fabmo/engine",
 	"engine_git_repos" : "https://github.com/FabMo/FabMo-Engine.git",
 	"updater_git_repos" : "https://github.com/FabMo/FabMo-Updater.git",
-	"engine_package_source" : "http://gofabmo.org/manifest/packages.json",
+	"packages_url" : "http://gofabmo.org/manifest/packages.json",
 	"platform" : "generic",
 	"server_port" : 81,
 	"engine_server_port" : 80,

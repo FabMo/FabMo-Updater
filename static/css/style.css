@@ -260,6 +260,10 @@ input[type="text"], input[type="password"] {
 
 }
 
+input.long {
+	width: 50em;
+}
+
 select {
    background: transparent;
 	border-radius: 0.25em;
@@ -435,3 +439,10 @@ td {
 	display: none;
 }
 
+.update-indicator {
+		transition: all 1s ease 0s;
+}
+
+.updates-available {
+	color: #B5D837;
+}
