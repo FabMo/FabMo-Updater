@@ -312,7 +312,6 @@ function installUnpackedPackage(manifest_filename) {
 		.then(clearToken)
 		.then(executeOperations)
 		.then(setToken)
-		.catch(function(e){log.error(e)})
 		.finally(lock)
 		.then(startServices)
 }
