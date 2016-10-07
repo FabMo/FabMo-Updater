@@ -246,7 +246,7 @@ function stopServices(manifest) {
 function startServices(manifest) {
 	var deferred = Q.defer();
 	log.info('Starting services');
-	if (manifest.services.length > 0) {
+	if (manifest && nmanifest.services.length > 0) {
 		async.mapSeries(
 			manifest.services,
 			startService,
@@ -295,7 +295,6 @@ function installUnpackedPackage(manifest_filename) {
 		.then(clearToken)
 		.then(executeOperations)
 		.then(setToken)
-		.catch(function(e){log.error(e)})
 		.finally(lock)
 		.then(startServices)
 }
