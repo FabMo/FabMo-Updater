@@ -275,14 +275,20 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
             try {
                 log.info('Preparing for a self update')
                 log.info('Making shadow copy of updater')
+		fs.removeSync('/tmp/temp-updater')
                 fs.copy(__dirname, '/tmp/temp-updater', function(err) {
                     if(err) {
                         log.error(err);
                         return
                     }
                     log.info('Updater cloned, handing update off to clone');
-                    require('./util').eject(process.argv[0], ['server.js', '--selfupdate', package.local_filename, '--task', key]);
-                });
+                    log.info('The updater is going away for awhile.  Do not despair.');
+		    log.info('See you, space cowboy.');
+		    // Give a second for those log messages to head out the door before falling on our sword
+		    setTimeout(function() {
+		    	require('./util').eject(process.argv[0], ['server.js', '--selfupdate', package.local_filename, '--task', key]);
+		    },1000);
+		});
             } catch(err) {
                 return callback(err);
             }
@@ -554,14 +560,12 @@ Updater.prototype.start = function(callback) {
         }.bind(this),
     
     function setup_config_events(callback) {
-        log.info('Setup change events');
         config.updater.on('change', function(evt) {
             console.log(evt);
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
         }.bind(this));
-        log.info("likeaboss")
         callback();
     }.bind(this),
 
