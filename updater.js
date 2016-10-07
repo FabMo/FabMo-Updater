@@ -552,7 +552,8 @@ Updater.prototype.start = function(callback) {
                 .then(function() {
                     this.passTask(argv.task);
                     this.setState('idle');
-                    //process.exit();
+                    require('./hooks').startService('fabmo-updater');
+		    process.exit();
                 }.bind(this))
                 .catch(function(err) {
                     this.failTask(argv.task);

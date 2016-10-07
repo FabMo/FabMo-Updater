@@ -368,7 +368,7 @@ function eject(command, args) {
       stdio: 'ignore'
     });
     child.unref();
-    process.exit();
+    process.exit(1);
 }
 
 exports.getClientAddress = getClientAddress;

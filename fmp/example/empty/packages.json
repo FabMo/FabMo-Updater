@@ -5,16 +5,16 @@
 			"os" : "*",
 			"platform" : "*",
 			"version" : "v99.99.99",
-			"changelog" : "This is a FabMo-Engine empty package for testing!",
-			"url" : "https://github.com/FabMo/FabMo-Updater/raw/mayhem/fmp/example/empty/empty.fmp"
+			"changelog" : "Dummy package for updating the FabMo Engine",
+			"url" : "https://github.com/FabMo/FabMo-Updater/raw/mayhem/fmp/example/empty/empty-engine.fmp"
  		},
  		 {
 			"product" : "FabMo-Updater",
 			"os" : "*",
 			"platform" : "*",
 			"version" : "v99.99.99",
-			"changelog" : "This is a FabMo-Updater empty package for testing!",
-			"url" : "https://github.com/FabMo/FabMo-Updater/raw/mayhem/fmp/example/empty/empty.fmp"
+			"changelog" : "Dummy package for updating the FabMo Updater",
+			"url" : "https://github.com/FabMo/FabMo-Updater/raw/mayhem/fmp/example/empty/empty-updater.fmp"
  		}
 
 	]
