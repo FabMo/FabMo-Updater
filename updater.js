@@ -254,7 +254,7 @@ Updater.prototype.runAllPackageChecks = function() {
             if(!updaterPackage) {
                 this.runPackageCheck('FabMo-Engine')
             }                            
-        });
+        }.bind(this));
 }
 
 Updater.prototype.applyPreparedUpdates = function(callback) {
