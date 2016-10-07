@@ -22,7 +22,7 @@ var argv = require('minimist')(process.argv);
 
 var PLATFORM = process.platform;
 var TASK_TIMEOUT = 10800000;    // 3 hours (in milliseconds)
-var PACKAGE_CHECK_DELAY = 1;   // Seconds
+var PACKAGE_CHECK_DELAY = 30;   // Seconds
 var UPDATE_PRODUCTS = 'FabMo-Engine|FabMo-Updater'
 
 var Updater = function() 
