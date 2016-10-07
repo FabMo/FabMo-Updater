@@ -27,13 +27,11 @@
       </li>
       <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> Info</a></li>
       <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download"></i> Software Updates</a></li>
-      <li class="menu-item" data-id="view-firmware"><a href="#"><i class="fa fa-gears"></i> Firmware Updates</a></li>
       <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-wifi"></i> Network</a></li>
       <li class="menu-item" data-id="view-system"><a href="#"><i class="fa fa-wrench"></i> System</a></li>
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
       <li class="menu-item" data-id="goto-dashboard"><a href="#"><i class="fa fa-tachometer"></i> Goto Dashboard</a></li>
       <li class="menu-item" data-id="view-factory"><a href="#"><i class="fa fa-industry"></i> Factory Reset</a></li>
-      <li class="menu-item" data-id="view-manual"><a href="#"><i class="fa fa-file"></i> Manual Update</a></li>
       <li class="menu-item" data-id="view-console"><a href="#"><i class="fa fa-terminal"></i> Console</a></li>
       <li class="menu-label status" id="updater-status">
         <a>
@@ -93,6 +91,13 @@
         <p>A software update is available!<p>
         <p><pre id="message-changelog"></pre></p>
         <button id="btn-update-apply" class="btn-green disabled"><i class="fa fa-tags fa-lg"></i>  <span id="update-button-text">Update</span></button>
+        <br />
+      <h1><i class="fa fa-file"></i> Manual Update</h1>
+      <p>Click the button below to apply an update from an .fmu or .fmp file.</p>
+      <button id="btn-update-manual" class="btn-blue"><i class="fa fa-file fa-lg"></i>  Update With File...</button>
+      <span class="progressbar hide">
+        <div class="fill"></div>
+      </span>
       </div>
 
       <!--<p id="message-noupdate-ap">You cannot perform software updates because you do not have a reliable internet connection.  Please wait a moment, or use the network manager to join a wireless network.</p>
@@ -115,19 +120,6 @@
       <button id="btn-update-updater-latest" class="btn-purple"><i class="fa fa-github fa-lg"></i>  Update to Latest Development Version</button>
       </div> -->
 
-    </div>
-
-    <!--
-
-      FIRMWARE UPDATES
-
-    -->
-    <div class="content-pane" id="view-firmware">
-      <h1><span class="fa fa-cogs"></span> Firmware Updates</h1>
-      <p>The button below will force a firmware update on the G2 motion system.  Firmware installed in this way will be taken from your engine installation so you are sure to be using the firmware that is qualified for use with the version of the engine that you are running.</p>
-      <p><em>Firmware installation can be a risky operation.  Do not proceed unless you are sure you need to update!</em></p>
-      <button id="btn-update-firmware" class="btn-blue"><i class="fa fa-gears"></i> Update Firmware</button>
-      <br/>
     </div>
 
     <!--
@@ -205,19 +197,6 @@
       <br/>
     </div>
 
-   <!--
-
-      ENGINE UPDATES
-
-    -->
-    <div class="content-pane" id="view-manual">
-      <h1><i class="fa fa-file"></i> Manual Update</h1>
-      <p>Click the button below to apply an update from an .fmu or .fmp file.</p>
-      <button id="btn-update-manual" class="btn-green"><i class="fa fa-file fa-lg"></i>  Update With File...</button>
-      <span class="progressbar hide">
-        <div class="fill"></div>
-      </span>
-    </div>
     <!-- Console (Always Visible) -->
     <div id="console-header">
       Updater Console &nbsp;

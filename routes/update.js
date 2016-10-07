@@ -16,7 +16,7 @@ var getVersions = function(req, res, next) {
 	  }
     });
 };
-
+/*
 var updateEngine = function(req, res, next) {
     updater.updateEngine(req.params.version, function(err, data) {
 	  if(err) {
@@ -72,7 +72,7 @@ var updateFirmware = function(req, res, next) {
 		}
     });
 };
-
+*/
 var factoryReset = function(req, res, next) {
     updater.factoryReset(function(err, data) {
 	  if(err) {
@@ -80,7 +80,7 @@ var factoryReset = function(req, res, next) {
 		} else {
 			var answer = {
 			    status : "success",
-			   	  data : null /*{'task' : data}*/
+			   	  data : null // {'task' : data}
 			};
 			res.json(answer);			
 		}
@@ -144,10 +144,10 @@ var applyPreparedUpdates = function(req, res, next) {
 module.exports = function(server) {
   server.get('/update/versions', getVersions);
   server.get('/tasks', getTasks);
-  server.post('/update/engine', updateEngine);
-  server.post('/update/updater', updateUpdater);
-  server.post('/update/firmware', updateFirmware);
-  server.post('/install/engine', installEngine);
+  //server.post('/update/engine', updateEngine);
+  //server.post('/update/updater', updateUpdater);
+  //server.post('/update/firmware', updateFirmware);
+  //server.post('/install/engine', installEngine);
   server.post('/update/factory', factoryReset);
 
   server.post('/update/manual', doManualUpdate);

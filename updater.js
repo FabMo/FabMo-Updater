@@ -75,6 +75,9 @@ Updater.prototype.getVersion = function(callback) {
 }
 
 Updater.prototype.startTask = function() {
+    if(this.status.state != 'idle') {
+        throw new Error('Cannot start a task from the ' + idle + ' state');
+    }
     var id = uuid.v1();
     this.tasks[id] = 'pending';
     log.info('Starting task: ' + id);
@@ -184,21 +187,24 @@ Updater.prototype.doFMU = function(filename, callback) {
     }
 }
 
-Updater.prototype.doFMP = function(filename, callback) {
-    if(this.status.state != 'idle') {
-        callback(new Error('Cannot apply FMP update when in the ' + updater.status.state + ' state.'));
-    } else {
-        var key = this.startTask();
-        this.setState('updating');
-        fmp.installUpdate(filename)
+Updater.prototype.doFMP = function(filename) {
+        var key;
+        return Q.fcall(function() {
+                key = this.startTask();
+                this.setState('updating');
+            }.bind(this))
+            .then(function() {
+                return fmp.installPackageFromFile(filename)
+            })
             .then(function() {
                 this.passTask(key);
                 this.setState('idle');
             }.bind(this))
             .catch(function(err) {
-                this.failTask(key);
-            });
-    }
+                log.error(err);
+                this.failTask(key)
+                this.setState('idle');
+            }.bind(this));
 }
 
 Updater.prototype.runPackageCheck = function(product) {

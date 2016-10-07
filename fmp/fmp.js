@@ -76,6 +76,7 @@ function loadManifest(filename) {
 	var deferred = Q.defer()
 	fs.readFile(filename, 'utf8', function (err, data) {
 		if(err) {
+			log.error('Could not read the package manifest file.');
 			return deferred.reject(err);
 		}
 		try {
@@ -116,14 +117,11 @@ function unpackPackage(filename) {
 	log.info('Unpacking update from '  + filename);
 	var deferred = Q.defer();
 	try {	
-		log.info(TEMP_DIRECTORY);	
 		var updateDir = path.resolve(TEMP_DIRECTORY, 'fmp-update');
 		
 		// Trash the update directory if it already exists
-		log.debug('Removing the update directory: ' + updateDir);
 		fs.remove(updateDir, function(err) {
 			// Create a new empty one
-			log.debug('Creating a new update directory: ' + updateDir);
 			fs.mkdir(updateDir, function(err) {
 				if(err) { return deferred.reject(err); }
 				// Unpack the actual file into the newly created directory
@@ -227,8 +225,8 @@ function startService(service, callback) {
 
 function stopServices(manifest) {
 	var deferred = Q.defer();
-	log.info('Stopping services');
-	if (manifest.services.length > 0) {
+	if (manifest && manifest.services.length > 0) {
+		log.info('Stopping services');
 		async.mapSeries(
 			manifest.services,
 			stopService,
@@ -245,30 +243,49 @@ function stopServices(manifest) {
 
 function startServices(manifest) {
 	var deferred = Q.defer();
-	log.info('Starting services');
-	if (manifest.services.length > 0) {
-		async.mapSeries(
-			manifest.services,
-			startService,
-			function(err) {
-				if(err) { return deferred.reject(err); }
-				return deferred.resolve(manifest);
-			}
-		);
-	} else {
-		deferred.resolve(manifest);
+	try {
+		if (manifest && manifest.services.length > 0) {
+			log.info('Starting services');
+			async.mapSeries(
+				manifest.services,
+				startService,
+				function(err) {
+					if(err) { return deferred.reject(err); }
+					return deferred.resolve(manifest);
+				}
+			);
+		} else {
+			deferred.resolve(manifest);
+		}
+	} catch(err) {
+		deferred.reject(err);
 	}
+
 	return deferred.promise
 }
 
 function unlock(manifest) {
-	log.info('Unlocking the installation');	
-	return require('../hooks').unlock().then(function() { return manifest; });
+	try {
+		if(manifest) {
+			log.info('Unlocking the installation');	
+			return require('../hooks').unlock().then(function() { return manifest; });		
+		}
+		return Q(manifest);	
+	} catch(err) {
+		return Q.reject(err);
+	}
 }
 
 function lock(manifest) {
-	log.info('Locking the installation');
-	return require('../hooks').lock().then(function() { return manifest; });
+	try {
+		if(manifest) {
+			log.info('Locking the installation');	
+			return require('../hooks').lock().then(function() { return manifest; });		
+		}
+		return Q(manifest);
+	} catch(err) {
+		return Q.reject(err);
+	}
 }
 
 function installPackage(package) {
