@@ -25,9 +25,9 @@
           <i id="network-id-icon" class="fa fa-question"></i> <span class="label-network-id">&lt;name&gt;</span>
           </a>
       </li>
-      <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> Info</a></li>
-      <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download"></i> Software Updates</a></li>
+      <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> System Info</a></li>
       <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-wifi"></i> Network</a></li>
+      <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download"></i> Software Updates</a></li>
       <li class="menu-item" data-id="view-system"><a href="#"><i class="fa fa-wrench"></i> System</a></li>
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
       <li class="menu-item" data-id="goto-dashboard"><a href="#"><i class="fa fa-tachometer"></i> Goto Dashboard</a></li>
@@ -85,21 +85,24 @@
 
     -->
     <div class="content-pane" id="view-updates">
-      <h1><span class="fa fa-download"></span> Software Updates</h1>
-      <p id="message-noupdates">There are no software updates available.</p>
-      <div id="message-updates" class="hide">
-        <p>A software update is available!<p>
-        <p><pre id="message-changelog"></pre></p>
-        <button id="btn-update-apply" class="btn-green disabled"><i class="fa fa-tags fa-lg"></i>  <span id="update-button-text">Update</span></button>
-        <br />
+      <h1><span class="fa fa-download"></span> Software Update</h1>
+      <p>
+        <p id="message-noupdates">There are no software updates available.</p>
+        <div id="message-updates" class="hide">
+          <p>A software update is available!</p>
+          <p><pre id="message-changelog"></pre></p>
+          <button id="btn-update-apply" class="btn-green disabled"><i class="fa fa-tags fa-lg"></i>  <span id="update-button-text">Update</span></button>
+          </div>
+      </p>
+      <br />
       <h1><i class="fa fa-file"></i> Manual Update</h1>
-      <p>Click the button below to apply an update from an .fmu or .fmp file.</p>
-      <button id="btn-update-manual" class="btn-blue"><i class="fa fa-file fa-lg"></i>  Update With File...</button>
-      <span class="progressbar hide">
-        <div class="fill"></div>
-      </span>
-      </div>
-
+      <p>
+        <p>Click the button below to apply an update from an .fmu or .fmp file.</p>
+        <button id="btn-update-manual" class="btn-blue"><i class="fa fa-file fa-lg"></i>  Update With File...</button>
+        <span class="progressbar hide">
+          <div class="fill"></div>
+        </span>
+      </p>
       <!--<p id="message-noupdate-ap">You cannot perform software updates because you do not have a reliable internet connection.  Please wait a moment, or use the network manager to join a wireless network.</p>
       <div id="update-controls">
       <h2>Stable Version</h2>
