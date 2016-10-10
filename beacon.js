@@ -7,7 +7,6 @@ var log = require('./log').logger('beacon')
 var request = require('request')
 var Q = require('q');
 
-var last 
 // Return a promise that fulfills with the beacon message
 function createMessage() {
 	var msg = {
@@ -15,6 +14,7 @@ function createMessage() {
 		name : config.updater.get('name'),
 		os : config.platform,
 		platform : config.updater.get('platform'),
+		os_version : config.updater.get('os_version')
 	}
 
 	deferred = Q.defer()
@@ -23,14 +23,7 @@ function createMessage() {
 			msg.engine_version = version
 			updater.getVersion(function(err, version) {
 				msg.updater_version = version
-				hooks.getOSVersion(function(err, version) {
-					if(!err) {
-						msg.os_version = version
-					} else {
-						msg.os_version = null;
-					}
-					deferred.resolve(msg);
-				});
+				deferred.resolve(msg);
 			})
 		})		
 	} catch(e) {
