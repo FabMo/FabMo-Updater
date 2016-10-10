@@ -457,6 +457,7 @@ Updater.prototype.start = function(callback) {
                     setTimeout(function() {
                         log.info('Running package check due to network change');
                         this.runAllPackageChecks();
+                        beacon.report();
                     }.bind(this), PACKAGE_CHECK_DELAY*1000);
                 }
             }.bind(this));
