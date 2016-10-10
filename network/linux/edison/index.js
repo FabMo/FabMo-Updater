@@ -17,7 +17,11 @@ var wifi;
 var WIFI_SCAN_INTERVAL = 5000;
 var WIFI_SCAN_RETRIES = 3;
 
-ethernetInterfaceName = "enp0s17u1u1";
+var wifiInterface = 'wlan0';
+var ethernetInterface = "enp0s17u1u1";
+var apModeGateway= '192.168.42.1';
+
+var DEFAULT_NETMASK = "255.255.255.0";
 
 function jedison(cmdline, callback) {
     var callback = callback || function() {}
@@ -47,11 +51,11 @@ var EdisonNetworkManager = function() {
 util.inherits(EdisonNetworkManager, NetworkManager);
 
 // return an object containing {ipaddress:'',mode:''}
-EdisonNetworkManager.prototype.getInfo = function(callback) {
+EdisonNetworkManager.prototype.getInfo = function(interface,callback) {
   //jedison('get wifi-info', callback);
-  ifconfig.status('wlan0',function(err,ifstatus){
+  ifconfig.status(interface,function(err,ifstatus){
       if(err)return callback(err);
-      iwconfig.status('wlan0',function(err,iwstatus){
+      iwconfig.status(interface,function(err,iwstatus){
         if(err)return callback(err);
         callback(null,{ipaddress:ifstatus.ipv4_address,mode:iwstatus.mode})
       })
@@ -61,11 +65,11 @@ EdisonNetworkManager.prototype.getInfo = function(callback) {
 // return an object formatted like this :
 EdisonNetworkManager.prototype.getNetworks = function(callback) {
   //jedison('get networks', callback);
-  wpa_cli.scan_results('wlan0', callback);
+  wpa_cli.scan_results(wifiInterface, callback);
 }
 
 EdisonNetworkManager.prototype.scan = function(callback) {
-  wpa_cli.scan('wlan0', callback);
+  wpa_cli.scan(wifiInterface, callback);
 }
 
 EdisonNetworkManager.prototype.run = function() {
@@ -112,7 +116,7 @@ EdisonNetworkManager.prototype.run = function() {
 
     default:
       this.state = 'idle';
-      this.getInfo(function(err, data) {
+      this.getInfo(wifiInterface,function(err, data) {
         if(!err) {
          var old_mode = this.mode;
          log.info("Wireless mode is '" + data.mode + "'");
@@ -185,7 +189,7 @@ EdisonNetworkManager.prototype.runStation = function() {
       break;
 
     case 'check_network':
-      this.getInfo(function(err, data) {
+      this.getInfo(wifiInterface,function(err, data) {
         var networkOK = true;
         if(!err) {
           if(data.ipaddress === '?' || data.ipaddress === undefined) {
@@ -228,7 +232,7 @@ EdisonNetworkManager.prototype.runStation = function() {
 EdisonNetworkManager.prototype.runAP = function() {
   switch(this.state) {
     default:
-      this.getInfo(function(err, data) {
+      this.getInfo(wifiInterface,function(err, data) {
         if(!err) {
           if(data.mode === 'managed') { this.mode = 'station'; }
           else if(data.mode === 'master') { this.mode = 'ap'; }
@@ -278,9 +282,7 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
     if(err) {
         log.error(err);
     }
-    doshell('route add default gw 192.168.42.1', function(s) {
-        callback(err, result);
-    });
+    this.setGateway(apModeGateway,callback);
   });
 }
 
@@ -337,12 +339,12 @@ EdisonNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback
 
 EdisonNetworkManager.prototype.turnWifiOn=function(callback){
   //callback(new Error('Not available on the edison wifi manager.'));
-  ifconfig.up('wlan0',callback);
+  ifconfig.up(wifiInterface,callback);
 }
 
 EdisonNetworkManager.prototype.turnWifiOff=function(callback){
   //callback(new Error('Not available on the edison wifi manager.'));
-  ifconfig.down('wlan0',callback);
+  ifconfig.down(wifiInterface,callback);
 }
 
 EdisonNetworkManager.prototype.getWifiHistory=function(callback){
@@ -415,11 +417,11 @@ EdisonNetworkManager.prototype.isOnline = function(callback) {
 
 //Ethernet section
 EdisonNetworkManager.prototype.turnEthernetOn=function(callback) {
-    ifconfig.up(ethernetInterfaceName,callback);
+    ifconfig.up(ethernetInterface,callback);
 }
 
 EdisonNetworkManager.prototype.turnEthernetOff=function(callback) {
-    ifconfig.down(ethernetInterfaceName,callback);
+    ifconfig.down(ethernetInterface,callback);
 }
 
 // interface specific - static addressing
@@ -440,16 +442,31 @@ EdisonNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
 }
 
 EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
-    doshell('ifconfig '+interface+' '+ip, function(s) {
-        console.log(s);
-        callback(err, result);
+    if(!ip)return callback("no ip transmitted !")
+    ifconfig.status(interface, function(err, status) {
+        if(err)return callback(err,status);
+        var options = {
+          interface: interface,
+          ipv4_address: ip,
+          ipv4_broadcast: status.ipv4_broadcast || '192.168.1.255',
+          ipv4_subnet_mask: status.ipv4_subnet_mask || DEFAULT_NETMASK
+        };
+        ifconfig.up(options, callback);
     });
 }
 
 EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback) {
-    doshell('ifconfig '+interface+' netmask '+netmask, function(s) {
-        console.log(s);
-        callback(err, result);
+    if(!netmask)return callback("no netmask transmitted !")
+    ifconfig.status(interface, function(err, status) {
+        if(err)return callback(err,status);
+        if(!status.ipv4_address)return callback('interface ip address not configured !');
+        var options = {
+          interface: interface,
+          ipv4_address: status.ipv4_address,
+          ipv4_broadcast: netmask,
+          ipv4_subnet_mask: status.ipv4_subnet_mask || DEFAULT_NETMASK
+        };
+        ifconfig.up(options, callback);
     });
 }
 
