@@ -5,6 +5,7 @@ var cp = require('child_process');
 var byline = require('byline');
 var fs = require('fs');
 var Q = require('q');
+var updater = require('../updater');
 
 // Task keys
 var keys = {};
@@ -171,7 +172,6 @@ exports.installEngine = function(version, callback) {
 }
 
 exports.updateEngine = function(version, callback) {
-	var updater = require('./updater');
 
 	callback = callback || function() {};
 	var key = updater.startTask();
@@ -204,7 +204,7 @@ exports.updateEngine = function(version, callback) {
 }
 
 exports.doFMU = function(filename, callback) {
-	var updater = require('./updater');
+	var updater = require('../updater');
 	var callback = callback || function() {};
 	var key = updater.startTask();
 	updater.setState('updating');
