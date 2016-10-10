@@ -1,5 +1,6 @@
 # Specific files for build
 static/*.fmp
+install_token
 
 # Logs
 logs
