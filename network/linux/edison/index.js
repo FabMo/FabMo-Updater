@@ -9,7 +9,7 @@ var async = require('async');
 
 var ifconfig = require('wireless-tools/ifconfig');
 var iwconfig = require('wireless-tools/iwconfig');
-var iwconfig = require('wireless-tools/iwlist');
+var iwlist = require('wireless-tools/iwlist');
 var wpa_cli = require('wireless-tools/wpa_cli');
 var udhcpc = require('wireless-tools/udhcpc');
 
@@ -61,9 +61,7 @@ EdisonNetworkManager.prototype.getInfo = function(callback) {
 // return an object formatted like this :
 EdisonNetworkManager.prototype.getNetworks = function(callback) {
   //jedison('get networks', callback);
-  wpa_cli.scan_results('wlan0', function(err, networks) {
-      console.log(networks);
-    });
+  wpa_cli.scan_results('wlan0', callback);
 }
 
 EdisonNetworkManager.prototype.scan = function(callback) {
@@ -122,10 +120,10 @@ EdisonNetworkManager.prototype.run = function() {
          if(data.mode == 'managed') {this.mode = 'station';}
          else if(data.mode == 'master') { this.mode = 'ap';}
          else { log.warn('Unknown network mode: ' + data.mode)}
-          if(this.mode != old_mode) {
-            setImmediate(this.run.bind(this));
-          } else {
-        setTimeout(this.run.bind(this), 5000);
+         if(this.mode != old_mode) {
+           setImmediate(this.run.bind(this));
+         }else{
+           setTimeout(this.run.bind(this), 5000);
     }
   } else {
         setTimeout(this.run.bind(this), 5000);
@@ -190,7 +188,7 @@ EdisonNetworkManager.prototype.runStation = function() {
       this.getInfo(function(err, data) {
         var networkOK = true;
         if(!err) {
-          if(data.ipaddress === '?') {
+          if(data.ipaddress === '?' || data.ipaddress === undefined) {
             networkOK = false;
           }
           if(data.mode === 'master') {
@@ -254,18 +252,6 @@ EdisonNetworkManager.prototype._joinAP = function(callback) {
   var network_config = config.updater.get('network');
   network_config.mode = 'ap';
   config.updater.set('network', network_config);
-  this.getInfo(function(err,info){
-      if(err)
-        return callback(err);
-      if(info['mode']==='master')
-        return('System already in AP mode');
-        doshell('systemctl stop wpa_supplicant && sleep 2 && systemctl restart hostapd && sleep 2',function(s) {})
-        fs.writeFile('/etc/wpa_supplicant/wpa_supplicant.conf',)
-
-  })
-
-  // clear_network()
-  // set_ap_boot_flag();
   jedison('join ap', function(err, result) {
     if(!err) {
       log.info("Entered AP mode.");
