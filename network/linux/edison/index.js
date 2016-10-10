@@ -273,6 +273,7 @@ EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
 }
 
 EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
+   var self = this;
   log.info("Attempting to join wifi network: " + ssid + " with password: " + password);
   var network_config = config.updater.get('network');
   network_config.mode = 'station';
@@ -282,7 +283,7 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
     if(err) {
         log.error(err);
     }
-    this.setGateway(apModeGateway,callback);
+    self.setGateway(apModeGateway,callback);
   });
 }
 
