@@ -53,9 +53,9 @@ Updater.prototype.getVersion = function(callback) {
         this.version.hash = (data || '').trim();
         this.version.number = '';
         this.version.debug = ('debug' in argv);
+        this.version.type = 'dev'
         fs.readFile('version.json', 'utf8', function(err, data) {
             if(err) {
-                this.version.type = 'dev';
                 return callback(null, this.version);
             }
             try {
@@ -66,12 +66,12 @@ Updater.prototype.getVersion = function(callback) {
                 }
             } catch(e) {
                 this.version.type = 'dev';
-                this.version.number
+                this.version.number = null;
             } finally {
                 callback(null, this.version);
             }
         }.bind(this))
-    });
+    }.bind(this));
 }
 
 Updater.prototype.startTask = function() {
@@ -523,7 +523,6 @@ Updater.prototype.start = function(callback) {
             ///Handle options request in firefox
             function unknownMethodHandler(req, res) {
             if (req.method.toLowerCase() === 'options') {
-                console.log('received an options method request');
                 var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
 
                 if (res.methods.indexOf('OPTIONS') === -1) res.methods.push('OPTIONS');
@@ -582,7 +581,6 @@ Updater.prototype.start = function(callback) {
     
     function setup_config_events(callback) {
         config.updater.on('change', function(evt) {
-            console.log(evt);
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
@@ -611,9 +609,23 @@ Updater.prototype.start = function(callback) {
 		    	process.exit();
 		    }
 		});
+        } else {
+            callback();
         }
-    }.bind(this)
+    }.bind(this),
 
+    function test(callback) {
+        beacon = require('./beacon')
+        beacon.createMessage()
+            .then(function(msg) {
+                console.log("Simulated beacon");
+                console.log(msg);
+            })
+            .catch(function(err) {
+                log.error(err);
+            })
+            .finally(callback);
+    }
     ],
         function(err, results) {
             if(err) {
