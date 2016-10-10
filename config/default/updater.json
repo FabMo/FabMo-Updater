@@ -4,6 +4,7 @@
 	"engine_git_repos" : "https://github.com/FabMo/FabMo-Engine.git",
 	"updater_git_repos" : "https://github.com/FabMo/FabMo-Updater.git",
 	"packages_url" : "http://gofabmo.org/manifest/packages.json",
+	"beacon_url" : "http://beacon.shopbottools.com/beacon",
 	"platform" : "generic",
 	"server_port" : 81,
 	"engine_server_port" : 80,

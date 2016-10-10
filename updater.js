@@ -24,6 +24,7 @@ var PLATFORM = process.platform;
 var TASK_TIMEOUT = 10800000;    // 3 hours (in milliseconds)
 var PACKAGE_CHECK_DELAY = 30;   // Seconds
 var UPDATE_PRODUCTS = 'FabMo-Engine|FabMo-Updater'
+var BEACON_INTERVAL = 1*60*60*1000 // 1 Hour (in milliseconds)
 
 var Updater = function() 
 {   
@@ -53,9 +54,9 @@ Updater.prototype.getVersion = function(callback) {
         this.version.hash = (data || '').trim();
         this.version.number = '';
         this.version.debug = ('debug' in argv);
+        this.version.type = 'dev'
         fs.readFile('version.json', 'utf8', function(err, data) {
             if(err) {
-                this.version.type = 'dev';
                 return callback(null, this.version);
             }
             try {
@@ -66,12 +67,12 @@ Updater.prototype.getVersion = function(callback) {
                 }
             } catch(e) {
                 this.version.type = 'dev';
-                this.version.number
+                this.version.number = null;
             } finally {
                 callback(null, this.version);
             }
         }.bind(this))
-    });
+    }.bind(this));
 }
 
 Updater.prototype.startTask = function() {
@@ -457,6 +458,7 @@ Updater.prototype.start = function(callback) {
                     setTimeout(function() {
                         log.info('Running package check due to network change');
                         this.runAllPackageChecks();
+                        require('./beacon').report();
                     }.bind(this), PACKAGE_CHECK_DELAY*1000);
                 }
             }.bind(this));
@@ -523,7 +525,6 @@ Updater.prototype.start = function(callback) {
             ///Handle options request in firefox
             function unknownMethodHandler(req, res) {
             if (req.method.toLowerCase() === 'options') {
-                console.log('received an options method request');
                 var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
 
                 if (res.methods.indexOf('OPTIONS') === -1) res.methods.push('OPTIONS');
@@ -582,7 +583,6 @@ Updater.prototype.start = function(callback) {
     
     function setup_config_events(callback) {
         config.updater.on('change', function(evt) {
-            console.log(evt);
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
@@ -611,9 +611,18 @@ Updater.prototype.start = function(callback) {
 		    	process.exit();
 		    }
 		});
+        } else {
+            callback();
         }
-    }.bind(this)
+    }.bind(this),
 
+    function start_beacon(callback) {
+        log.info("Starting beacon service");
+        setInterval(function() {
+            log.info("Sending beacon report (interval)");
+            require('./beacon').report();
+        }, BEACON_INTERVAL)
+    }
     ],
         function(err, results) {
             if(err) {
@@ -625,7 +634,6 @@ Updater.prototype.start = function(callback) {
         }.bind(this)
     );
 };
-
 
 
 module.exports = new Updater();
