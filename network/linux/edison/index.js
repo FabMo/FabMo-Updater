@@ -473,8 +473,7 @@ EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback)
 
 EdisonNetworkManager.prototype.setGateway=function(gateway, callback) {
     doshell('route add default gw '+ gateway, function(s) {
-        console.log(s);
-        callback(err, result);
+        callback(null);
     });
 }
 
