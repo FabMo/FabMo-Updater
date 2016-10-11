@@ -84,6 +84,16 @@ GenericNetworkManager.prototype.disableDHCP=function(interface, callback) {
   fail(this, callback);
 }
 
+GenericNetworkManager.prototype.startDHCPServer=function(interface, callback) {
+  log.warn('Unimplemented: enableDHCP()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
+  log.warn('Unimplemented: disableDHCP()');
+  fail(this, callback);
+}
+
 GenericNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
   log.warn('Unimplemented: setIpAddress()');
   fail(this, callback);
