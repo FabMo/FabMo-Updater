@@ -279,24 +279,36 @@ select.disabled {
 	display: none;
 }
 
-/* HEY BRENDAN */
+
 fieldset {
     min-width: 100px;
     display: inline-block;
     border: none;
 }
 
+fieldset li {
+	list-style-type: none;
+	margin-bottom: 0.4em;
+}
+
 fieldset input{
     float: right;
+	margin-left: 0.3em;
 }
 
 fieldset label{
-	line-height: 100%;
-		padding: 0.5em 1em;
+	display: inline-block;
+	width: 110px;
+	text-align: right;
+	padding: 0.4em;
 }
 
 fieldset p {
     margin-bottom: 2px;
+}
+
+input {
+    line-height: 1.7em;
 }
 
 button {
