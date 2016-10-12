@@ -25,7 +25,7 @@ var PLATFORM = process.platform;
 var TASK_TIMEOUT = 10800000;    // 3 hours (in milliseconds)
 var PACKAGE_CHECK_DELAY = 30;   // Seconds
 var UPDATE_PRODUCTS = 'FabMo-Engine|FabMo-Updater'
-var BEACON_INTERVAL = 10000//1*60*60*1000 // 1 Hour (in milliseconds)
+var BEACON_INTERVAL = 1*60*60*1000 // 1 Hour (in milliseconds)
 
 var Updater = function() 
 {   
