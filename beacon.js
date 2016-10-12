@@ -39,7 +39,7 @@ Beacon.prototype.run = function() {
 			log.warn('Could not send a beacon message: ' + err);
 		})
 		.finally(function() {
-			this._timer = setTimeout(this.run, this.interval);
+			this._timer = setTimeout(this.run.bind(this), this.interval);
 		}.bind(this));
 }
 
@@ -87,17 +87,21 @@ Beacon.prototype.report = function() {
 	deferred = Q.defer()
 	if(this.url) {
 		log.info('Sending beacon report')
-		return createMessage()
+		return this.createMessage()
 		.then(function(message) {
-			request({url : url, json : true,body : message}, function(err, body) {
+			request({uri : this.url, json : true,body : message}, function(err, body) {
 				if(err) {
+					deferred.reject(err);
 					log.warn('Could not send message to beacon server: ' + err);
 				} else {
+					deferred.resolve();
 					log.info('Post to beacon server successful.')
 				}
-				deferred.resolve();
 			});
-		})
+		}.bind(this)).catch(function(err){
+			log.error(err)
+			deferred.reject(err);
+		}.bind(this))
 	} else {
 		deferred.resolve();
 	}

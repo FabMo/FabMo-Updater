@@ -586,6 +586,9 @@ Updater.prototype.start = function(callback) {
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
+            if(evt.beacon_url) {
+                this.beacon.once();
+            }
         }.bind(this));
         callback();
     }.bind(this),
@@ -618,13 +621,12 @@ Updater.prototype.start = function(callback) {
 
     function start_beacon(callback) {
         var url = config.updater.get('beacon_url');
-
         log.info("Starting beacon service");
         this.beacon = new Beacon({
             url : url,
             interval : BEACON_INTERVAL
         });
-
+        this.beacon.start();
     }.bind(this)
     ],
         function(err, results) {
