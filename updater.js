@@ -591,7 +591,10 @@ Updater.prototype.start = function(callback) {
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
-            if(evt.beacon_url || evt.name) {
+            if(evt.beacon_url) {
+                this.beacon.set(config.updater.get('beacon_url'));
+            }
+            if(evt.name) {
                 this.beacon.once('config');
             }
         }.bind(this));

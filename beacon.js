@@ -23,7 +23,7 @@ Beacon.prototype.set = function(key, value) {
 	var wasRunning = this.running;
 	this.stop();
 	this[key] = value;
-	if(wasRunning) { this.run(); }	
+	if(wasRunning) { this.run('config'); }	
 }
 
 // Start reporting with the beacon
