@@ -89,13 +89,20 @@ Beacon.prototype.report = function() {
 		log.info('Sending beacon report')
 		return this.createMessage()
 		.then(function(message) {
-			request({uri : this.url, json : true,body : message}, function(err, body) {
+			log.debug(JSON.stringify(message))
+			request({uri : this.url, json : true,body : message, method : 'POST'}, function(err, response, body) {
 				if(err) {
-					deferred.reject(err);
 					log.warn('Could not send message to beacon server: ' + err);
+					deferred.reject(err);
+				} else if(response.statusCode != 200) {
+					var err = new Error("Beacon server responded with status code " + response.statusCode);
+					log.warn(err);
+					deferred.reject(err);
 				} else {
+					log.debug('Beacon response code: ' + response.statusCode)
+					log.debug('Beacon response body: ' + body);
+					log.info('Post to beacon server successful.');
 					deferred.resolve();
-					log.info('Post to beacon server successful.')
 				}
 			});
 		}.bind(this)).catch(function(err){

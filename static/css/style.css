@@ -257,7 +257,6 @@ input[type="text"], input[type="password"] {
     display: inline-block;
 	padding: 0.5em 1em;
 	border: 1px solid #aaa;
-
 }
 
 input.long {
@@ -281,13 +280,22 @@ select.disabled {
 }
 
 fieldset {
-	border: none;
-	padding: 1em;
+    min-width: 100px;
+    display: inline-block;
+    border: none;
 }
 
-fieldset label {
-	font-weight: bold;
+fieldset input{
+    float: right;
+}
+
+fieldset label{
 	line-height: 100%;
+		padding: 0.5em 1em;
+}
+
+fieldset p {
+    margin-bottom: 2px;
 }
 
 button {
