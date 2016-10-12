@@ -1,24 +1,25 @@
+var log = require('./log').logger('updater');
+var Beacon = require('./beacon');
+var fmp = require('./fmp');
+var config = require('./config');
+var util = require('./util');
+var hooks = require('./hooks');
+var network = require('./network');
+var GenericNetworkManager = require('./network/manager').NetworkManager;
+var doshell = require('./util').doshell;
+
 var restify = require('restify');
 var async = require('async');
 var process = require('process');
 var path = require('path');
-var log = require('./log').logger('updater');
-var config = require('./config');
-var util = require('./util');
 var socketio = require('socket.io')
 var events = require('events');
 var util = require('util');
-var hooks = require('./hooks');
-var network = require('./network');
 var fs = require('fs-extra');
-var GenericNetworkManager = require('./network/manager').NetworkManager;
-var doshell = require('./util').doshell;
 var uuid = require('node-uuid');
 var moment = require('moment');
 var argv = require('minimist')(process.argv);
 var Q = require('q');
-var fmp = require('./fmp');
-var argv = require('minimist')(process.argv);
 
 var PLATFORM = process.platform;
 var TASK_TIMEOUT = 10800000;    // 3 hours (in milliseconds)
@@ -458,7 +459,6 @@ Updater.prototype.start = function(callback) {
                     setTimeout(function() {
                         log.info('Running package check due to network change');
                         this.runAllPackageChecks();
-                        require('./beacon').report();
                     }.bind(this), PACKAGE_CHECK_DELAY*1000);
                 }
             }.bind(this));
@@ -617,12 +617,15 @@ Updater.prototype.start = function(callback) {
     }.bind(this),
 
     function start_beacon(callback) {
+        var url = config.updater.get('beacon_url');
+
         log.info("Starting beacon service");
-        setInterval(function() {
-            log.info("Sending beacon report (interval)");
-            require('./beacon').report();
-        }, BEACON_INTERVAL)
-    }
+        this.beacon = new Beacon({
+            url : url,
+            interval : BEACON_INTERVAL
+        });
+
+    }.bind(this)
     ],
         function(err, results) {
             if(err) {

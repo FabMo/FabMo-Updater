@@ -1,5 +1,4 @@
 var config = require('./config')
-var updater = require('./updater')
 var engine = require('./engine')
 var hooks = require('./hooks')
 var log = require('./log').logger('beacon')
@@ -7,8 +6,59 @@ var log = require('./log').logger('beacon')
 var request = require('request')
 var Q = require('q');
 
-// Return a promise that fulfills with the beacon message
-function createMessage() {
+var Beacon = function(options) {
+	var options = options || {}
+	this.url = options.url 
+	if(!this.url) { throw new Error('Beacon needs a URL.'); }
+	this.interval = options.interval || 1*60*60*1000;
+	this._timer = null;
+	this.running = false;
+}
+
+function setURL(url) { this.set('url', url); }
+function setInterval(interval) { this.set('interval', interval); }
+
+// Changing any of the options provokes a new beacon report
+Beacon.prototype.set = function(key, value) {
+	var wasRunning = this.running;
+	this.stop();
+	this[key] = value;
+	if(wasRunning) { this.run(); }	
+}
+
+// Start reporting with the beacon
+Beacon.prototype.start = function() {
+	this.running = true;
+	this.run();
+}
+
+// Function called at intervals to report to the beacon
+Beacon.prototype.run = function() {
+	this.report()
+		.catch(function(err) {
+			log.warn('Could not send a beacon message: ' + err);
+		})
+		.finally(function() {
+			this._timer = setTimeout(this.run, this.interval);
+		}.bind(this));
+}
+
+// Stops further beacon reports. Reports can be restarted with start()
+Beacon.prototype.stop = function() {
+	this.running = false;
+	if(this._timer) {
+		clearTimeout(this._timer);
+	}
+}
+
+Beacon.prototype.once = function() {
+	var wasRunning = this.running;
+	this.stop();
+	this.start();
+}
+
+// Return a promise that fulfills with the beacon message to be sent
+Beacon.prototype.createMessage = function() {
 	var msg = {
 		id : config.updater.get('id'),
 		name : config.updater.get('name'),
@@ -21,7 +71,7 @@ function createMessage() {
 	try {
 		engine.getVersion(function(err, version) {
 			msg.engine_version = version
-			updater.getVersion(function(err, version) {
+			require('./updater').getVersion(function(err, version) {
 				msg.updater_version = version
 				deferred.resolve(msg);
 			})
@@ -32,10 +82,11 @@ function createMessage() {
 	return deferred.promise
 }
 
-function report() {
-	var url = config.updater.get('beacon_url');
+// Return a promise that resolves when the beacon server has been contacted
+Beacon.prototype.report = function() {
 	deferred = Q.defer()
-	if(url) {
+	if(this.url) {
+		log.info('Sending beacon report')
 		return createMessage()
 		.then(function(message) {
 			request({url : url, json : true,body : message}, function(err, body) {
@@ -46,7 +97,7 @@ function report() {
 				}
 				deferred.resolve();
 			});
-		})		
+		})
 	} else {
 		deferred.resolve();
 	}
@@ -54,5 +105,4 @@ function report() {
 	return deferred.promise()
 }
 
-exports.createMessage = createMessage;
-exports.report = report;
+module.exports = Beacon
