@@ -12,6 +12,7 @@ var iwconfig = require('wireless-tools/iwconfig');
 var iwlist = require('wireless-tools/iwlist');
 var wpa_cli = require('wireless-tools/wpa_cli');
 var udhcpc = require('wireless-tools/udhcpc');
+var udhcpd = require('wireless-tools/udhcpd');
 
 var wifi;
 var WIFI_SCAN_INTERVAL = 5000;
@@ -491,15 +492,15 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
   var self = this;
   var ethernet_config = config.updater.get('network').ethernet;
   ifconfig.status(ethernetInterface,function(err,status){
-    if(!status.up || !status.running){
+    if(status.up && status.running){
       switch(ethernet_config.mode) {
         case 'static':
           self.disableDHCP(ethernetInterface,function(err){
             if(err)log.warn(err);
             // need promises here ...
-            setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){});
-            setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){});
-            setGateway(ethernet_config.default_config.gateway,function(err){});
+            self.setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){});
+            self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){});
+            self.setGateway(ethernet_config.default_config.gateway,function(err){});
           });
           break;
         case 'dhcp':
@@ -515,10 +516,10 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
                 else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
                   self.disableDHCP(ethernetInterface,function(err){
                     // need promises here ...
-                    setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){});
-                    setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){});
-                    setGateway(ethernet_config.default_config.gateway,function(err){});
-                    startDHCPServer(ethernetInterface,function(err){log.warn(err);})
+                    self.setIpAddresss(ethernetInterface,ethernet_config.default_config.ip_address,function(err){});
+                    self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){});
+                    self.setGateway(ethernet_config.default_config.gateway,function(err){});
+                    self.startDHCPServer(ethernetInterface,function(err){if(err)log.warn(err);})
                   });
                 }
               });
@@ -527,10 +528,10 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
           break;
       }
     }
-  })
+  });
 }
 
-EdisonNetworkManager.prototype.runEthernet(){
+EdisonNetworkManager.prototype.runEthernet = function(){
   function checkEthernetstate(){
     var oldState = this.ethernetState;
     ifconfig.status(ethernetInterface,function(err,status){
@@ -542,9 +543,10 @@ EdisonNetworkManager.prototype.runEthernet(){
       }
       if(this.ethernetState!==oldState && this.ethernetState !== "unplugged")
         this.applyEthernetConfig();
-    }).bind(this);
-  }.bind(this);
-  this.setTimeout(checkEthernetstate,ETHERNET_SCAN_INTERVAL);
+    }.bind(this));
+  }
+  checkEthernetstate();
+  setTimeout(checkEthernetstate,ETHERNET_SCAN_INTERVAL);
 
 }
 
