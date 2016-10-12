@@ -52,20 +52,29 @@ function compareProducts(a,b) {
 }
 
 // Return a promise that fulfills with a registry object loaded from the provided URL
-function fetchUpdateRegistry(url) {
+function fetchPackagesList(url) {
 	log.info('Retrieving a list of packages from ' + url)
 	deferred = Q.defer();
-	request(url, function (error, response, body) {
-	  	if(error) {
-	  		return deferred.reject(error);
-	  	}
-	  	if (response.statusCode == 200) {
-	    	var p = JSON.parse(body);
-			return deferred.resolve(p);
-	  	} else {
-	  		return deferred.reject(new Error(response.statusMessage));
-	  	}
-	});
+	try {
+		request(url, {timeout: 5000}, function (error, response, body) {
+		  	if(error) {
+		  		return deferred.reject(error);
+		  	}
+		  	if (response.statusCode == 200) {
+		    	
+		    	try {
+		    		var p = JSON.parse(body);
+					return deferred.resolve(p);
+		    	} catch(err) {
+		    		return deferred.reject(err);
+		    	}
+		  	} else {
+		  		return deferred.reject(new Error(response.statusMessage));
+		  	}
+		});		
+	} catch(err) {
+		deferred.reject(err);
+	}
 	return deferred.promise;
 }
 
@@ -317,6 +326,8 @@ function installUnpackedPackage(manifest_filename) {
 }
 
 function filterPackages(registry, options) {
+	if(!packages) { return []; }
+	
 	var packages =  registry.packages.filter(function(package) {
 		for(var key in options) {
 			if(options.hasOwnProperty(key)) {
@@ -389,7 +400,7 @@ function checkForAvailablePackage(product) {
 	var options = options || {};
 
 	log.info("Checking online source for updates");
-	return fetchUpdateRegistry(updateSource)
+	return fetchPackagesList(updateSource)
 		.then(function(registry) {
 			var deferred = Q.defer();
 

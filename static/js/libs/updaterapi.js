@@ -213,9 +213,13 @@ UpdaterAPI.prototype.factoryReset = function(callback) {
 	this._post('/update/factory', {}, callback, callback);
 }
 
-// Factory Reset
+// Apply prepared updates
 UpdaterAPI.prototype.applyPreparedUpdates = function(callback) {
 	this._post('/update/apply', {}, callback, callback);
+}
+// Check for updates
+UpdaterAPI.prototype.checkForUpdates = function(callback) {
+	this._post('/update/check', {}, callback, callback);
 }
 
 function makeFormData(obj, default_name, default_type) {

@@ -130,7 +130,6 @@ var applyPreparedUpdates = function(req, res, next) {
 		if(err) {
 			return res.json({status : 'error', message : err});
 		}
-
 		var answer = {
 		    status : "success",
 		   	  data : {'task' : data}
@@ -138,7 +137,16 @@ var applyPreparedUpdates = function(req, res, next) {
 
 		res.json(answer);
 	});
+}
 
+var check = function(req, res, next) {
+	updater.runAllPackageChecks();
+	res.json( {
+		status : 'success',
+		data : {
+			status : 'complete'
+		}
+	});
 }
 
 module.exports = function(server) {
@@ -152,5 +160,6 @@ module.exports = function(server) {
 
   server.post('/update/manual', doManualUpdate);
   server.post('/update/apply', applyPreparedUpdates);
+  server.post('/update/check', check);
 
 };

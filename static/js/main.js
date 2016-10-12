@@ -236,6 +236,9 @@ function setState(state) {
             icon.removeClass(classes).addClass('fa-spin fa-spinner');
             break;
     }
+  $('#check-button-text').text(' Check for updates');
+  $('#btn-check-for-updates').removeClass('disabled');
+  $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');  
 }
 
 function showModal(options) {
@@ -460,7 +463,13 @@ $("#btn-factory-reset").click( function(evt) {
   $("#btn-start-engine").click(function() {updater.startEngine()});
   $("#btn-stop-engine").click(function() {updater.stopEngine()});
 
-
+  $("#btn-check-for-updates").click(function() {
+    $("#btn-check-for-updates").addClass('disabled');
+    $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');  
+    $("#check-button-text").text('Checking...');
+    updater.checkForUpdates();
+  });
+  
   // Console clear
   $('#btn-console-clear').click(function() {clearConsole()});
 

@@ -27,14 +27,14 @@ Beacon.prototype.set = function(key, value) {
 }
 
 // Start reporting with the beacon
-Beacon.prototype.start = function() {
+Beacon.prototype.start = function(reason) {
 	this.running = true;
-	this.run();
+	this.run(reason);
 }
 
 // Function called at intervals to report to the beacon
-Beacon.prototype.run = function() {
-	this.report()
+Beacon.prototype.run = function(reason) {
+	this.report(reason)
 		.catch(function(err) {
 			log.warn('Could not send a beacon message: ' + err);
 		})
@@ -51,20 +51,21 @@ Beacon.prototype.stop = function() {
 	}
 }
 
-Beacon.prototype.once = function() {
+Beacon.prototype.once = function(reason) {
 	var wasRunning = this.running;
 	this.stop();
-	this.start();
+	this.start(reason);
 }
 
 // Return a promise that fulfills with the beacon message to be sent
-Beacon.prototype.createMessage = function() {
+Beacon.prototype.createMessage = function(reason) {
 	var msg = {
 		id : config.updater.get('id'),
 		name : config.updater.get('name'),
 		os : config.platform,
 		platform : config.updater.get('platform'),
-		os_version : config.updater.get('os_version')
+		os_version : config.updater.get('os_version'),
+		reason : reason || 'interval',
 	}
 
 	deferred = Q.defer()
@@ -83,13 +84,13 @@ Beacon.prototype.createMessage = function() {
 }
 
 // Return a promise that resolves when the beacon server has been contacted
-Beacon.prototype.report = function() {
+Beacon.prototype.report = function(reason) {
 	deferred = Q.defer()
 	if(this.url) {
-		log.info('Sending beacon report')
-		return this.createMessage()
+		log.info('Sending beacon report (' + (reason || 'interval') + ')');
+		return this.createMessage(reason)
 		.then(function(message) {
-			log.debug(JSON.stringify(message))
+			//log.debug(JSON.stringify(message))
 			request({uri : this.url, json : true,body : message, method : 'POST'}, function(err, response, body) {
 				if(err) {
 					log.warn('Could not send message to beacon server: ' + err);
@@ -99,8 +100,8 @@ Beacon.prototype.report = function() {
 					log.warn(err);
 					deferred.reject(err);
 				} else {
-					log.debug('Beacon response code: ' + response.statusCode)
-					log.debug('Beacon response body: ' + body);
+					//log.debug('Beacon response code: ' + response.statusCode)
+					//log.debug('Beacon response body: ' + body);
 					log.info('Post to beacon server successful.');
 					deferred.resolve();
 				}

@@ -256,6 +256,9 @@ Updater.prototype.runAllPackageChecks = function() {
             if(!updaterPackage) {
                 this.runPackageCheck('FabMo-Engine')
             }                            
+        }.bind(this))
+        .then(function() {
+            this.emit('status',this.status);
         }.bind(this));
 }
 
@@ -457,6 +460,8 @@ Updater.prototype.start = function(callback) {
                     // before trying to pull an update (https requests will fail with an inaccurate system time)
                     log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')        
                     setTimeout(function() {
+                        log.info('Doing beacon report due to network change');
+                        this.beacon.once('network');
                         log.info('Running package check due to network change');
                         this.runAllPackageChecks();
                     }.bind(this), PACKAGE_CHECK_DELAY*1000);
@@ -586,8 +591,8 @@ Updater.prototype.start = function(callback) {
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
-            if(evt.beacon_url) {
-                this.beacon.once();
+            if(evt.beacon_url || evt.name) {
+                this.beacon.once('config');
             }
         }.bind(this));
         callback();
