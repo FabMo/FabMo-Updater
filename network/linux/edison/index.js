@@ -441,7 +441,17 @@ EdisonNetworkManager.prototype.disableDHCP=function(interface, callback) {
 }
 
 EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
-  udhcpd.enable({interface: interface},callback)
+  var options = {
+    interface: interface,
+    start: '192.168.43.20',
+    end: '192.168.43.254',
+    option: {
+      router: '192.168.43.1',
+      subnet: '255.255.255.0',
+      dns: [ '8.8.8.8' ]
+    }
+  };
+  udhcpd.enable(options,callback);
 }
 
 EdisonNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
@@ -516,7 +526,7 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
                 else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
                   self.disableDHCP(ethernetInterface,function(err){
                     // need promises here ...
-                    self.setIpAddresss(ethernetInterface,ethernet_config.default_config.ip_address,function(err){});
+                    self.setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){});
                     self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){});
                     self.setGateway(ethernet_config.default_config.gateway,function(err){});
                     self.startDHCPServer(ethernetInterface,function(err){if(err)log.warn(err);})
@@ -532,21 +542,23 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
 }
 
 EdisonNetworkManager.prototype.runEthernet = function(){
+  var self = this;
   function checkEthernetstate(){
     var oldState = this.ethernetState;
     ifconfig.status(ethernetInterface,function(err,status){
       if(!err && status.up && status.running){
-        this.ethernetState = "plugged";
+        self.ethernetState = "plugged";
       }else{
         if(err) log.warn(err);
-        this.ethernetState = "unplugged";
+        self.ethernetState = "unplugged";
       }
-      if(this.ethernetState!==oldState && this.ethernetState !== "unplugged")
-        this.applyEthernetConfig();
-    }.bind(this));
+      if(self.ethernetState!==oldState && self.ethernetState !== 
+"unplugged")
+        self.applyEthernetConfig();
+    });
   }
   checkEthernetstate();
-  setTimeout(checkEthernetstate,ETHERNET_SCAN_INTERVAL);
+  setInterval(checkEthernetstate,ETHERNET_SCAN_INTERVAL);
 
 }
 
