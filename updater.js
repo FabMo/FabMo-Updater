@@ -325,7 +325,7 @@ Updater.prototype.start = function(callback) {
             });
 
             // Configure local directory for uploading files
-            log.info("Cofiguring upload directory...");
+            log.info("Configuring upload directory...");
             server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
             server.pre(restify.pre.sanitizePath());
 

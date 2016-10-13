@@ -23,6 +23,7 @@ var ethernetInterface = "enp0s17u1u1";
 var apModeGateway= '192.168.42.1';
 
 var DEFAULT_NETMASK = "255.255.255.0";
+var DEFAULT_BROADCAST = "192.168.1.255"
 var DHCP_TTL = 5000;
 var ETHERNET_SCAN_INTERVAL = 2000;
 
@@ -116,6 +117,9 @@ EdisonNetworkManager.prototype.runWifi = function() {
 
     case 'station':
       this.runWifiStation();
+      break;
+
+    case 'off':
       break;
 
     default:
@@ -441,14 +445,15 @@ EdisonNetworkManager.prototype.disableDHCP=function(interface, callback) {
 }
 
 EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
+  var ethernet_config = config.updater.get('network').ethernet;
   var options = {
     interface: interface,
-    start: '192.168.43.20',
-    end: '192.168.43.254',
+    start: ethernet_config.default_config.dhcp_range.start || '192.168.44.20',
+    end: ethernet_config.default_config.dhcp_range.end || '192.168.44.254',
     option: {
-      router: '192.168.43.1',
-      subnet: '255.255.255.0',
-      dns: [ '8.8.8.8' ]
+      router: ethernet_config.default_config.ip_address || '192.168.44.1',
+      subnet: ethernet_config.default_config.netmask || '255.255.255.0',
+      dns: ethernet_config.default_config.dns || ["8.8.8.8"]
     }
   };
   udhcpd.enable(options,callback);
@@ -465,7 +470,7 @@ EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
     var options = {
       interface: interface,
       ipv4_address: ip,
-      ipv4_broadcast: status.ipv4_broadcast || '192.168.1.255',
+      ipv4_broadcast: status.ipv4_broadcast || DEFAULT_BROADCAST,
       ipv4_subnet_mask: status.ipv4_subnet_mask || DEFAULT_NETMASK
     };
     ifconfig.up(options, callback);
@@ -503,38 +508,51 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
   var ethernet_config = config.updater.get('network').ethernet;
   ifconfig.status(ethernetInterface,function(err,status){
     if(status.up && status.running){
+        self.stopDHCPServer(ethernetInterface,function(err){if(err)log.warn(err);});
+        log.info:"ethernet is in "+ethernet_config.mode+" mode";
       switch(ethernet_config.mode) {
         case 'static':
           self.disableDHCP(ethernetInterface,function(err){
             if(err)log.warn(err);
             // need promises here ...
-            self.setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){});
-            self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){});
-            self.setGateway(ethernet_config.default_config.gateway,function(err){});
+            self.setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){if(err)log.warn(err);});
+            self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){if(err)log.warn(err);});
+            self.setGateway(ethernet_config.default_config.gateway,function(err){if(err)log.warn(err);});
+            log.info("Ethernet static configuration is set")
           });
           break;
+
         case 'dhcp':
-          self.enableDHCP(ethernetInterface,function(err){if(err)log.warn(err);});
+          self.enableDHCP(ethernetInterface,function(err){
+            if(err)return log.warn(err);
+            log.info("Ethernet dynamic configuration is set");
+          });
           break;
+
         case 'magic':
           self.enableDHCP(ethernetInterface,function(err){
             setTimeout(function(){
               ifconfig.status(ethernetInterface,function(err,status){
                 if(err)log.warn(err);
                 if(status.ipv4_address!==undefined)// we got a lease !
-                  return;
+                  return log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
                 else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
                   self.disableDHCP(ethernetInterface,function(err){
                     // need promises here ...
-                    self.setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){});
-                    self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){});
-                    self.setGateway(ethernet_config.default_config.gateway,function(err){});
+                    self.setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){if(err)log.warn(err);});
+                    self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){if(err)log.warn(err);});
+                    self.setGateway(ethernet_config.default_config.gateway,function(err){if(err)log.warn(err);});
                     self.startDHCPServer(ethernetInterface,function(err){if(err)log.warn(err);})
+                    log.info("[magic mode] No dhcp server found, switched to static configuration and launched a dhcp server...")
                   });
                 }
               });
             },DHCP_TTL);
           });
+          break;
+
+        case 'off':
+        default:
           break;
       }
     }
@@ -552,8 +570,9 @@ EdisonNetworkManager.prototype.runEthernet = function(){
         if(err) log.warn(err);
         self.ethernetState = "unplugged";
       }
-      if(self.ethernetState!==oldState && self.ethernetState !== 
+      if(self.ethernetState!==oldState && self.ethernetState !==
 "unplugged")
+        log.info("ethernet cable was plugged");
         self.applyEthernetConfig();
     });
   }
