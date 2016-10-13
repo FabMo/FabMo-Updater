@@ -341,27 +341,6 @@ var getClientAddress = function (req) {
         || req.connection.remoteAddress;
 };
 
-function httpGET(url) {
-    var deferred = Q.defer();
-    try {
-        http.get(url, function(response) {
-          if (!(String(response.statusCode)).match(/^2\d\d$/)) {
-            return deferred.reject(new Error(response.statusCode + ' ' + response.statusMessage));
-          }
-            var body = '';
-            response.on('data', function(d) {
-                body += d;
-            });
-            response.on('end', function() {
-                return deferred.resolve(body);
-            });
-        }); 
-    } catch(err) {
-        deferred.reject(err);
-    }
-    return deferred.promise;
-}
-
 function eject(command, args) {
     var child = require('child_process').spawn(command, args, {
       detached: true,
