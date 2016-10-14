@@ -33,7 +33,7 @@ var onConnect = function(socket) {
   });
 
   socket.emit('status', updater.status);
-
+  socket.emit('log', log.getLogBuffer())
 };
 
 module.exports = function(server) {
