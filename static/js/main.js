@@ -325,8 +325,10 @@ $(document).ready(function() {
       $('#update-button-text').text('Update ' + update.product + ' to ' + update.version);
       $('#message-updates').removeClass('hide');
       $('#message-noupdates').addClass('hide');   
-      $('.update-indicator').addClass('updates-available')   
+      $('.update-indicator').addClass('updates-available')  
+      $('#check-for-updates-controls').addClass('hide'); 
     } else {
+      $('#check-for-updates-controls').removeClass('hide'); 
       $('#message-updates').addClass('hide');
       $('#message-noupdates').removeClass('hide');      
       $('.update-indicator').removeClass('updates-available')   
