@@ -190,7 +190,6 @@ function printPackageEntry() {
 
 	package.md5 = md5
 
-
 	console.log(JSON.stringify(package,null, 3));
 	return Q();
 }
