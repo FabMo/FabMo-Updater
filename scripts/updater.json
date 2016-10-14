@@ -1,0 +1,23 @@
+{
+	"product" : "FabMo-Updater",
+	"os" : "linux",
+	"platform" : "edison",
+	"system" : "handibot",
+	"token" : "/fabmo/engine/install_token",
+	"repository" : "https://github.com/FabMo/FabMo-Updater",
+	"updaterNeeded" : "v2.0.0",
+	"services" : ["fabmo"],
+	"operations" : [
+		{
+			"op" : "deleteFiles",
+			"paths" : [
+				"/fabmo/updater"
+			]
+		},
+		{
+			"op" : "expandArchive",
+			"src" : "files.tar.gz",
+			"dest" : "/fabmo/updater"
+		}
+	]
+}

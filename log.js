@@ -75,7 +75,7 @@ Logger.prototype.write = function(level, msg) {
 
 				case 'stderr':
 				case 'stdout':
-					var prefix = level === 'stdout' ? ' - '.magenta : ' - '.red
+					var prefix = level === 'stdout' ? ' - '.blue : ' - '.red
 					msg.split('\n').forEach(function(line) {
 						if(line.trim()) {
 							console.log(prefix + line);													

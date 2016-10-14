@@ -616,7 +616,7 @@ Updater.prototype.start = function(callback) {
                     this.setState('idle');
                 }.bind(this))
 		.finally(function() {
-                    try {
+            try {
 		    	require('./hooks').startService('fabmo-updater');
 		    } finally {
 		    	process.exit();
