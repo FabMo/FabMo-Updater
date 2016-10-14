@@ -143,6 +143,9 @@ function clearStagingArea() {
 }
 
 function stageFirmware() {
+	if(product === 'updater') {
+		return Q();
+	}
 	log.info('Copying firmware into staging area')
 	return doshell('cp ' + firmwarePath + ' ' + path.resolve(stagingDirectory, 'g2.bin'), {cwd : reposDirectory});
 }
