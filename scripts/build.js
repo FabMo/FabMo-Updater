@@ -157,9 +157,9 @@ function stageFilesArchive() {
 
 function getMD5Hash() {
 	log.info('Getting MD5 hash of ' + fmpArchivePath);
-	return doshell('md5sum -q ' + fmpArchivePath)
+	return doshell('md5sum ' + fmpArchivePath)
 		.then(function(hash) {
-			md5 = hash.trim();
+			md5 = hash.split(' ')[0].trim();
 		});
 }
 
