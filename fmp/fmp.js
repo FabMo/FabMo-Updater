@@ -326,7 +326,7 @@ function installUnpackedPackage(manifest_filename) {
 }
 
 function filterPackages(registry, options) {
-	if(!packages) { return []; }
+	if(!registry) { return []; }
 	
 	var packages =  registry.packages.filter(function(package) {
 		for(var key in options) {
