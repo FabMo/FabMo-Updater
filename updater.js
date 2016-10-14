@@ -65,6 +65,7 @@ Updater.prototype.getVersion = function(callback) {
                 if(data.number) {
                     this.version.number = data.number;
                     this.version.type = 'release';
+                    this.version.date = data.date;
                 }
             } catch(e) {
                 this.version.type = 'dev';

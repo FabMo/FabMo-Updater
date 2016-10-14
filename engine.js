@@ -16,6 +16,7 @@ exports.getVersion = function(callback) {
             if(data.number) {
                 version.number = data.number;
                 version.type = data.type || 'release';
+                version.date = data.date
             }
 
         } catch(e) {
