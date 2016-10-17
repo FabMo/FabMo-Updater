@@ -21,6 +21,8 @@ var WIFI_SCAN_RETRIES = 3;
 var wifiInterface = 'wlan0';
 var ethernetInterface = "enp0s17u1u1";
 var apModeGateway= '192.168.42.1';
+var tmpPath = '/tmp/'
+
 
 var DEFAULT_NETMASK = "255.255.255.0";
 var DEFAULT_BROADCAST = "192.168.1.255"
@@ -448,6 +450,7 @@ EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
   var ethernet_config = config.updater.get('network').ethernet;
   var options = {
     interface: interface,
+    tmpPath: tmpPath,
     start: ethernet_config.default_config.dhcp_range.start || '192.168.44.20',
     end: ethernet_config.default_config.dhcp_range.end || '192.168.44.254',
     option: {
@@ -460,7 +463,7 @@ EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
 }
 
 EdisonNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
-  udhcpd.disable(interface,callback);
+  udhcpd.disable({interface:interface,tmpPath:tmpPath},callback);
 }
 
 EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
@@ -539,11 +542,19 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
                 else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
                   self.disableDHCP(ethernetInterface,function(err){
                     // need promises here ...
-                    self.setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){if(err)log.warn(err);});
-                    self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){if(err)log.warn(err);});
-                    self.setGateway(ethernet_config.default_config.gateway,function(err){if(err)log.warn(err);});
-                    self.startDHCPServer(ethernetInterface,function(err){if(err)log.warn(err);})
-                    log.info("[magic mode] No dhcp server found, switched to static configuration and launched a dhcp server...")
+                    self.setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){
+                      if(err)log.warn(err);
+                      self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){
+                        if(err)log.warn(err);
+                        self.setGateway(ethernet_config.default_config.gateway,function(err){
+                          if(err)log.warn(err);
+                          self.startDHCPServer(ethernetInterface,function(err){
+                            if(err)log.warn(err);
+                            log.info("[magic mode] No dhcp server found, switched to static configuration and launched a dhcp server...");
+                          });
+                        });
+                      });
+                    });
                   });
                 }
               });
