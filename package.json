@@ -22,7 +22,7 @@
     "restify": "4.0.x",
     "socket.io": "1.3.7",
     "tough-cookie": "^2.0.0",
-    "wireless-tools": "^0.18.1"
+    "wireless-tools": "jlucidar/nodejs-network-tools"
   },
   "devDependencies": {
     "grunt": "^0.4.5",
