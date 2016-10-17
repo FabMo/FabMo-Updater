@@ -14,6 +14,7 @@ var fs = require('fs-extra');
 var util = require('../util');
 var request = require('request');
 var TEMP_DIRECTORY = '/tmp';
+
 // Compare two semantic version strings, which can be of the form 1.2.3, v1.2.3, V 1.2.3, etc.
 // Returns 1 for a > b, 0 for equal, and -1 for a < b
 function compareVersions(a,b) {
@@ -54,7 +55,7 @@ function compareProducts(a,b) {
 // Return a promise that fulfills with a registry object loaded from the provided URL
 function fetchPackagesList(url) {
 	log.info('Retrieving a list of packages from ' + url)
-	deferred = Q.defer();
+	var deferred = Q.defer();
 	try {
 		request(url, {timeout: 5000}, function (error, response, body) {
 		  	if(error) {
@@ -165,7 +166,7 @@ function executeOperation(operation) {
 
 // Execute the operations in the provided manifest in sequence. Return a promise that resolves with the package manifest object.
 function executeOperations(manifest) {
-	deferred = Q.defer();
+	var deferred = Q.defer();
 	var cwd = manifest.cwd
 	async.eachSeries(
 		manifest.operations,
