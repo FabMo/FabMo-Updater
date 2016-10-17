@@ -292,8 +292,7 @@ fieldset li {
 }
 
 fieldset input{
-    float: right;
-	margin-left: 0.3em;
+	margin-left: 0.1em;
 }
 
 fieldset label{
@@ -305,6 +304,12 @@ fieldset label{
 
 fieldset p {
     margin-bottom: 2px;
+}
+
+fieldset button {
+	float: right;
+	margin-left: 0.4em;
+	margin-top: 1px;
 }
 
 input {
