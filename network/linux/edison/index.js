@@ -5,7 +5,6 @@ var fs = require('fs');
 var doshell = require('../../../util').doshell;
 var util = require('util');
 var NetworkManager = require('../../manager').NetworkManager;
-var async = require('async');
 
 var ifconfig = require('wireless-tools/ifconfig');
 var iwconfig = require('wireless-tools/iwconfig');
@@ -515,13 +514,14 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
         log.info("ethernet is in "+ethernet_config.mode+" mode");
       switch(ethernet_config.mode) {
         case 'static':
-          self.disableDHCP(ethernetInterface,function(err){
-            if(err)log.warn(err);
-            // need promises here ...
-            self.setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){if(err)log.warn(err);});
-            self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){if(err)log.warn(err);});
-            self.setGateway(ethernet_config.default_config.gateway,function(err){if(err)log.warn(err);});
-            log.info("Ethernet static configuration is set")
+          async.series([
+            self.disableDHCP.bind(this,ethernetInterface),
+            self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
+            self.setNetmask.bind(this,ethernetInterface,ethernet_config.default_config.netmask),
+            self.setGateway.bind(this,ethernet_config.default_config.gateway)
+          ],function(err,results){
+            if(err) log.warn(err);
+            else log.info("Ethernet static configuration is set");
           });
           break;
 
@@ -540,22 +540,16 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
                 if(status.ipv4_address!==undefined)// we got a lease !
                   return log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
                 else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
-                  self.disableDHCP(ethernetInterface,function(err){
-                    // need promises here ...
-                    self.setIpAddress(ethernetInterface,ethernet_config.default_config.ip_address,function(err){
-                      if(err)log.warn(err);
-                      self.setNetmask(ethernetInterface,ethernet_config.default_config.netmask,function(err){
-                        if(err)log.warn(err);
-                        self.setGateway(ethernet_config.default_config.gateway,function(err){
-                          if(err)log.warn(err);
-                          self.startDHCPServer(ethernetInterface,function(err){
-                            if(err)log.warn(err);
-                            log.info("[magic mode] No dhcp server found, switched to static configuration and launched a dhcp server...");
-                          });
-                        });
-                      });
-                    });
-                  });
+                  async.series([
+                    self.disableDHCP.bind(this,ethernetInterface),
+                    self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
+                    self.setNetmask.bind(this,ethernetInterface,ethernet_config.default_config.netmask),
+                    self.setGateway.bind(this,ethernet_config.default_config.gateway),
+                    self.startDHCPServer.bind(this,ethernetInterface)
+                ],function(err,results){
+                    if(err) log.warn(err);
+                    else log.info("[magic mode] No dhcp server found, switched to static configuration and launched a dhcp server...");
+                });
                 }
               });
             },DHCP_TTL);
