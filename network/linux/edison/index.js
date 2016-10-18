@@ -25,7 +25,7 @@ var tmpPath = '/tmp/'
 
 var DEFAULT_NETMASK = "255.255.255.0";
 var DEFAULT_BROADCAST = "192.168.1.255"
-var DHCP_TTL = 5000;
+var DHCP_MAGIC_TTL = 5000;
 var ETHERNET_SCAN_INTERVAL = 2000;
 
 function jedison(cmdline, callback) {
@@ -510,56 +510,60 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
   var ethernet_config = config.updater.get('network').ethernet;
   ifconfig.status(ethernetInterface,function(err,status){
     if(status.up && status.running){
-        self.stopDHCPServer(ethernetInterface,function(err){if(err)log.warn(err);});
+      async.series([
+        self.disableDHCP.bind(this,ethernetInterface),
+        self.stopDHCPServer.bind(this,ethernetInterface)
+      ],function(err,results){
+        if(err)log.warn(err);
         log.info("ethernet is in "+ethernet_config.mode+" mode");
-      switch(ethernet_config.mode) {
-        case 'static':
-          async.series([
-            self.disableDHCP.bind(this,ethernetInterface),
-            self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
-            self.setNetmask.bind(this,ethernetInterface,ethernet_config.default_config.netmask),
-            self.setGateway.bind(this,ethernet_config.default_config.gateway)
-          ],function(err,results){
-            if(err) log.warn(err);
-            else log.info("Ethernet static configuration is set");
-          });
-          break;
+        switch(ethernet_config.mode) {
+          case 'static':
+            async.series([
+              self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
+              self.setNetmask.bind(this,ethernetInterface,ethernet_config.default_config.netmask),
+              self.setGateway.bind(this,ethernet_config.default_config.gateway)
+            ],function(err,results){
+              if(err) log.warn(err);
+              else log.info("Ethernet static configuration is set");
+            });
+            break;
 
-        case 'dhcp':
-          self.enableDHCP(ethernetInterface,function(err){
-            if(err)return log.warn(err);
-            log.info("Ethernet dynamic configuration is set");
-          });
-          break;
+          case 'dhcp':
+            self.enableDHCP(ethernetInterface,function(err){
+              if(err)return log.warn(err);
+              log.info("Ethernet dynamic configuration is set");
+            });
+            break;
 
-        case 'magic':
-          self.enableDHCP(ethernetInterface,function(err){
-            setTimeout(function(){
-              ifconfig.status(ethernetInterface,function(err,status){
-                if(err)log.warn(err);
-                if(status.ipv4_address!==undefined)// we got a lease !
-                  return log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
-                else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
-                  async.series([
-                    self.disableDHCP.bind(this,ethernetInterface),
-                    self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
-                    self.setNetmask.bind(this,ethernetInterface,ethernet_config.default_config.netmask),
-                    self.setGateway.bind(this,ethernet_config.default_config.gateway),
-                    self.startDHCPServer.bind(this,ethernetInterface)
-                ],function(err,results){
-                    if(err) log.warn(err);
-                    else log.info("[magic mode] No dhcp server found, switched to static configuration and launched a dhcp server...");
+          case 'magic':
+            self.enableDHCP(ethernetInterface,function(err){
+              setTimeout(function(){
+                ifconfig.status(ethernetInterface,function(err,status){
+                  if(err)log.warn(err);
+                  if(status.ipv4_address!==undefined)// we got a lease !
+                    return log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
+                  else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
+                    async.series([
+                      self.disableDHCP.bind(this,ethernetInterface),
+                      self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
+                      self.setNetmask.bind(this,ethernetInterface,ethernet_config.default_config.netmask),
+                      self.setGateway.bind(this,ethernet_config.default_config.gateway),
+                      self.startDHCPServer.bind(this,ethernetInterface)
+                  ],function(err,results){
+                      if(err) log.warn(err);
+                      else log.info("[magic mode] No dhcp server found, switched to static configuration and launched a dhcp server...");
+                  });
+                  }
                 });
-                }
-              });
-            },DHCP_TTL);
-          });
-          break;
+              },DHCP_MAGIC_TTL);
+            });
+            break;
 
-        case 'off':
-        default:
-          break;
-      }
+          case 'off':
+          default:
+            break;
+        }
+      });
     }
   });
 }
