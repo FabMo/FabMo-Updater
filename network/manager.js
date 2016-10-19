@@ -109,4 +109,14 @@ GenericNetworkManager.prototype.setGateway=function(gateway, callback) {
   fail(this, callback);
 }
 
+GenericNetworkManager.prototype.applyEthernetConfig=function(callback) {
+  log.warn('Unimplemented: applyEthernetConfig()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.applyWifiConfig=function(callback) {
+  log.warn('Unimplemented: applyWifiConfig()');
+  fail(this, callback);
+}
+
 exports.NetworkManager = GenericNetworkManager;
