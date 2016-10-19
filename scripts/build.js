@@ -165,7 +165,7 @@ function getMD5Hash() {
 		.then(function(hash) {
 			md5 = hash.split(' ')[0].trim();
 		}).catch(function(err) {
-			return doshell('md5 -q' + fmpArchivePath)
+			return doshell('md5 -q ' + fmpArchivePath)
 					.then(function(hash) {
 						md5 = hash.split(' ')[0].trim();
 					});
