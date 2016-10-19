@@ -23,6 +23,9 @@ switch(argv.product) {
 		var product = 'updater';
 		var reposDirectory = '/fabmo/updater';
 		break;
+	default:
+		log.error("Product specified must be either engine or updater.");
+		process.exit(1);
 }
 
 // Globals that are setup by the build process
@@ -73,8 +76,8 @@ function createBuildDirectories() {
 function getProductVersion() {
 	
 	var setupPaths = function(v) {
-		version = v.trim();	
-		fmpArchiveName = 'fabmo-engine-' + version + '.fmp';
+		version = v.trim().replace('.','-');	
+		fmpArchiveName = 'fabmo-' + product + '-' + manifest.os + '-' + manifest.platform + '-' version + '.fmp';
 		fmpArchivePath = distPath(fmpArchiveName);
 	}
 
