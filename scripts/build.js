@@ -76,8 +76,9 @@ function createBuildDirectories() {
 function getProductVersion() {
 	
 	var setupPaths = function(v) {
-		version = v.trim().replace('.','-');	
-		fmpArchiveName = 'fabmo-' + product + '-' + manifest.os + '-' + manifest.platform + '-' + version + '.fmp';
+		version = v.trim()
+		var fnversion  = version.replace(/\./g,'-');
+		fmpArchiveName = 'fabmo-' + product + '-' + manifest.os + '-' + manifest.platform + '-' + fnversion + '.fmp';
 		fmpArchivePath = distPath(fmpArchiveName);
 	}
 
