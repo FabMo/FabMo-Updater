@@ -77,7 +77,7 @@ function getProductVersion() {
 	
 	var setupPaths = function(v) {
 		version = v.trim().replace('.','-');	
-		fmpArchiveName = 'fabmo-' + product + '-' + manifest.os + '-' + manifest.platform + '-' version + '.fmp';
+		fmpArchiveName = 'fabmo-' + product + '-' + manifest.os + '-' + manifest.platform + '-' + version + '.fmp';
 		fmpArchivePath = distPath(fmpArchiveName);
 	}
 
