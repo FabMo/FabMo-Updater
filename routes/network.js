@@ -182,11 +182,10 @@ setEthernetConfig = function(req,res,next){
   netConfig.ethernet = ethernetConfig;
   config.updater.set('network',netConfig);
   network.applyEthernetConfig();
-    res.json({
-      status : 'success',
-      data : config.updater.get('network').ethernet;}
-    });
-  };
+  res.json({
+    status : 'success',
+    data : config.updater.get('network').ethernet
+  });
 }
 
 setWifiConfig = function(req,res,next){
@@ -198,11 +197,10 @@ setWifiConfig = function(req,res,next){
   netConfig.wifi = wifiConfig;
   config.updater.set('network',netConfig);
   network.applyWifiConfig();
-    res.json({
-      status : 'success',
-      data : config.updater.get('network').wifi;}
-    });
-  };
+  res.json({
+    status : 'success',
+    data : config.updater.get('network').wifi
+  });
 }
 
 module.exports = function(server) {
