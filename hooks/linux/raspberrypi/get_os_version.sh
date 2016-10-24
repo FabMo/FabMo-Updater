@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cat /etc/issue.net
+uname -a
