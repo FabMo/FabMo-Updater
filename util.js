@@ -350,56 +350,6 @@ function eject(command, args) {
     process.exit(0);
 }
 
-function getCpuInfo( callback )
-{
-  fs.readFile( '/proc/cpuinfo', function( err, filedata )
-  {
-    if ( err ) return callback( err );
-
-    cpuinfoString = filedata.toString();
-
-    // Split Multiple Processors
-    var procs = cpuinfoString.split("\n\n");
-
-    var cpuinfo = [];
-
-    // Format Each Processor
-    for( p in procs )
-    {
-      if ( procs[p].length < 1 ) continue;
-
-      var sep = ":";
-
-      lines = procs[p].trim().split( "\n" );
-
-      var proc_obj = {};
-
-      for( key in lines )
-      {
-        line = lines[ key ].trim().split( sep );
-
-        if ( line.length != 2 ) continue;
-
-        line[0] = line[0].trim();
-        line[1] = line[1].trim();
-
-        // Convert kB values to bytes
-        if ( line[1].slice( -3 ) == ' kB' || line[1].slice( -3 ) == ' KB' )
-          line[1] = parseInt( line[1].substr( 0, line[1].length -3 ) ) * 1024;
-
-        // Append To Response
-        proc_obj[ line[0] ] = line[1];
-      }
-
-      // Parse and append to response
-      cpuinfo.push( proc_obj);
-    }
-
-    return callback( null, cpuinfo );
-  });
-};
-
-exports.getCpuInfo = getCpuInfo;
 exports.getClientAddress = getClientAddress;
 exports.serveStatic = serveStatic;
 exports.Queue = Queue;
