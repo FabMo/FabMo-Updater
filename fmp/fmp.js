@@ -15,9 +15,33 @@ var util = require('../util');
 var request = require('request');
 var TEMP_DIRECTORY = '/tmp';
 
+function isDevVersion(v) {
+	return v.match(/[0-9a-fA-F](\-\w+)?/) ? true : false;
+}
+
+function isReleaseVersion(v) {
+		v = v.replace(/v|\s/ig, '').split('.').map(function(x) {return parseInt(x,10)});
+		if (v.length !== 3) {
+			return false;
+		}
+		return true;
+}
+
 // Compare two semantic version strings, which can be of the form 1.2.3, v1.2.3, V 1.2.3, etc.
 // Returns 1 for a > b, 0 for equal, and -1 for a < b
 function compareVersions(a,b) {
+	// If one is a
+	if(isDevVersion(a)) {
+		if(isDevVersion(b)) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+	if(isDevVersion(b)) {
+		// If we got here, a isn't a dev version, so b is higher
+		return -1;
+	}
 	try {
 		a = a.replace(/v|\s/ig, '').split('.').map(function(x) {return parseInt(x,10)});
 		b = b.replace(/v|\s/ig, '').split('.').map(function(x) {return parseInt(x,10)});		
@@ -288,11 +312,8 @@ function unlock(manifest) {
 
 function lock(manifest) {
 	try {
-		if(manifest) {
-			log.info('Locking the installation');	
-			return require('../hooks').lock().then(function() { return manifest; });		
-		}
-		return Q(manifest);
+		log.info('Locking the installation');	
+		return require('../hooks').lock().then(function() { return manifest; });		
 	} catch(err) {
 		return Q.reject(err);
 	}
