@@ -337,14 +337,21 @@ function installPackageFromFile(filename) {
 }
 
 function installUnpackedPackage(manifest_filename) {
+	var manifest;
+
 	return loadManifest(manifest_filename)
+		.then(function(m) {
+			manifest = m;
+		})
 		.then(stopServices)
 		.then(unlock)
 		.then(clearToken)
 		.then(executeOperations)
 		.then(setToken)
 		.finally(lock)
-		.then(startServices)
+		.then(function() {
+			return startServices(manifest);
+		});
 }
 
 function filterPackages(registry, options) {
