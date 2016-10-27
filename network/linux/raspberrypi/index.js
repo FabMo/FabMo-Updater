@@ -15,7 +15,7 @@ var WIFI_SCAN_RETRIES = 3;
 
 function jedison(cmdline, callback) {
     var callback = callback || function() {}
-    doshell('./scripts/jedison ' + cmdline, function(s) {
+    doshell('./network/linux/raspberrypi/jedison ' + cmdline, function(s) {
         try {
             j = JSON.parse(s)
             if(j.status == 'success') {

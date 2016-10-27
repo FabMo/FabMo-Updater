@@ -375,12 +375,12 @@ function UpdaterConfigFirstTime(callback) {
                             var id = '';
                             log.error('There was a problem generating the factory ID:');
                             log.error(err);
-                            for(var i=0; i<8; i++) {
+                            for(var i=0; i<6; i++) {
                                 id += (Math.floor(Math.random()*15)).toString(16);
                             }
                         }
                         var hostname = 'FabMo-' + id;
-                        config.updater.set('name', hostname);
+                        config.updater.set('name', hostname.substring(0,30));
                         callback();
                     })
 
