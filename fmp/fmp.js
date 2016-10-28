@@ -215,7 +215,8 @@ function executeOperations(manifest) {
 function clearToken(manifest) {
 	var deferred = Q.defer();
 
-	if(manifest.token) {
+	if(!manifest) { deferred.reject(new Error('No manifest was provided.')); }
+	else if(manifest.token) {
 		log.info('Clearing update token ' + manifest.token)
 		fs.unlink(manifest.token, function(err) {
 			// err is swallowed on purpose.  It's ok if this operation fails due to the file not existing
@@ -232,7 +233,8 @@ function clearToken(manifest) {
 function setToken(manifest) {
 	var deferred = Q.defer();
 	
-	if(manifest.token) {
+	if(!manifest) { deferred.reject(new Error('No manifest was provided.')); }
+	else if(manifest.token) {
 		log.info('Setting update token ' + manifest.token)
 		fs.writeFile(manifest.token, "", function(err) {
 	    	if(err) {
@@ -342,6 +344,7 @@ function installUnpackedPackage(manifest_filename) {
 	return loadManifest(manifest_filename)
 		.then(function(m) {
 			manifest = m;
+			return m;
 		})
 		.then(stopServices)
 		.then(unlock)
