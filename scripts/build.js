@@ -13,6 +13,7 @@ if(!('product' in argv)) {
 }
 
 var IGNORE_NPM_ERROR = argv['ignore-npm-error'];
+var SKIP_NPM_INSTALL = argv['skip-npm-install'];
 
 switch(argv.product) {
 	case 'engine':
@@ -39,7 +40,19 @@ var versionFilePath = path.resolve(stagingDirectory, 'version.json');
 var firmwarePath = path.resolve(reposDirectory, 'firmware/g2.bin');
 
 var fmpArchivePath;
-var version = argv.version ? argv.version.trim() : null;
+var version;
+var versionString;
+var candidateVersion;
+if(argv['rc']) {
+	version = 'rc';
+} else if(argv['dev']) {
+	version = 'master';
+} else if(argv['release']) {
+	version = 'release';
+}
+else {
+	version = argv.version ? argv.version.trim() : null;
+}
 var manifest = {};
 var md5;
 var manifestTemplatePath = scriptPath(product + '.json');
@@ -68,41 +81,55 @@ function clean() {
 	return doshell('rm -rf ' + buildDirectory);
 }
 
+function getLatestReleasedVersion() {
+	if(version == 'release') {
+		return doshell('git tag --sort=v:refname | tail -1', {cwd : reposDirectory})
+			.then(function(v) {
+				version = v.trim();
+			});
+	} else {
+		return Q();
+	}
+}
+
 function createBuildDirectories() {
 	log.info("Creating build directory tree");
 	return doshell('mkdir -p ' + buildDirectory + ' ' + stagingDirectory + ' ' + distDirectory);
 }
 
 function getProductVersion() {
-	
-	var setupPaths = function(v) {
-		version = v.trim()
-		var fnversion  = version.replace(/\./g,'-');
-		fmpArchiveName = 'fabmo-' + product + '-' + manifest.os + '-' + manifest.platform + '-' + fnversion + '.fmp';
+	return doshell('git describe --dirty', {cwd : reposDirectory}).then(function(v) {
+		v = v.trim().replace('-dirty', '!');
+		console.log(v)
+		parts = v.split('-');
+		versionString = parts[0]
+		if(parts[2]) {
+			versionString += '-' + parts[2];
+			if(version === 'master') {
+				versionString += '-dev';
+			}
+		} 
+		fmpArchiveName = 'fabmo-' + product + '_' + manifest.os + '_' + manifest.platform + '_' + versionString + '.fmp';
 		fmpArchivePath = distPath(fmpArchiveName);
-	}
-
-	if(version) {
-		log.info("Using the provided version: " + version)
-		return Q(setupPaths(version))
-	} else {
-		log.info("Getting latest version number")
-		return doshell('git tag --sort=v:refname | tail -1', {cwd : reposDirectory})
-			.then(setupPaths);		
-	}
+	});
 }
 
 function checkout() {
-	log.info("Checking out version " + version)
-	return doshell('git checkout ' + version, {cwd : reposDirectory});
+	if(version) {
+		log.info("Checking out version " + version)
+		return doshell('git checkout ' + version, {cwd : reposDirectory});		
+	}
+	return Q();
 }
 
 function npmClean() {
+	if(SKIP_NPM_INSTALL) { return Q(); }
 	log.info('Removing node_modules directory')
 	return doshell('rm -rf node_modules', {cwd : reposDirectory});
 }
 
 function npmInstall() {
+	if(SKIP_NPM_INSTALL) { return Q(); }
 	log.info("Installing dependencies")
 	var npmPromise = doshell('npm install --production', {cwd : reposDirectory});
 	if(IGNORE_NPM_ERROR) {
@@ -209,8 +236,9 @@ function printPackageEntry() {
 clean()
 .then(createBuildDirectories)
 .then(loadManifestTemplate)
-.then(getProductVersion)
+.then(getLatestReleasedVersion)
 .then(checkout)
+.then(getProductVersion)
 .then(npmClean)
 .then(npmInstall)
 .then(stageRepos)

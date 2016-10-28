@@ -84,9 +84,9 @@ function compareVersions(a,b) {
 		if(a.minor === b.minor) {
 			if(a.patch === b.patch) {
 				if(a.type === 'release' && b.type !== 'release') {
-					return 1;
+					return b.type === 'dev' ? -1 : 1;
 				} else if(b.type === 'release' && a.type !== 'release') {
-					return -1;
+					return a.type === 'dev' ? 1 : -1;
 				} 
 				return 0;
 			} else {
