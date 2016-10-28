@@ -439,14 +439,23 @@ function downloadPackage(package) {
 	var filename = "/opt/fabmo/update.fmp";
 	log.info('Starting download of ' + package.url);
 	var file = fs.createWriteStream(filename);
+	var statusCode;
+	var statusMessage;
 	request(package.url)
 		.on('error', function(err) { // Handle errors
     		deferred.reject(err);
   		})
+  		.on('response', function(response) {
+  			statusCode = response.statusCode;
+  			statusMessage = response.statusMessage;
+  		})
 		.pipe(file).on('finish', function() {
 			file.close(function(err) {
-      			if(err) { 
+      			if(err) {
       				return deferred.reject(err); 
+      			}
+      			if(statusCode !== 200) {
+      				return deferred.reject(new Error(statusCode + ' ' + statusMessage));
       			}
 	  			log.info('Download of ' + package.url + ' is complete.')
   				package.local_filename = filename;
