@@ -87,7 +87,7 @@ function getProductVersion() {
 		return Q(setupPaths(version))
 	} else {
 		log.info("Getting latest version number")
-		return doshell('git tag | tail -1', {cwd : reposDirectory})
+		return doshell('git tag --sort=v:refname | tail -1', {cwd : reposDirectory})
 			.then(setupPaths);		
 	}
 }
