@@ -15,6 +15,67 @@ var util = require('../util');
 var request = require('request');
 var TEMP_DIRECTORY = '/tmp';
 
+function parseVersion(v) {
+	var retval = {
+		'dirty' : false,
+		'scm' : null,
+		'hash' : null
+	}
+	var parts = v.split('-');
+	var type = null;
+	var hash = null;
+	if(parts[2]) {
+		type = parts[2];
+		hash = parts[1];
+	} else if(parts[1]) {
+		type = parts[1];
+	} else {
+		type = 'release';
+	}
+
+	switch(type) {
+		case 'dev':
+		case 'rc':
+		case 'release':
+			retval.type = type;
+		break;
+		case 'rel':
+			retval.type = 'release';
+		break;
+		default:
+			throw new Error('Unknown release type ' + type);
+		break;
+	}
+	
+	if(hash) {
+		hash = hash.trim()
+		if(hash[0] === 'g') {
+			retval.scm = 'git'
+			hash = hash.replace('g','');
+		}
+
+		if(hash.search('!') >= 0) {
+			console.log('Hash is dirty, ' + hash);
+			retval.dirty = true;
+			hash = hash.replace('!','');
+		}
+		retval.hash = hash;
+	}
+
+	mmp = parts[0].replace(/v?|\s/ig, '').split('.').map(function(x) {return parseInt(x,10)});
+	if(mmp.length != 3) {
+		throw new Error('Invalid version number: ' + parts[0]);
+	}
+	retval.major = mmp[0];
+	retval.minor = mmp[1];
+	retval.patch = mmp[2];
+
+	if(retval.type === 'release' && (retval.dirty || retval.hash)) {
+		throw new Error('Invalid version string: ' + v);
+	}	
+	return retval;
+}
+
 function isDevVersion(v) {
 	return v.match(/[0-9a-fA-F](\-\w+)?/) ? true : false;
 }
@@ -489,3 +550,4 @@ exports.installUnpackedPackage = installUnpackedPackage;
 exports.installPackageFromFile = installPackageFromFile
 exports.checkForAvailablePackage = checkForAvailablePackage;
 exports.downloadPackage = downloadPackage;
+exports.parseVersion = parseVersion;
