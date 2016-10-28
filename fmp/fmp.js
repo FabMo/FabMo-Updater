@@ -55,7 +55,6 @@ function parseVersion(v) {
 		}
 
 		if(hash.search('!') >= 0) {
-			console.log('Hash is dirty, ' + hash);
 			retval.dirty = true;
 			hash = hash.replace('!','');
 		}
@@ -76,54 +75,28 @@ function parseVersion(v) {
 	return retval;
 }
 
-function isDevVersion(v) {
-	return v.match(/[0-9a-fA-F](\-\w+)?/) ? true : false;
-}
-
-function isReleaseVersion(v) {
-		v = v.replace(/v|\s/ig, '').split('.').map(function(x) {return parseInt(x,10)});
-		if (v.length !== 3) {
-			return false;
-		}
-		return true;
-}
-
 // Compare two semantic version strings, which can be of the form 1.2.3, v1.2.3, V 1.2.3, etc.
 // Returns 1 for a > b, 0 for equal, and -1 for a < b
 function compareVersions(a,b) {
-	// If one is a
-	if(isDevVersion(a)) {
-		if(isDevVersion(b)) {
-			return 0;
-		} else {
-			return 1;
-		}
-	}
-	if(isDevVersion(b)) {
-		// If we got here, a isn't a dev version, so b is higher
-		return -1;
-	}
-	try {
-		a = a.replace(/v|\s/ig, '').split('.').map(function(x) {return parseInt(x,10)});
-		b = b.replace(/v|\s/ig, '').split('.').map(function(x) {return parseInt(x,10)});		
-		if (a.length !== 3 || b.length !== 3) {
-			throw new Error()
-		}
-	} catch(err) {
-		throw new Error('Invalid version number format')
-	}
-	if(a[0] === b[0]) {
-		if(a[1] === b[1]) {
-			if(a[2] === b[2]) {
-				return 0
+	a = parseVersion(a);
+	b = parseVersion(b);
+	if(a.major === b.major) {
+		if(a.minor === b.minor) {
+			if(a.patch === b.patch) {
+				if(a.type === 'release' && b.type !== 'release') {
+					return 1;
+				} else if(b.type === 'release' && a.type !== 'release') {
+					return -1;
+				} 
+				return 0;
 			} else {
-				return a[2] > b[2] ? 1 : -1;
+				return a.patch > b.patch ? 1 : -1;
 			}
 		} else {
-			return a[1] > b[1] ? 1 : -1;
+			return a.minor > b.minor ? 1 : -1;
 		}
 	} else {
-		return a[0] > b[0] ? 1 : -1;
+		return a.major > b.major ? 1 : -1;
 	}
 }
 
