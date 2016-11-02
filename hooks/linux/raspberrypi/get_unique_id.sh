@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cat /var/lib/dbus/machine-id
+cat /proc/cpuinfo | grep Serial | awk ' {print $3}'
