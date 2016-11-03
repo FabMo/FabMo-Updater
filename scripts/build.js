@@ -3,6 +3,7 @@ var Q = require('q');
 var path = require('path');
 var argv = require('minimist')(process.argv);
 var fs = require('fs');
+var github = require('./github');
 
 var log = require('../log').logger('build');
 
@@ -15,14 +16,18 @@ if(!('product' in argv)) {
 var IGNORE_NPM_ERROR = argv['ignore-npm-error'];
 var SKIP_NPM_INSTALL = argv['skip-npm-install'];
 
+var githubReposOwner = 'FabMo';
+
 switch(argv.product) {
 	case 'engine':
 		var product = 'engine';
 		var reposDirectory = '/fabmo/engine';
+		var githubRepos = 'FabMo-Engine';
 		break;
 	case 'updater':
 		var product = 'updater';
 		var reposDirectory = '/fabmo/updater';
+		var githubRepos = 'FabMo-Updater';
 		break;
 	default:
 		log.error("Product specified must be either engine or updater.");
@@ -39,22 +44,31 @@ var scriptDirectory = path.resolve(__dirname);
 var versionFilePath = path.resolve(stagingDirectory, 'version.json');
 var firmwarePath = path.resolve(reposDirectory, 'firmware/g2.bin');
 
+
 var fmpArchivePath;
 var version;
 var versionString;
 var candidateVersion;
+var isFinalRelease = false;
+
 if(argv['rc']) {
 	version = 'rc';
 } else if(argv['dev']) {
 	version = 'master';
 } else if(argv['release']) {
 	version = 'release';
+	isFinalRelease = true;
+
 }
 else {
 	version = argv.version ? argv.version.trim() : null;
+	if(version) {
+		isFinalRelease = true;
+	}
 }
 var manifest = {};
 var md5;
+var packageDownloadURL;
 var manifestTemplatePath = scriptPath(product + '.json');
 
 function stagePath(pth) { return path.resolve(stagingDirectory, pth); }
@@ -227,9 +241,27 @@ function printPackageEntry() {
 		package[item] = manifest[item];
 	});
 
-	package.md5 = md5
+	package.md5 = md5;
+	package.url = packageDownloadURL;
 
 	console.log(JSON.stringify(package,null, 3));
+	return Q();
+}
+
+function publishGithubRelease() {
+	if(argv.publish) {
+		log.info("Publishing Github release...")
+		return github.getCredentials()
+			.then(function(creds) {
+				return github.createRelease(githubReposOwner, githubRepos, version, creds)
+			})
+			.then(function(release) {
+				return github.addReleaseAsset(release, fmpArchivePath);
+			}).then(function(downloadURL) {
+				packageDownloadURL = downloadURL;
+			});
+		}
+	}
 	return Q();
 }
 
@@ -252,6 +284,7 @@ clean()
 .then(createFMPArchive)
 .then(getMD5Hash)
 .then(printPackageEntry)
+.then(publishGithubRelease)
 .catch(function(err) {
 	log.error(err);
 }).done();
