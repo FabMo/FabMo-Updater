@@ -514,6 +514,7 @@ $("#btn-factory-reset").click( function(evt) {
 
 
   updater.getConfig(function(err, config) {
+
     var updater_version_number = 'unavailable';
     try{
       updater_version_number = config.version.number || config.version.hash.substring(0,8) + '-' + config.version.type      
@@ -526,9 +527,12 @@ $("#btn-factory-reset").click( function(evt) {
     $('.label-platform').text(config.os + '/' + config.platform);
     $('.label-os-version').text(config.os_version);
     $('.label-machine-id').text(config.id);
+    $('#consent_for_beacon').val(config.consent_for_beacon);
+    
     setOS(config.os);
 
     config = flattenObject(config);
+
     for(key in config) {
       v = config[key];
       input = $('#config-' + key);
