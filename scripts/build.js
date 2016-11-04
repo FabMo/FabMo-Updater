@@ -69,6 +69,7 @@ else {
 var manifest = {};
 var md5;
 var packageDownloadURL;
+var changelog = '';
 var manifestTemplatePath = scriptPath(product + '.json');
 
 function stagePath(pth) { return path.resolve(stagingDirectory, pth); }
@@ -114,7 +115,6 @@ function createBuildDirectories() {
 function getProductVersion() {
 	return doshell('git describe --dirty', {cwd : reposDirectory}).then(function(v) {
 		v = v.trim().replace('-dirty', '!');
-		console.log(v)
 		parts = v.split('-');
 		versionString = parts[0]
 		if(parts[2]) {
@@ -243,6 +243,7 @@ function printPackageEntry() {
 
 	package.md5 = md5;
 	package.url = packageDownloadURL;
+	package.changelog = changelog;
 
 	console.log(JSON.stringify(package,null, 3));
 	return Q();
@@ -251,16 +252,20 @@ function printPackageEntry() {
 function publishGithubRelease() {
 	if(argv.publish) {
 		log.info("Publishing Github release...")
+		var githubCredentials;
 		return github.getCredentials()
 			.then(function(creds) {
-				return github.createRelease(githubReposOwner, githubRepos, version, creds)
+				githubCredentials = creds;
+				return github.createRelease(githubReposOwner, githubRepos, version, githubCredentials)
 			})
 			.then(function(release) {
-				return github.addReleaseAsset(release, fmpArchivePath);
+				changelog = release.body;
+				log.info("Uploading FMP package to github...")
+				return github.addReleaseAsset(release, fmpArchivePath, githubCredentials);
 			}).then(function(downloadURL) {
 				packageDownloadURL = downloadURL;
+				return Q();
 			});
-		}
 	}
 	return Q();
 }
@@ -283,8 +288,8 @@ clean()
 .then(stageManifestJSON)
 .then(createFMPArchive)
 .then(getMD5Hash)
-.then(printPackageEntry)
 .then(publishGithubRelease)
+.then(printPackageEntry)
 .catch(function(err) {
 	log.error(err);
 }).done();

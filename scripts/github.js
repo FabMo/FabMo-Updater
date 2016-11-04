@@ -3,6 +3,7 @@ var prompt = require('prompt');
 var Q = require('q');
 var path = require('path');
 var fs = require('fs');
+
 var USER_AGENT = 'DangerBuns';
 
 function createRelease(owner, repos, tagName, options) {
@@ -45,6 +46,12 @@ function createRelease(owner, repos, tagName, options) {
 			    	}
 				},
 				function(err, resp, body) {
+					if(err) {
+						return deferred.reject(err);
+					}
+					if(resp.statusCode != 201) {
+						deferred.reject(new Error(resp.statusMessage));
+					}
 					deferred.resolve(JSON.parse(body));
 				}
 			);
@@ -66,67 +73,77 @@ function URITemplateSubst(template, obj) {
 		}
 	});
 	var retval = parts.join('').replace(/[\?\&]$/g,'');
-	console.log(retval);
 	return retval;
 }
 
 function addReleaseAsset(release, filename, options) {
 	var deferred = Q.defer();
-	var name = path.basename(filename);
-	var uploadURL = URITemplateSubst(release.upload_url, {'name' : name});
-	var auth = {};
-    if(options.username || options.password) {
-    	auth.user = options.username
-    	auth.pass = options.password
-    }
+	try {
+		var name = path.basename(filename);
+		var uploadURL = URITemplateSubst(release.upload_url, {'name' : name});
+		var auth = {};
 
-	var size = fs.statSync(filename, function(err, stat) {
-		fs.createReadStream(filename)
-			.pipe(request.post(
-					{
-						url : uploadURL,
-						auth : auth,
-			    		headers : {
-			    			'User-Agent' : USER_AGENT,
-			    			'Content-Length' : stat.size
-			    		}
-					},
-					function(err, resp, body) {
-						if(err) {
-							deferred.reject(err);
+	    if(options.username || options.password) {
+	    	auth.user = options.username
+	    	auth.pass = options.password
+	    }
+
+		var size = fs.stat(filename, function(err, stat) {
+			fs.createReadStream(filename)
+				.pipe(request.post(
+						{
+							url : uploadURL,
+							auth : auth,
+				    		headers : {
+				    			'User-Agent' : USER_AGENT,
+				    			'Content-Length' : stat.size
+				    		}
+						},
+						function(err, resp, body) {
+							if(err) {
+								return deferred.reject(err);
+							}
+							if(resp.statusCode != 201) {
+								deferred.reject(new Error(body))
+							}
+							body = JSON.parse(body);
+							deferred.resolve(body.browser_download_url);
 						}
-						body = JSON.parse(body);
-						deferred.resolve(body.browser_download_url);
-					}
-				
-				)
-			);
-	})
+					
+					)
+				);
+		})
+	} catch(e) {
+		deferred.reject(e);
+	}
 
 	return deferred.promise
 }
-
 function getCredentials() {
 	var deferred = Q.defer();
 	var schema = {
 		properties: {
 		  username: {
-		    required: true
+		    required: true,
+		    message: 'Github Username:'
 		  },
 		  password: {
 		  	required: true,
-		    hidden: true
+		    hidden: true,
+		    message: 'Github Password:'
 		  }
 		}
 	};
 	prompt.start();
+	prompt.message = '';
+	prompt.delimiter = '';
 	prompt.get(schema, function(err, result) {
 		if(err) {
 			return deferred.reject(err);
 		}
 		return deferred.resolve(result);
 	});
-	return deferred.promise();
+	return deferred.promise;
 }
 
 exports.createRelease = createRelease;
