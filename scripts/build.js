@@ -132,7 +132,7 @@ function getProductVersion() {
 function checkout() {
 	if(version) {
 		log.info("Checking out version " + version)
-		return doshell('git checkout ' + version, {cwd : reposDirectory});		
+		return doshell('git fetch origin --tags; git checkout ' + version, {cwd : reposDirectory});		
 	}
 	return Q();
 }
@@ -253,7 +253,7 @@ function publishGithubRelease() {
 
 	if(argv.publish) {
 		if(!isFinalRelease) {
-			log.warn("Cannot publish a release that is not a final release.  " + versionString + " is not a final release.");
+			log.warn("Cannot publish " + versionString + " to github because it is not a final release.");
 			return Q();
 		}
 
