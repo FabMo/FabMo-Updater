@@ -278,7 +278,7 @@ function publishGithubRelease() {
 
 clean()
 .then(createBuildDirectories)
-.then(loadManifestTemplate)      	// Set manifest to the loaded template
+.then(loadManifestTemplate)      	// Set manifest
 .then(getLatestReleasedVersion)  	// Set version
 .then(checkout)
 .then(getProductVersion)			// Set versionString, fmpArchiveName, fmpArchivePath
