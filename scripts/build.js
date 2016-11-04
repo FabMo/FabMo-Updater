@@ -97,7 +97,7 @@ function clean() {
 }
 
 function getLatestReleasedVersion() {
-	if(version == 'release') {
+	if(version === 'release') {
 		return doshell('git tag --sort=v:refname | tail -1', {cwd : reposDirectory})
 			.then(function(v) {
 				version = v.trim();
@@ -217,8 +217,6 @@ function loadManifestTemplate() {
 	return Q.nfcall(fs.readFile, manifestTemplatePath)
 		.then(function(data) {
 			manifest = JSON.parse(data);
-		}).catch(function(err){
-			log.error(err);
 		})
 }
 
@@ -272,11 +270,11 @@ function publishGithubRelease() {
 
 clean()
 .then(createBuildDirectories)
-.then(loadManifestTemplate)
-.then(getLatestReleasedVersion)
+.then(loadManifestTemplate)      	// Set manifest to the loaded template
+.then(getLatestReleasedVersion)  	// Set version
 .then(checkout)
-.then(getProductVersion)
-.then(npmClean)
+.then(getProductVersion)			// Set versionString, fmpArchiveName, fmpArchivePath
+.then(npmClean)						
 .then(npmInstall)
 .then(stageRepos)
 .then(stageNodeModules)
@@ -287,8 +285,8 @@ clean()
 .then(stageFirmware)
 .then(stageManifestJSON)
 .then(createFMPArchive)
-.then(getMD5Hash)
-.then(publishGithubRelease)
+.then(getMD5Hash)					// Set md5
+.then(publishGithubRelease)			// Set changelog
 .then(printPackageEntry)
 .catch(function(err) {
 	log.error(err);
