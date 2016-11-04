@@ -52,7 +52,11 @@ function createRelease(owner, repos, tagName, options) {
 					if(resp.statusCode != 201) {
 						deferred.reject(new Error(resp.statusMessage));
 					}
-					deferred.resolve(JSON.parse(body));
+					try {
+						deferred.resolve(JSON.parse(body));
+					} catch(e) {
+						deferred.reject(e);
+					}
 				}
 			);
     	}

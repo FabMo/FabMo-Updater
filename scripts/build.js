@@ -66,6 +66,7 @@ else {
 		isFinalRelease = true;
 	}
 }
+
 var manifest = {};
 var md5;
 var packageDownloadURL;
@@ -222,7 +223,7 @@ function loadManifestTemplate() {
 
 function stageManifestJSON() {
 	log.info('Compiling package manifest')
-	manifest.version = version
+	manifest.version = versionString
 	return Q.nfcall(fs.writeFile, stagePath('manifest.json'), JSON.stringify(manifest))
 }
 
@@ -242,13 +243,20 @@ function printPackageEntry() {
 	package.md5 = md5;
 	package.url = packageDownloadURL;
 	package.changelog = changelog;
+	package.date = (new Date()).toISOString();
 
 	console.log(JSON.stringify(package,null, 3));
 	return Q();
 }
 
 function publishGithubRelease() {
+
 	if(argv.publish) {
+		if(!isFinalRelease) {
+			log.warn("Cannot publish a release that is not a final release.  " + versionString + " is not a final release.");
+			return Q();
+		}
+
 		log.info("Publishing Github release...")
 		var githubCredentials;
 		return github.getCredentials()
@@ -257,7 +265,7 @@ function publishGithubRelease() {
 				return github.createRelease(githubReposOwner, githubRepos, version, githubCredentials)
 			})
 			.then(function(release) {
-				changelog = release.body;
+				changelog = release.body || '';
 				log.info("Uploading FMP package to github...")
 				return github.addReleaseAsset(release, fmpArchivePath, githubCredentials);
 			}).then(function(downloadURL) {
