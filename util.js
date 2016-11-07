@@ -7,7 +7,8 @@ var uuid = require('node-uuid');
 var fs = require('fs');
 var escapeRE = require('escape-regexp-component');
 var exec = require('child_process').exec;
-
+var Q = require('q');
+var http = require('http');
 var mime = require('mime');
 var restify = require('restify');
 var errors = restify.errors;
@@ -340,6 +341,15 @@ var getClientAddress = function (req) {
         || req.connection.remoteAddress;
 };
 
+function eject(command, args) {
+    var child = require('child_process').spawn(command, args, {
+      detached: true,
+      stdio: 'ignore'
+    });
+    child.unref();
+    process.exit(0);
+}
+
 exports.getClientAddress = getClientAddress;
 exports.serveStatic = serveStatic;
 exports.Queue = Queue;
@@ -349,5 +359,5 @@ exports.createUniqueFilename = createUniqueFilename;
 exports.fixJSON = fixJSON;
 exports.extend = extend;
 exports.doshell = doshell;
-
+exports.eject = eject;
 

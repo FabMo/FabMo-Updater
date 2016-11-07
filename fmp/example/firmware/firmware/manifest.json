@@ -1,0 +1,16 @@
+{
+	"product" : "G2-Core",
+	"repository" : "https://github.com/FabMo/FabMo-Engine",
+	"os" : "linux",
+	"platform" : "edison",
+	"version" : "v99.99.99",
+	"services" : ["fabmo"],
+	"updaterNeeded" : "2.0.0",
+	"token" : "/tmp/dummy_token",
+	"operations" : [
+		{
+			"op" : "installFirmware",
+			"src" : "/fabmo/engine/firmware/g2.bin"
+		}
+	] 
+}

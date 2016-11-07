@@ -1,0 +1,31 @@
+{
+	"product" : "FabMo-Engine",
+	"repository" : "https://github.com/FabMo/FabMo-Engine",
+	"os" : "*",
+	"platform" : "*",
+	"version" : "99.99.99",
+	"services" : ["bogus_service"],
+	"updaterNeeded" : "1.4.0",
+	"token" : "/tmp/update_token_test",
+	"operations" : [
+        {
+            "op" : "createDirectories",
+            "path" : "/tmp/fmp-demo"
+        },
+        {
+            "op" : "expandArchive",
+            "src" : "abc.tar.gz",
+            "dest" : "/tmp/fmp-demo"
+        },
+		{
+			"op" : "deleteFiles",
+			"paths" : [
+				"/tmp/fmp-demo/thisFileShouldBeDeleted"
+			]
+		},
+		{
+			"op" : "installFirmware",
+			"src" : "/fabmo/engine/firmware/g2.bin"
+		}
+	]
+}

@@ -16,7 +16,7 @@ var getVersions = function(req, res, next) {
 	  }
     });
 };
-
+/*
 var updateEngine = function(req, res, next) {
     updater.updateEngine(req.params.version, function(err, data) {
 	  if(err) {
@@ -72,7 +72,7 @@ var updateFirmware = function(req, res, next) {
 		}
     });
 };
-
+*/
 var factoryReset = function(req, res, next) {
     updater.factoryReset(function(err, data) {
 	  if(err) {
@@ -80,7 +80,7 @@ var factoryReset = function(req, res, next) {
 		} else {
 			var answer = {
 			    status : "success",
-			   	  data : null /*{'task' : data}*/
+			   	  data : null // {'task' : data}
 			};
 			res.json(answer);			
 		}
@@ -94,35 +94,72 @@ var getTasks = function(req, res, next) {
  	});
 }
 
-var doFMU = function(req, res, next) {
+var doManualUpdate = function(req, res, next) {
 	upload(req, res, next, function(err, upload) {
         log.info("Upload complete");
-		log.info("Doing FMU");
+		log.info("Processing Manual Update");
         
         var uploads = upload.files
-
         if(uploads.length > 1) {
-            log.warn("Got an upload of " + uploads.length + ' files for a submitted job when only one is allowed.')
-        }       
-        res.json( {
-        	status : 'success',
-        	data : {
-        		status : 'complete'
-        	}
-        });
-        console.log(upload.files[0].file.path)
-        updater.doFMU(upload.files[0].file.path);
+            log.warn("Got an upload of " + uploads.length + ' files for a manual update when only one is allowed.')
+        }    
+        var filePath = upload.files[0].file.path;
+        var fileName = upload.files[0].file.name;
+        try {
+	        if (fileName.match(/.*\.fmu/i)) {
+		        updater.doFMU(filePath);
+	        } else if (fileName.match(/.*\.fmp/i)) {
+	        	updater.doFMP(filePath);
+	        } else {
+	        	throw new Error('Unknown file type for ' + filePath);
+	        }
+	    	res.json( {
+        		status : 'success',
+        		data : {
+        			status : 'complete'
+        		}
+        	});
+	    } catch(err) {
+	    	res.json({status : 'error', message : err});
+	    }
     });
+}
+
+var applyPreparedUpdates = function(req, res, next) {
+	updater.applyPreparedUpdates(function(err, data) {
+		if(err) {
+			return res.json({status : 'error', message : err});
+		}
+		var answer = {
+		    status : "success",
+		   	  data : {'task' : data}
+		};
+
+		res.json(answer);
+	});
+}
+
+var check = function(req, res, next) {
+	updater.runAllPackageChecks();
+	res.json( {
+		status : 'success',
+		data : {
+			status : 'complete'
+		}
+	});
 }
 
 module.exports = function(server) {
   server.get('/update/versions', getVersions);
   server.get('/tasks', getTasks);
-  server.post('/update/engine', updateEngine);
-  server.post('/update/updater', updateUpdater);
-  server.post('/update/firmware', updateFirmware);
-  server.post('/install/engine', installEngine);
+  //server.post('/update/engine', updateEngine);
+  //server.post('/update/updater', updateUpdater);
+  //server.post('/update/firmware', updateFirmware);
+  //server.post('/install/engine', installEngine);
   server.post('/update/factory', factoryReset);
 
-  server.post('/update/fmu', doFMU);
+  server.post('/update/manual', doManualUpdate);
+  server.post('/update/apply', applyPreparedUpdates);
+  server.post('/update/check', check);
+
 };

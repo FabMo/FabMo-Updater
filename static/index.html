@@ -25,15 +25,13 @@
           <i id="network-id-icon" class="fa fa-question"></i> <span class="label-network-id">&lt;name&gt;</span>
           </a>
       </li>
-      <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> Info</a></li>
-      <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download"></i> Software Updates</a></li>
-      <li class="menu-item" data-id="view-firmware"><a href="#"><i class="fa fa-gears"></i> Firmware Updates</a></li>
+      <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> System Info</a></li>
       <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-wifi"></i> Network</a></li>
-      <li class="menu-item" data-id="view-system"><a href="#"><i class="fa fa-wrench"></i> System</a></li>
+      <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download update-indicator"></i><span class="update-indicator"> Software Updates</span></a></li>
+      <li class="menu-item" data-id="view-settings"><a href="#"><i class="fa fa-wrench"></i> Settings</a></li>
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
       <li class="menu-item" data-id="goto-dashboard"><a href="#"><i class="fa fa-tachometer"></i> Goto Dashboard</a></li>
       <li class="menu-item" data-id="view-factory"><a href="#"><i class="fa fa-industry"></i> Factory Reset</a></li>
-      <li class="menu-item" data-id="view-fmu"><a href="#"><i class="fa fa-file"></i> FMU Update</a></li>
       <li class="menu-item" data-id="view-console"><a href="#"><i class="fa fa-terminal"></i> Console</a></li>
       <li class="menu-label status" id="updater-status">
         <a>
@@ -87,8 +85,29 @@
 
     -->
     <div class="content-pane" id="view-updates">
-      <h1><span class="fa fa-download"></span> Software Updates</h1>
-      <p id="message-noupdate-ap">You cannot perform software updates because you do not have a reliable internet connection.  Please wait a moment, or use the network manager to join a wireless network.</p>
+      <h1><span class="fa fa-download"></span> Software Update</h1>
+      <p>
+        <div id="check-for-updates-controls">
+        <p id="message-noupdates">There are no software updates available. </p>
+        <button id="btn-check-for-updates" class="btn"><i class="fa fa-cloud-download fa-lg" id="check-button-icon"></i> <span id="check-button-text"> Check for Updates</span></button>
+        </div>
+
+        <div id="message-updates" class="hide">
+          <p>A software update is available!</p>
+          <p><pre id="message-changelog"></pre></p>
+          <button id="btn-update-apply" class="btn-green disabled"><i class="fa fa-tags fa-lg"></i>  <span id="update-button-text">Update</span></button>
+          </div>
+      </p>
+      <br />
+      <h1><i class="fa fa-file"></i> Manual Update</h1>
+      <p>
+        <p>Click the button below to apply an update from an .fmu or .fmp file.</p>
+        <button id="btn-update-manual" class="btn-blue"><i class="fa fa-file fa-lg"></i>  Update With File...</button>
+        <span class="progressbar hide">
+          <div class="fill"></div>
+        </span>
+      </p>
+      <!--<p id="message-noupdate-ap">You cannot perform software updates because you do not have a reliable internet connection.  Please wait a moment, or use the network manager to join a wireless network.</p>
       <div id="update-controls">
       <h2>Stable Version</h2>
       <p>To update to a stable release of the engine, choose one from the list below and click update.</p>
@@ -106,20 +125,8 @@
       <h1>Updater Updates</h1>
       <p>Occasionally, the software updater needs to be updated too.  Click the button below to do that. <em>A failed updater update cannot be recovered without a factory reset.  Proceed with caution.</em></p>
       <button id="btn-update-updater-latest" class="btn-purple"><i class="fa fa-github fa-lg"></i>  Update to Latest Development Version</button>
-      </div>
-    </div>
+      </div> -->
 
-    <!--
-
-      FIRMWARE UPDATES
-
-    -->
-    <div class="content-pane" id="view-firmware">
-      <h1><span class="fa fa-cogs"></span> Firmware Updates</h1>
-      <p>The button below will force a firmware update on the G2 motion system.  Firmware installed in this way will be taken from your engine installation so you are sure to be using the firmware that is qualified for use with the version of the engine that you are running.</p>
-      <p><em>Firmware installation can be a risky operation.  Do not proceed unless you are sure you need to update!</em></p>
-      <button id="btn-update-firmware" class="btn-blue"><i class="fa fa-gears"></i> Update Firmware</button>
-      <br/>
     </div>
 
     <!--
@@ -165,8 +172,8 @@
       SYSTEM
 
     -->
-    <div class="content-pane" id="view-system">
-      <h1><i class="fa fa-wrench"></i> System</h1>
+    <div class="content-pane" id="view-settings">
+      <h1><i class="fa fa-wrench"></i> Settings</h1>
       <h2>System Identity</h2>
       <p>The name selected here will be used both as the system hostname as well as the SSID when in AP mode.  The password will be used both as the root password as well as the network key for AP mode.  <em>You do not need to enter both values.  Only non-blank values will be changed.</em></p>
       <form class="form-horizontal" id="form-network-id">
@@ -177,10 +184,25 @@
          <button id="btn-network-id" class="btn-green">Set System ID</button>
         </fieldset>
       </form>
+      <!--
       <h2>Engine Control</h2>
       <p>The buttons below can be used to start and stop the engine software.  <em>These operations do not normally need to be performed manually.</em></p>
       <button id="btn-start-engine" class="button btn-green">Start Engine</button>
       <button id="btn-stop-engine" class="button btn-red">Stop Engine</button>
+      -->
+      <h2>Configuration</h2>
+      <fieldset>
+        <ul>
+          <li>
+            <label class="settings" for="config-packages_url">Packages URL: </label>
+            <input class="config-input long" id="config-packages_url" type="text" placeholder="URL for update packages file" />
+          </li>
+          <li>
+            <label class="settings" for="config-beacon_url">Beacon URL: </label>
+            <input class="config-input long" id="config-beacon_url" type="text" placeholder="URL for the beacon server" />
+          </li>
+        <ul>
+      </fieldset>
     </div>
 
     <!--
@@ -197,19 +219,6 @@
       <br/>
     </div>
 
-   <!--
-
-      ENGINE UPDATES
-
-    -->
-    <div class="content-pane" id="view-fmu">
-      <h1><i class="fa fa-file"></i> FMU Update</h1>
-      <p>Click the button below to apply an update from a .fmu file.</p>
-      <button id="btn-update-fmu" class="btn-green"><i class="fa fa-file fa-lg"></i>  Update With .fmu File...</button>
-      <span class="progressbar hide">
-        <div class="fill"></div>
-      </span>
-    </div>
     <!-- Console (Always Visible) -->
     <div id="console-header">
       Updater Console &nbsp;

@@ -52,6 +52,7 @@ DarwinNetworkManager.prototype.run = function() {
  */
 DarwinNetworkManager.prototype.init = function() {
 	this.run();
+  this.emit('network', {mode : 'station'});
 }
 
 DarwinNetworkManager.prototype.isOnline = function(callback) {

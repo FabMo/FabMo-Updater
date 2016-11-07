@@ -111,6 +111,12 @@ UpdaterAPI.prototype.getTasks = function(callback) {
 UpdaterAPI.prototype.getConfig = function(callback) {
 	this._get('/config', callback, callback, 'config');
 }
+UpdaterAPI.prototype.setConfig = function(cfg_data, callback) {
+	this._post('/config', cfg_data, callback, function(err, data) {
+		callback = callback || function() {};
+		callback(null, cfg_data);
+	});
+}
 
 UpdaterAPI.prototype.getEngineInfo = function(callback) {
 	this._get('/info', callback, callback, 'info', true); // Engine
@@ -120,8 +126,8 @@ UpdaterAPI.prototype.getEngineStatus = function(callback) {
 	this._get('/status', callback, callback, 'status', true); // Engine
 }
 
-UpdaterAPI.prototype.submitFMU = function(fmu, options, callback, progress) {
-	this._postUpload('/update/fmu', fmu, {}, callback, callback, null, progress);
+UpdaterAPI.prototype.submitManualUpdate = function(fmu, options, callback, progress) {
+	this._postUpload('/update/manual', fmu, {}, callback, callback, null, progress);
 }
 
 // Updates
@@ -205,6 +211,15 @@ UpdaterAPI.prototype.getNetworkIdentity = function(callback) {
 // Factory Reset
 UpdaterAPI.prototype.factoryReset = function(callback) {
 	this._post('/update/factory', {}, callback, callback);
+}
+
+// Apply prepared updates
+UpdaterAPI.prototype.applyPreparedUpdates = function(callback) {
+	this._post('/update/apply', {}, callback, callback);
+}
+// Check for updates
+UpdaterAPI.prototype.checkForUpdates = function(callback) {
+	this._post('/update/check', {}, callback, callback);
 }
 
 function makeFormData(obj, default_name, default_type) {

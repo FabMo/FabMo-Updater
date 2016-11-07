@@ -1,9 +1,12 @@
 var log = require('../log').logger('manager');
+var util = require('util');
+var events = require('events');
 
-var GenericNetworkManager = function() {
-	this.platform = '???';
-	this.os = '???';
+var GenericNetworkManager = function(platform, os) {
+	this.platform = platform || '???';
+	this.os = os || '???';
 }
+util.inherits(GenericNetworkManager, events.EventEmitter);
 
 function fail(instance, callback) {
     callback(new Error('Function unavailable on ' + instance.os + '/' + instance.platform));

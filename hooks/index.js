@@ -1,30 +1,52 @@
 var glob = require('glob');
-var config = require('./config');
-var log = require('./log').logger('hooks');
+var config = require('../config');
+var log = require('../log').logger('hooks');
 var cp = require('child_process');
 var byline = require('byline');
 var fs = require('fs');
 var Q = require('q');
+var updater = require('../updater');
 
 // Task keys
 var keys = {};
 
 var execute = function(name, args, callback) {
+	var deferred = Q.defer();
 	callback = callback || function() {};
-	hook = getHook(name);
- 	var hook_func = hook.func || function(err, stdout, stderr, callback) {
-		callback(err, stdout);
+	try {
+		hook = getHook(name);
+	} catch(e) {
+		deferred.reject(e);
+		return deferred.promise;
 	}
-	return cp.exec(hook.file + ' ' + (args || ''), function(err, stdout, stderr) {
-				log.shell(stdout);
-				hook_func(err, stdout, stderr, callback);
-			});
+ 	var hook_func = hook.func || function(err, stdout, stderr, cb) {
+		cb = cb || function() {}
+		cb(err, stdout);
+
+		if(err) {
+			return deferred.reject(err);
+		}
+		return deferred.resolve(stdout);
+	}
+	cp.exec(hook.file + ' ' + (args || ''), function(err, stdout, stderr) {
+		if(stdout.trim() !== '') {
+			log.shell(stdout);
+		}
+		hook_func(err, stdout, stderr, function(err, data) {
+			if(err) {
+				callback(err);
+				return deferred.reject(err);
+			}
+			return deferred.resolve(callback(null, data));
+		});
+	});
+	return deferred.promise;
 }
 
 var spawn = function(name) {
 	var hook = getHook(name);
-	out = fs.openSync('/tmp/factory_reset.log', 'a');
-	err = fs.openSync('/tmp/factory_reset.log', 'a');
+	var out = fs.openSync('/tmp/factory_reset.log', 'a');
+	var err = fs.openSync('/tmp/factory_reset.log', 'a');
 
 	var child = cp.spawn(hook.file, [], {
 		detached:true,
@@ -38,16 +60,15 @@ var getHook = function(name) {
 	var OS = config.platform;
 	var PLATFORM = config.updater.get('platform');
 
-
 	// JS Function for post processing the hook
 	var hook_func = null;
 	try {
-		hook_func = require('./hooks/' + OS + '/' + PLATFORM)[name];
+		hook_func = require(__dirname + '/' + OS + '/' + PLATFORM)[name];
 	} catch(e) {
 		log.warn(e);
 	}
 
-	var hook_exec_pattern = './hooks/' + OS + '/'  + PLATFORM + '/' + name + '.*';
+	var hook_exec_pattern = __dirname + '/' + OS + '/'  + PLATFORM + '/' + name + '.*([a-zA-Z0-9])';
 	var matches = [];
 
 	try {
@@ -69,12 +90,28 @@ var getHook = function(name) {
 		break;
 
 		default:
-			throw new Error("More than one hook defined for " + name + " on " + PLATFORM + "???");
+			throw new Error("More than one hook defined for " + name + " on " + OS + '/' + PLATFORM + "??? ( " + matches + ' )');
 			break;
 	}
 }
 
 // Exported hooks
+
+exports.lock = function(callback) {
+	return execute('lock', null, callback);
+}
+
+exports.unlock = function(callback) {
+	return execute('unlock', null, callback);
+}
+
+exports.startService = function(service, callback) {
+	return execute('start_service', service, callback);
+}
+
+exports.stopService = function(service, callback) {
+	return execute('stop_service', service, callback);
+}
 
 exports.reboot = function(callback) {
 	execute('reboot', null, callback);
@@ -135,7 +172,6 @@ exports.installEngine = function(version, callback) {
 }
 
 exports.updateEngine = function(version, callback) {
-	var updater = require('./updater');
 
 	callback = callback || function() {};
 	var key = updater.startTask();
@@ -168,7 +204,7 @@ exports.updateEngine = function(version, callback) {
 }
 
 exports.doFMU = function(filename, callback) {
-	var updater = require('./updater');
+	var updater = require('../updater');
 	var callback = callback || function() {};
 	var key = updater.startTask();
 	updater.setState('updating');
@@ -188,6 +224,10 @@ exports.doFMU = function(filename, callback) {
 	});
 	callback(null, key);	
 	return deferred.promise;
+}
+
+exports.installFirmware = function(filename, callback) {
+	return execute('update_firmware', filename, callback);
 }
 
 exports.updateFirmware = function(filename, callback) {

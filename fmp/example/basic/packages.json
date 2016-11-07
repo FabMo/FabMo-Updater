@@ -1,0 +1,13 @@
+{
+	"packages" : [
+ 		{
+			"product" : "FabMo-Engine",
+			"os" : "*",
+			"platform" : "*",
+			"version" : "v99.99.99",
+			"changelog" : "This is a dummy installer - it does dummy installations, but doesn't actually install an engine.",
+			"url" : "https://github.com/FabMo/FabMo-Updater/raw/mayhem/fmp/example/basic/basic.fmp"
+ 		}
+
+	]
+}

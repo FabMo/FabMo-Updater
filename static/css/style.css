@@ -62,6 +62,7 @@ em {
 
 .hide {
 	visibility: hidden;
+	display: none;
 }
 
 #container {
@@ -244,7 +245,7 @@ em {
 	width: 0%;
 	height: 100%;
 	position: relative;
-	transition: all 0.3s ease 0s;
+	transition: width 0.3s ease 0s;
 }
 /*
  * Forms
@@ -256,7 +257,10 @@ input[type="text"], input[type="password"] {
     display: inline-block;
 	padding: 0.5em 1em;
 	border: 1px solid #aaa;
+}
 
+input.long {
+	width: 50em;
 }
 
 select {
@@ -275,14 +279,41 @@ select.disabled {
 	display: none;
 }
 
+
 fieldset {
-	border: none;
-	padding: 1em;
+    min-width: 100px;
+    display: inline-block;
+    border: none;
 }
 
-fieldset label {
-	font-weight: bold;
-	line-height: 100%;
+fieldset li {
+	list-style-type: none;
+	margin-bottom: 0.4em;
+}
+
+fieldset input{
+	margin-left: 0.1em;
+}
+
+fieldset label{
+	display: inline-block;
+	width: 110px;
+	text-align: right;
+	padding: 0.4em;
+}
+
+fieldset p {
+    margin-bottom: 2px;
+}
+
+fieldset button {
+	float: right;
+	margin-left: 0.4em;
+	margin-top: 1px;
+}
+
+input {
+    line-height: 1.7em;
 }
 
 button {
@@ -434,3 +465,10 @@ td {
 	display: none;
 }
 
+.update-indicator {
+		transition: all 1s ease 0s;
+}
+
+.updates-available {
+	color: #B5D837;
+}

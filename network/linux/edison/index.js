@@ -13,6 +13,8 @@ var wpa_cli = require('wireless-tools/wpa_cli');
 var udhcpc = require('wireless-tools/udhcpc');
 var udhcpd = require('wireless-tools/udhcpd');
 
+var events = require('events');
+
 var wifi;
 var WIFI_SCAN_INTERVAL = 5000;
 var WIFI_SCAN_RETRIES = 3;
@@ -208,6 +210,7 @@ EdisonNetworkManager.prototype.runWifiStation = function() {
             log.info("In master mode...");
             this.mode = 'ap';
             this.wifiState = 'idle';
+            this.emit('network', {'mode' : 'ap'})
             setImmediate(this.runWifi.bind(this));
           }
         } else {
@@ -292,8 +295,11 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
     if(err) {
         log.error(err);
     }
-    self.setGateway(apModeGateway,callback);
-  });
+    self.setGateway(apModeGateway,function(err,result) {
+        this.emit('network', {'mode' : 'station'});
+        callback(err, result);
+    }.bind(this));
+  }.bind(this));
 }
 
 EdisonNetworkManager.prototype.unjoinAP = function() {

@@ -1,0 +1,16 @@
+{
+	"product" : "FabMo-Updater",
+	"repository" : "https://github.com/FabMo/FabMo-Updater",
+	"os" : "*",
+	"platform" : "*",
+	"version" : "v99.99.99",
+	"services" : ["fabmo-updater"],
+	"updaterNeeded" : "1.4.0",
+	"token" : "/tmp/updater_test_token",
+	"operations" : [
+		{
+			"op" : "sleep",
+			"seconds" : 10
+		}
+	] 
+}

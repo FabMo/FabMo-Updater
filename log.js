@@ -72,9 +72,27 @@ Logger.prototype.write = function(level, msg) {
 		buffer_msg = level + ': ' + msg + ' ['+this.name+']';
 		if(colors) {
 			switch(level) {
-				case 'shell':
-					console.log((level + ': ').magenta + msg + ' ['+this.name+']');
+
+				case 'stderr':
+				case 'stdout':
+					var prefix = level === 'stdout' ? ' - '.blue : ' - '.red
+					msg.split('\n').forEach(function(line) {
+						if(line.trim()) {
+							console.log(prefix + line);													
+						} else {
+							//console.log(prefix)
+						}
+					});
 					break;
+
+				case 'command':
+					console.log(('   ' + msg).bold);
+					break;
+
+				case 'shell':
+					console.log((level + ': ').magenta + msg+' ['+this.name+']');
+					break;
+
 				case 'debug':
 					console.log((level + ': ').blue + msg+' ['+this.name+']');
 					break;
@@ -102,6 +120,9 @@ Logger.prototype.write = function(level, msg) {
 };
 
 // These functions provide a shorthand alternative to specifying the log level every time
+Logger.prototype.command = function(msg) { this.write('command', msg)}
+Logger.prototype.stdout = function(msg) { this.write('stdout', msg)}
+Logger.prototype.stderr = function(msg) { this.write('stderr', msg)}
 Logger.prototype.shell = function(msg) { this.write('shell', msg);};
 Logger.prototype.debug = function(msg) { this.write('debug', msg);};
 Logger.prototype.info = function(msg) { this.write('info', msg);};
@@ -114,6 +135,13 @@ Logger.prototype.error = function(msg) {
 		this.write('error', msg);
 	}
 };
+
+Logger.prototype.stack = function(msg) {
+	var stackTrace = new Error().stack;
+	stackTrace = stackTrace.split('\n');
+	stackTrace = stackTrace.slice(2).join('\n');
+	this.write('debug', 'Stack Trace:\n' + stackTrace);
+}
 
 Logger.prototype.uncaught = function(err) {
 	if(colors) {

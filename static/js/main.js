@@ -51,6 +51,44 @@ function setOnline(online) {
   }
 }
 
+var flattenObject = function(ob) {
+  var toReturn = {};
+  for (var i in ob) {
+    if (!ob.hasOwnProperty(i)) continue;
+
+    if ((typeof ob[i]) == 'object') {
+      var flatObject = flattenObject(ob[i]);
+      for (var x in flatObject) {
+        if (!flatObject.hasOwnProperty(x)) continue;
+
+        toReturn[i + '-' + x] = flatObject[x];
+      }
+    } else {
+      toReturn[i] = ob[i];
+    }
+  }
+  return toReturn;
+};
+
+function setConfig(id, value) {
+  var parts = id.split("-");
+  var o = {};
+  var co = o;
+  var i=1;
+
+  do {
+    co[parts[i]] = {};
+    if(i < parts.length-1) {
+      co = co[parts[i]];
+    }
+  } while(i++ < parts.length-1 );
+  co[parts[parts.length-1]] = value;
+  console.log("Setconfig: ", co)
+  updater.setConfig(co, function(err, data) {
+    //update();
+  });
+}
+
 var lastLevel = ''
 // Prettify lines for "console" output
 function prettify(line) {
@@ -126,7 +164,7 @@ function updateNetworks(callback) {
 }
 
 function updateVersions() {
-
+/*
   // The update version menu
   updater.getVersions(function(err, versions) {
     menu1 = $("#update-version");
@@ -140,6 +178,7 @@ function updateVersions() {
     $('#update-version').removeClass('disabled');
     $('#icon-update-version-spinner').hide();
   });
+  */
 
 }
 
@@ -180,19 +219,26 @@ function setState(state) {
     $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + state);
     var icon = $('#updater-status-icon');
     var classes = 'fa-circle-o fa-spin fa-spinner fa-chain-broken'
+    var update_button = $('#btn-update-apply');
     switch(state) {
         case 'idle':
+            update_button.removeClass('disabled');
             icon.removeClass(classes).addClass('fa-circle-o');
             break;
 
         case 'disconnected':
+            update_button.addClass('disabled');
             icon.removeClass(classes).addClass('fa-chain-broken');
             break;
 
         case 'updating':
+            update_button.addClass('disabled');
             icon.removeClass(classes).addClass('fa-spin fa-spinner');
             break;
     }
+  $('#check-button-text').text(' Check for updates');
+  $('#btn-check-for-updates').removeClass('disabled');
+  $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');  
 }
 
 function showModal(options) {
@@ -260,6 +306,10 @@ function dismissModal() {
 
 $(document).ready(function() {
 
+  $('.config-input').change(function() {
+    setConfig(this.id, this.value);
+  });
+
   // Updater Events
   updater.on('log', function(msg) {
     printf(msg);
@@ -268,6 +318,22 @@ $(document).ready(function() {
   updater.on('status', function(status) {
     setState(status.state);
     setOnline(status.online);
+     
+    if(status.updates && status.updates.length > 0) {
+      var update = status.updates[0];
+      $('#message-changelog').text(update.changelog);
+      $('#update-button-text').text('Update ' + update.product + ' to ' + update.version);
+      $('#message-updates').removeClass('hide');
+      $('#message-noupdates').addClass('hide');   
+      $('.update-indicator').addClass('updates-available')  
+      $('#check-for-updates-controls').addClass('hide'); 
+    } else {
+      $('#check-for-updates-controls').removeClass('hide'); 
+      $('#message-updates').addClass('hide');
+      $('#message-noupdates').removeClass('hide');      
+      $('.update-indicator').removeClass('updates-available')   
+
+    }
     dismissModal();
   });
 
@@ -303,6 +369,10 @@ $(document).ready(function() {
     updater.updateFirmware();
   });
 
+  $("#btn-update-apply").click( function(evt) {
+    evt.preventDefault();
+    updater.applyPreparedUpdates();
+  });
 
 $("#btn-reinstall").click( function(evt) {
     evt.preventDefault();
@@ -395,11 +465,17 @@ $("#btn-factory-reset").click( function(evt) {
   $("#btn-start-engine").click(function() {updater.startEngine()});
   $("#btn-stop-engine").click(function() {updater.stopEngine()});
 
-
+  $("#btn-check-for-updates").click(function() {
+    $("#btn-check-for-updates").addClass('disabled');
+    $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');  
+    $("#check-button-text").text('Checking...');
+    updater.checkForUpdates();
+  });
+  
   // Console clear
   $('#btn-console-clear').click(function() {clearConsole()});
 
-  $('#btn-update-fmu').click(function() {
+  $('#btn-update-manual').click(function() {
     jQuery('#file').trigger('click');
   });
 
@@ -409,12 +485,12 @@ $("#btn-factory-reset").click( function(evt) {
     for(var i=0; i<evt.target.files.length; i++) {
       files.push({file:evt.target.files[i]});
     }
-    updater.submitFMU(files, {}, function(err, data) {
+    updater.submitManualUpdate(files, {}, function(err, data) {
       setTimeout(function() {
         $('.progressbar').addClass('hide');
+        $('#file').val(null);
         $('.progressbar .fill').width(0);
       }, 750);
-      $('#file').val(null);
 
     }, function(progress) {
       var pg = (progress*100).toFixed(0) + '%';
@@ -436,6 +512,7 @@ $("#btn-factory-reset").click( function(evt) {
     $(".label-network-id").text(id.name);
   });
 
+
   updater.getConfig(function(err, config) {
     var updater_version_number = 'unavailable';
     try{
@@ -450,6 +527,16 @@ $("#btn-factory-reset").click( function(evt) {
     $('.label-os-version').text(config.os_version);
     $('.label-machine-id').text(config.id);
     setOS(config.os);
+
+    config = flattenObject(config);
+    for(key in config) {
+      v = config[key];
+      input = $('#config-' + key);
+      if(input.length) {
+        input.val(String(v));
+      }
+    }
+
   });
 
   updater.getEngineInfo(function(err, info) {
