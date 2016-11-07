@@ -212,7 +212,7 @@ setWifiConfig = function(req,res,next){
   });
 }
 
-getWIFIConfig = function(req,res,next){
+getWifiConfig = function(req,res,next){
   var netConfig = config.updater.get('network');
   var wifiConfig = netConfig.wifi;
   res.json({
