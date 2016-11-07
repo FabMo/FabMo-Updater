@@ -188,6 +188,15 @@ setEthernetConfig = function(req,res,next){
   });
 }
 
+getEthernetConfig = function(req,res,next){
+  var netConfig = config.updater.get('network');
+  var ethernetConfig = netConfig.ethernet;
+  res.json({
+    status : 'success',
+    data : ethernetConfig
+  });
+}
+
 setWifiConfig = function(req,res,next){
   var network = require('../updater').networkManager;
   var netConfig = config.updater.get('network');
@@ -200,6 +209,15 @@ setWifiConfig = function(req,res,next){
   res.json({
     status : 'success',
     data : config.updater.get('network').wifi
+  });
+}
+
+getWIFIConfig = function(req,res,next){
+  var netConfig = config.updater.get('network');
+  var wifiConfig = netConfig.wifi;
+  res.json({
+    status : 'success',
+    data : wifiConfig
   });
 }
 
@@ -216,5 +234,7 @@ module.exports = function(server) {
   server.get('/network/online', isOnline);
   server.post('/network/ethernet/config',setEthernetConfig);
   server.post('/network/wifi/config',setWifiConfig);
+  server.get('/network/ethernet/config',getEthernetConfig);
+  server.get('/network/wifi/config',getWifiConfig);
 
 }
