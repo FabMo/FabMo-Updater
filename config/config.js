@@ -175,7 +175,7 @@ Config.createDataDirectories = function(callback) {
 			}
 		});
 	}.bind(this);
-	dirs = [null, 'config'];
+	dirs = [null, 'config', 'fmus'];
 	async.eachSeries(dirs, create_directory, callback);
 };
 

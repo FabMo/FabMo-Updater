@@ -1,6 +1,7 @@
 var restify = require('restify');
 var async = require('async');
 var process = require('process');
+var path = require('path');
 var PLATFORM = process.platform;
 var log = require('./log').logger('updater');
 var detection_service = require('./detection_daemon');
@@ -17,6 +18,7 @@ var doshell = require('./util').doshell;
 var uuid = require('node-uuid');
 var moment = require('moment');
 var argv = require('minimist')(process.argv);
+var Q = require('q');
 
 var TASK_TIMEOUT = 10800000; // 3 hours
 
@@ -298,6 +300,36 @@ Updater.prototype.start = function(callback) {
             onlineCheck();
             setInterval(onlineCheck,3000);
             return callback(null);
+        }.bind(this),
+
+        function run_startup_fmus(callback) {
+            log.info("Checking for startup FMUs...")
+            fs.readdir(path.join(config.getDataDir(), 'fmus'), function(err, files) {
+                files = files.map(function(filename) { 
+                    return path.join(config.getDataDir(),'fmus', filename);
+                });
+                fmu_files = files.filter(function(filename) { return filename.match(/.*\.fmu$/);})
+                if(fmu_files.length == 0) {
+                    log.info("No startup FMUs.");
+                    return callback();
+                } else {
+                    log.info(fmu_files.length + " startup FMU" + (fmu_files.length > 1 ? "s" : "") + " to run...");
+                }
+                result = fmu_files.reduce(function (prev, filename) {
+                    return prev.then(function() {
+                        return hooks.doFMU(filename);
+                    }).then(function() {
+                        fs.unlink(filename);
+                    });
+                }, Q());
+
+                result.then(function() {
+                    callback();
+                }).fail(function(err) {
+                    log.error(err);
+                    callback();
+                });
+            });
         }.bind(this),
 
         function start_server(callback) {
