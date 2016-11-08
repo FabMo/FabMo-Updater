@@ -120,15 +120,15 @@ Updater.prototype.setOnline = function(online) {
 }
 
 Updater.prototype.addAvailablePackage = function(package) {
-    this.status.updates.forEach(function(update) {
-        try {
-            if(update.local_filename === package.local_filename) {
-                return package;
-            }
-        } catch(e) {}
-
-    });
-
+    for(var i=0; i<this.status.updates.length; i++) {
+	try {
+		if(package.local_filename === this.status.updates[i].local_filename) {
+			this.status.updates[i] = package;
+    			this.emit('status',this.status);
+			return package;
+		}
+	} catch(e) {}
+    }
     this.status.updates.push(package);
     this.emit('status',this.status);
     return package;
