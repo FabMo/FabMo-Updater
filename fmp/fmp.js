@@ -82,14 +82,14 @@ function parseVersion(v) {
 function compareVersions(a,b) {
 	a = parseVersion(a);
 	b = parseVersion(b);
+	if(a.type === 'release' && b.type !== 'release') {
+		return b.type === 'dev' ? 1 : -1;
+	} else if(b.type === 'release' && a.type !== 'release') {
+		return a.type === 'dev' ? -1 : 1;
+	} 
 	if(a.major === b.major) {
 		if(a.minor === b.minor) {
 			if(a.patch === b.patch) {
-				if(a.type === 'release' && b.type !== 'release') {
-					return b.type === 'dev' ? -1 : 1;
-				} else if(b.type === 'release' && a.type !== 'release') {
-					return a.type === 'dev' ? 1 : -1;
-				} 
 				return 0;
 			} else {
 				return a.patch > b.patch ? 1 : -1;
