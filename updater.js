@@ -637,12 +637,19 @@ Updater.prototype.start = function(callback) {
 
     function start_beacon(callback) {
         var url = config.updater.get('beacon_url');
+        var consent = config.updater.get('consent_for_beacon');
+        
         log.info("Starting beacon service");
         this.beacon = new Beacon({
             url : url,
             interval : BEACON_INTERVAL
         });
-        this.beacon.start();
+        
+        if (consent === "true"){
+            this.beacon.start();
+        } else if (consent === "false"){
+            log.error("Beacon is not consented to");
+        }
     }.bind(this)
     ],
         function(err, results) {
