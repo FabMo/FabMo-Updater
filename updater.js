@@ -50,31 +50,37 @@ var Updater = function()
 util.inherits(Updater, events.EventEmitter);
 
 Updater.prototype.getVersion = function(callback) {
-    require('./util').doshell('git rev-parse --verify HEAD', function(data) {
-        this.version = {};
-        this.version.hash = (data || '').trim();
-        this.version.number = '';
-        this.version.debug = ('debug' in argv);
-        this.version.type = 'dev'
-        fs.readFile('version.json', 'utf8', function(err, data) {
-            if(err) {
-                return callback(null, this.version);
-            }
-            try {
-                data = JSON.parse(data);
-                if(data.number) {
-                    this.version.number = data.number;
-                    this.version.type = 'release';
-                    this.version.date = data.date;
-                }
-            } catch(e) {
-                this.version.type = 'dev';
-                this.version.number = null;
-            } finally {
-                callback(null, this.version);
-            }
+    require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
+        .then(function(data) {
+	    parts = data.split('-');
+            if(parts.length === 1) {
+		var versionString = parts[0].trim();
+	    } else {
+	    	var versionString = parts[0].trim() + '-' + parts[2].trim();
+	    }
+	    this.version = require('./fmp').parseVersion(versionString);
+            callback(null, this.version);
         }.bind(this))
-    }.bind(this));
+        .catch(function(e) {
+            fs.readFile('version.json', 'utf8', function(err, data) {
+                if(err) {
+                    return callback(null, this.version);
+                }
+                try {
+                    data = JSON.parse(data);
+                    if(data.number) {
+                        this.version.number = data.number;
+                        this.version.type = 'release';
+                        this.version.date = data.date;
+                    }
+                } catch(e) {
+                    log.warn("Could not read updater version.json: " + (e.message || e))
+                    log.warn(e);
+                } finally {
+                    callback(null, this.version);
+                }
+            }.bind(this))
+        }.bind(this));
 }
 
 Updater.prototype.startTask = function() {
@@ -117,15 +123,15 @@ Updater.prototype.setOnline = function(online) {
 }
 
 Updater.prototype.addAvailablePackage = function(package) {
-    this.status.updates.forEach(function(update) {
-        try {
-            if(update.local_filename === package.local_filename) {
-                return package;
-            }
-        } catch(e) {}
-
-    });
-
+    for(var i=0; i<this.status.updates.length; i++) {
+	try {
+		if(package.local_filename === this.status.updates[i].local_filename) {
+			this.status.updates[i] = package;
+    			this.emit('status',this.status);
+			return package;
+		}
+	} catch(e) {}
+    }
     this.status.updates.push(package);
     this.emit('status',this.status);
     return package;
@@ -225,7 +231,7 @@ Updater.prototype.runPackageCheck = function(product) {
     this.packageDownloadInProgress = true;
     return fmp.checkForAvailablePackage(product)
             .catch(function(err) {
-                log.warn('There was a problem retrieving the list of packages: ' + err)
+                log.warn('There was a problem retrieving the list of packages: ' + JSON.stringify(err))
             })
             .then(fmp.downloadPackage)
             .catch(function(err) {
@@ -589,14 +595,19 @@ Updater.prototype.start = function(callback) {
     
     function setup_config_events(callback) {
         config.updater.on('change', function(evt) {
+            
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
             if(evt.beacon_url) {
-                this.beacon.set(config.updater.get('beacon_url'));
+                this.beacon.set('url', config.updater.get('beacon_url'));
             }
             if(evt.name) {
                 this.beacon.once('config');
+            }
+            if (evt.consent_for_beacon) {
+                this.beacon.set("consent_for_beacon", evt.consent_for_beacon);
+                log.info("Consent for beacon is " + evt.consent_for_beacon);
             }
         }.bind(this));
         callback();
@@ -628,13 +639,23 @@ Updater.prototype.start = function(callback) {
         }
     }.bind(this),
 
-    function start_beacon(callback) {
+  function start_beacon(callback) {
         var url = config.updater.get('beacon_url');
+        var consent = config.updater.get('consent_for_beacon');
+        
         log.info("Starting beacon service");
         this.beacon = new Beacon({
             url : url,
             interval : BEACON_INTERVAL
         });
+        
+        if (consent === "true"){
+            this.beacon.set("consent_for_beacon", consent);
+            log.info("Beacon is enabled");
+        } else if (consent === "false"){
+            this.beacon.set("consent_for_beacon", consent);
+            log.info("Beacon is disabled");
+        }
         this.beacon.start();
     }.bind(this)
     ],

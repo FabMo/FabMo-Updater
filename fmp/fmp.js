@@ -28,7 +28,8 @@ function parseVersion(v) {
 		type = parts[2];
 		hash = parts[1];
 	} else if(parts[1]) {
-		type = parts[1];
+		hash = parts[1];
+		type = 'dev';
 	} else {
 		type = 'release';
 	}
@@ -72,6 +73,7 @@ function parseVersion(v) {
 	if(retval.type === 'release' && (retval.dirty || retval.hash)) {
 		throw new Error('Invalid version string: ' + v);
 	}	
+	retval.number = v;
 	return retval;
 }
 
@@ -80,14 +82,14 @@ function parseVersion(v) {
 function compareVersions(a,b) {
 	a = parseVersion(a);
 	b = parseVersion(b);
+	if(a.type === 'release' && b.type !== 'release') {
+		return b.type === 'dev' ? 1 : -1;
+	} else if(b.type === 'release' && a.type !== 'release') {
+		return a.type === 'dev' ? -1 : 1;
+	} 
 	if(a.major === b.major) {
 		if(a.minor === b.minor) {
 			if(a.patch === b.patch) {
-				if(a.type === 'release' && b.type !== 'release') {
-					return 1;
-				} else if(b.type === 'release' && a.type !== 'release') {
-					return -1;
-				} 
 				return 0;
 			} else {
 				return a.patch > b.patch ? 1 : -1;
@@ -439,14 +441,23 @@ function downloadPackage(package) {
 	var filename = "/opt/fabmo/update.fmp";
 	log.info('Starting download of ' + package.url);
 	var file = fs.createWriteStream(filename);
+	var statusCode;
+	var statusMessage;
 	request(package.url)
 		.on('error', function(err) { // Handle errors
     		deferred.reject(err);
   		})
+  		.on('response', function(response) {
+  			statusCode = response.statusCode;
+  			statusMessage = response.statusMessage;
+  		})
 		.pipe(file).on('finish', function() {
 			file.close(function(err) {
-      			if(err) { 
+      			if(err) {
       				return deferred.reject(err); 
+      			}
+      			if(statusCode !== 200) {
+      				return deferred.reject(new Error(statusCode + ' ' + statusMessage));
       			}
 	  			log.info('Download of ' + package.url + ' is complete.')
   				package.local_filename = filename;
@@ -471,7 +482,7 @@ function checkForAvailablePackage(product) {
 
 			// Cut down the list of packages to only ones for the specified product
 			updates = filterPackages(registry, {platform : PLATFORM, os : OS, 'product' : product});
-
+			
 			// If no updates are available for the product, end the process
 			if(updates.length == 0) {
 				return deferred.resolve();
@@ -491,7 +502,7 @@ function checkForAvailablePackage(product) {
 				default:
 					break;
 			}
-			// Read the version manifest for the currently installed engine
+			// Read the version manifest for the currently installed product
 			getVersion(function(err, version) {
 				if(err) {
 					deferred.reject(err);
@@ -502,8 +513,8 @@ function checkForAvailablePackage(product) {
 				try {
 					var newerPackageAvailable = compareVersions(updates[0].version, version.number) > 0;
 				} catch(e) {
-					return deferred.resolve(updates[0]);
 					log.warn(e);
+					return deferred.resolve(updates[0]);
 				}
 
 				// If so, return it, or return nothing if not

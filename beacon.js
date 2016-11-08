@@ -13,6 +13,7 @@ var Beacon = function(options) {
 	this.interval = options.interval || 1*60*60*1000;
 	this._timer = null;
 	this.running = false;
+	this.consent_for_beacon = "false";
 }
 
 function setURL(url) { this.set('url', url); }
@@ -20,9 +21,9 @@ function setInterval(interval) { this.set('interval', interval); }
 
 // Changing any of the options provokes a new beacon report
 Beacon.prototype.set = function(key, value) {
+	this[key] = value;
 	var wasRunning = this.running;
 	this.stop();
-	this[key] = value;
 	if(wasRunning) { this.run('config'); }	
 }
 
@@ -34,13 +35,17 @@ Beacon.prototype.start = function(reason) {
 
 // Function called at intervals to report to the beacon
 Beacon.prototype.run = function(reason) {
-	this.report(reason)
-		.catch(function(err) {
-			log.warn('Could not send a beacon message: ' + err);
-		})
-		.finally(function() {
-			this._timer = setTimeout(this.run.bind(this), this.interval);
-		}.bind(this));
+	if (this.consent_for_beacon === "true"){
+		this.report(reason)
+			.catch(function(err) {
+				log.warn('Could not send a beacon message: ' + err);
+			})
+			.finally(function() {
+				this._timer = setTimeout(this.run.bind(this), this.interval);
+			}.bind(this));
+	} else {
+		log.warn('Beacon is not enabled');
+	}
 }
 
 // Stops further beacon reports. Reports can be restarted with start()
@@ -68,12 +73,24 @@ Beacon.prototype.createMessage = function(reason) {
 		reason : reason || 'interval',
 	}
 
-	deferred = Q.defer()
+	var deferred = Q.defer()
 	try {
 		engine.getVersion(function(err, version) {
-			msg.engine_version = version
+			if(err) {
+				msg.engine_version = {};
+				log.warn("Engine version could not be determined");
+				log.warn(err);
+			} else {
+				msg.engine_version = version;		
+			}
 			require('./updater').getVersion(function(err, version) {
-				msg.updater_version = version
+				if(err) {
+					msg.updater_version = {};
+					log.warn("Updater version could not be determined");
+					log.warn(err);
+				} else {
+					msg.updater_version = version					
+				}
 				deferred.resolve(msg);
 			})
 		})		
@@ -87,10 +104,9 @@ Beacon.prototype.createMessage = function(reason) {
 Beacon.prototype.report = function(reason) {
 	deferred = Q.defer()
 	if(this.url) {
-		log.info('Sending beacon report (' + (reason || 'interval') + ')');
+		log.info('Sending beacon report (' + (reason || 'interval') + ') to ' + this.url);
 		return this.createMessage(reason)
 		.then(function(message) {
-			//log.debug(JSON.stringify(message))
 			request({uri : this.url, json : true,body : message, method : 'POST'}, function(err, response, body) {
 				if(err) {
 					log.warn('Could not send message to beacon server: ' + err);

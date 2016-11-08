@@ -22,6 +22,12 @@
 		{
 		    "op" : "installFirmware",
 		    "src" : "g2.bin"
-		}
+		},
+        {
+            "op" : "deleteFiles",
+            "paths" : [
+                "/opt/fabmo/approot"
+            ]
+        }
 	]
 }
