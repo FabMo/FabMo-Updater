@@ -280,7 +280,7 @@ function createRelease(owner, repos, tagName, targetCommitish, options) {
 						return deferred.reject(err);
 					}
 					if(resp.statusCode != 201) {
-						deferred.reject(new Error(resp.statusMessage));
+						deferred.reject(new Error(resp.statusCode + ": " + resp.statusMessage));
 					}
 					try {
 						deferred.resolve(JSON.parse(body));
