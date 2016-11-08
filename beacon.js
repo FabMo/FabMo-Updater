@@ -71,9 +71,19 @@ Beacon.prototype.createMessage = function(reason) {
 	deferred = Q.defer()
 	try {
 		engine.getVersion(function(err, version) {
-			msg.engine_version = version
+			if(err) {
+				msg.engine_version = null;
+				log.warn("Engine version could not be determined: " + (err.message || err));
+			} else {
+				msg.engine_version = {};		
+			}
 			require('./updater').getVersion(function(err, version) {
-				msg.updater_version = version
+				if(err) {
+					msg.updater_version = {};
+					log.warn("Updater version could not be determined: " + (err.message || err));
+				} else {
+					msg.updater_version = version					
+				}
 				deferred.resolve(msg);
 			})
 		})		
@@ -87,7 +97,7 @@ Beacon.prototype.createMessage = function(reason) {
 Beacon.prototype.report = function(reason) {
 	deferred = Q.defer()
 	if(this.url) {
-		log.info('Sending beacon report (' + (reason || 'interval') + ')');
+		log.info('Sending beacon report (' + (reason || 'interval') + ') to ' + this.url);
 		return this.createMessage(reason)
 		.then(function(message) {
 			//log.debug(JSON.stringify(message))

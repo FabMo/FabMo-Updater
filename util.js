@@ -31,6 +31,37 @@ function doshell(command, callback){
     });
 }
 
+/*
+ * Conduct the specified shell operation, and return a promise that resolves upon completion of the command.
+ * If the command was successful (0 error code) the promise resolves with all the stdout data from the process.
+ * If the command fails (nonzero error code) the promise rejects with all the stderr data from the process.
+ */
+function doshell_promise(command, options) {
+    deferred = Q.defer();
+    options = options || {};
+
+    if(!options.silent) {
+        log.command(command);        
+    }
+    try {
+        exec(command, options, function(err, stdout, stderr) {
+            if(!options.silent) {
+                log.stdout(stdout);
+                log.stderr(stderr);
+            }
+            if(err) {
+                deferred.reject(err);
+            } else {
+                deferred.resolve(stdout);
+            }
+        });
+    } catch(e) {
+        deferred.reject(e);
+    }
+    
+    return deferred.promise;
+}
+
 function extend(a,b, force) {
     for(k in b) {
         if(a.hasOwnProperty(k) || force) {
@@ -244,8 +275,8 @@ function serveStatic(opts) {
 
     function serve(req, res, next) {
         var uricomp = decodeURIComponent(req.path());
-        console.log("URI COMPONENT: " + uricomp);
-        console.log("DIR: " + opts.directory);
+        //console.log("URI COMPONENT: " + uricomp);
+        //console.log("DIR: " + opts.directory);
         var file = path.join(opts.directory, uricomp);
 
         if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -359,5 +390,6 @@ exports.createUniqueFilename = createUniqueFilename;
 exports.fixJSON = fixJSON;
 exports.extend = extend;
 exports.doshell = doshell;
+exports.doshell_promise = doshell_promise;
 exports.eject = eject;
 

@@ -50,13 +50,12 @@ var Updater = function()
 util.inherits(Updater, events.EventEmitter);
 
 Updater.prototype.getVersion = function(callback) {
-    require('./util').doshell("git describe --dirty=! --match='v*.*.*'", function(data) {
+    require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
+        .then(function(data) {
         parts = data.split('-');
-        var versionString = parts[0] + '-' + parts[2];
+        var versionString = parts[0].trim() + '-' + parts[2].trim() + '-dev';
         this.version = {};
-        this.version.hash = (data || '').trim();
         this.version.number = versionString;
-        this.version.debug = ('debug' in argv);
         this.version.type = 'dev'
         fs.readFile('version.json', 'utf8', function(err, data) {
             if(err) {
