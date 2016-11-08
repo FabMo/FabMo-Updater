@@ -100,7 +100,7 @@ Beacon.prototype.report = function(reason) {
 		log.info('Sending beacon report (' + (reason || 'interval') + ') to ' + this.url);
 		return this.createMessage(reason)
 		.then(function(message) {
-			//log.debug(JSON.stringify(message))
+			log.debug(JSON.stringify(message))
 			request({uri : this.url, json : true,body : message, method : 'POST'}, function(err, response, body) {
 				if(err) {
 					log.warn('Could not send message to beacon server: ' + err);

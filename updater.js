@@ -69,7 +69,7 @@ Updater.prototype.getVersion = function(callback) {
                         this.version.date = data.date;
                     }
                 } catch(e) {
-                    log.warn("Could not read version.json: " + (e.message || e))
+                    log.warn("Could not read updater version.json: " + (e.message || e))
                     log.warn(e);
                 } finally {
                     callback(null, this.version);
