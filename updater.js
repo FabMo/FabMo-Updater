@@ -596,14 +596,19 @@ Updater.prototype.start = function(callback) {
     
     function setup_config_events(callback) {
         config.updater.on('change', function(evt) {
+            
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
             if(evt.beacon_url) {
-                this.beacon.set(config.updater.get('beacon_url'));
+                this.beacon.set('url', config.updater.get('beacon_url'));
             }
             if(evt.name) {
                 this.beacon.once('config');
+            }
+            if (evt.consent_for_beacon) {
+                this.beacon.set("consent_for_beacon", evt.consent_for_beacon);
+                log.info("Consent for beacon is " + evt.consent_for_beacon);
             }
         }.bind(this));
         callback();
@@ -635,7 +640,7 @@ Updater.prototype.start = function(callback) {
         }
     }.bind(this),
 
-    function start_beacon(callback) {
+  function start_beacon(callback) {
         var url = config.updater.get('beacon_url');
         var consent = config.updater.get('consent_for_beacon');
         
@@ -646,10 +651,13 @@ Updater.prototype.start = function(callback) {
         });
         
         if (consent === "true"){
-            this.beacon.start();
+            this.beacon.set("consent_for_beacon", consent);
+            log.info("Beacon is enabled");
         } else if (consent === "false"){
-            log.error("Beacon is not consented to");
+            this.beacon.set("consent_for_beacon", consent);
+            log.info("Beacon is disabled");
         }
+        this.beacon.start();
     }.bind(this)
     ],
         function(err, results) {

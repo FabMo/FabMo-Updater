@@ -13,6 +13,7 @@ var Beacon = function(options) {
 	this.interval = options.interval || 1*60*60*1000;
 	this._timer = null;
 	this.running = false;
+	this.consent_for_beacon = "false";
 }
 
 function setURL(url) { this.set('url', url); }
@@ -20,9 +21,9 @@ function setInterval(interval) { this.set('interval', interval); }
 
 // Changing any of the options provokes a new beacon report
 Beacon.prototype.set = function(key, value) {
+	this[key] = value;
 	var wasRunning = this.running;
 	this.stop();
-	this[key] = value;
 	if(wasRunning) { this.run('config'); }	
 }
 
@@ -34,13 +35,17 @@ Beacon.prototype.start = function(reason) {
 
 // Function called at intervals to report to the beacon
 Beacon.prototype.run = function(reason) {
-	this.report(reason)
-		.catch(function(err) {
-			log.warn('Could not send a beacon message: ' + err);
-		})
-		.finally(function() {
-			this._timer = setTimeout(this.run.bind(this), this.interval);
-		}.bind(this));
+	if (this.consent_for_beacon === "true"){
+		this.report(reason)
+			.catch(function(err) {
+				log.warn('Could not send a beacon message: ' + err);
+			})
+			.finally(function() {
+				this._timer = setTimeout(this.run.bind(this), this.interval);
+			}.bind(this));
+	} else {
+		log.warn('Beacon is not enabled');
+	}
 }
 
 // Stops further beacon reports. Reports can be restarted with start()
