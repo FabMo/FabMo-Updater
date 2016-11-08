@@ -37,7 +37,7 @@ function doshell(command, callback){
  * If the command fails (nonzero error code) the promise rejects with all the stderr data from the process.
  */
 function doshell_promise(command, options) {
-    deferred = Q.defer();
+    var deferred = Q.defer();
     options = options || {};
 
     if(!options.silent) {
