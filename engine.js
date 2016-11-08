@@ -8,9 +8,13 @@ exports.getVersion = function(callback) {
     return require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : config.updater.get('engine_dir'), silent : true})
         .then(function(data) {
             parts = data.split('-');
-            var versionString = parts[0] + '-' + parts[2];
+	    if(parts.length === 1) {
+		var versionString = parts[0].trim();
+	    } else {
+            	var versionString = parts[0].trim() + '-' + parts[2].trim();
+	    }
             var version = require('./fmp').parseVersion(versionString);
-            callback(version);
+            callback(null, version);
         }).catch(function(err) {
             fs.readFile(path.join(config.updater.get('engine_dir'), 'version.json'), 'utf8', function(err, data) {
                 var version = {number : null};

@@ -73,14 +73,16 @@ Beacon.prototype.createMessage = function(reason) {
 		engine.getVersion(function(err, version) {
 			if(err) {
 				msg.engine_version = {};
-				log.warn("Engine version could not be determined: " + (err.message || err));
+				log.warn("Engine version could not be determined");
+				log.warn(err);
 			} else {
 				msg.engine_version = version;		
 			}
 			require('./updater').getVersion(function(err, version) {
 				if(err) {
 					msg.updater_version = {};
-					log.warn("Updater version could not be determined: " + (err.message || err));
+					log.warn("Updater version could not be determined");
+					log.warn(err);
 				} else {
 					msg.updater_version = version					
 				}

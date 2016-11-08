@@ -482,7 +482,7 @@ function checkForAvailablePackage(product) {
 
 			// Cut down the list of packages to only ones for the specified product
 			updates = filterPackages(registry, {platform : PLATFORM, os : OS, 'product' : product});
-
+			
 			// If no updates are available for the product, end the process
 			if(updates.length == 0) {
 				return deferred.resolve();
@@ -502,7 +502,7 @@ function checkForAvailablePackage(product) {
 				default:
 					break;
 			}
-			// Read the version manifest for the currently installed engine
+			// Read the version manifest for the currently installed product
 			getVersion(function(err, version) {
 				if(err) {
 					deferred.reject(err);
@@ -513,8 +513,8 @@ function checkForAvailablePackage(product) {
 				try {
 					var newerPackageAvailable = compareVersions(updates[0].version, version.number) > 0;
 				} catch(e) {
-					return deferred.resolve(updates[0]);
 					log.warn(e);
+					return deferred.resolve(updates[0]);
 				}
 
 				// If so, return it, or return nothing if not

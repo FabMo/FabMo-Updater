@@ -53,8 +53,12 @@ Updater.prototype.getVersion = function(callback) {
     require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
         .then(function(data) {
             parts = data.split('-');
-            var versionString = parts[0].trim() + '-' + parts[2].trim();
-            this.version = require('./fmp').parseVersion(versionString);
+            if(parts.length === 1) {
+		var versionString = parts[0].trim();
+	    } else {
+	    	var versionString = parts[0].trim() + '-' + parts[2].trim();
+	    }
+	    this.version = require('./fmp').parseVersion(versionString);
             callback(null, this.version);
         }.bind(this))
         .catch(function(e) {
@@ -228,7 +232,7 @@ Updater.prototype.runPackageCheck = function(product) {
     this.packageDownloadInProgress = true;
     return fmp.checkForAvailablePackage(product)
             .catch(function(err) {
-                log.warn('There was a problem retrieving the list of packages: ' + err)
+                log.warn('There was a problem retrieving the list of packages: ' + JSON.stringify(err))
             })
             .then(fmp.downloadPackage)
             .catch(function(err) {
