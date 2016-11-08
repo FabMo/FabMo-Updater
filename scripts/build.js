@@ -49,7 +49,7 @@ function distPath(pth) { return path.resolve(distDirectory, pth); }
 function scriptPath(pth) { return path.resolve(scriptDirectory, pth); }
 
 function doshell(command, options) {
-	deferred = Q.defer();
+	var deferred = Q.defer();
 	log.command(command);
     exec(command, options, function(err, stdout, stderr) {
     	log.stdout(stdout);
