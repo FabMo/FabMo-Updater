@@ -1,9 +1,23 @@
+/**
+ * FabMo Build Script
+ * 
+ * This script conducts the build for both the FabMo Engine and FabMo Updater
+ * It also provides release/deployment automation.
+ * 
+ * Releases are done through github using the github Release API.
+ * 
+ * The process goes like this:
+ * 1. Checkout the appropriate release for the specified product
+ * 2. Check
+ */
+
 var exec = require('child_process').exec;
 var Q = require('q');
 var path = require('path');
 var argv = require('minimist')(process.argv);
 var fs = require('fs');
 var github = require('./github');
+var fmp = require('../fmp');
 
 var log = require('../log').logger('build');
 
@@ -13,10 +27,6 @@ if(!('product' in argv)) {
 	process.exit(1);
 }
 
-var IGNORE_NPM_ERROR = argv['ignore-npm-error'];
-var SKIP_NPM_INSTALL = argv['skip-npm-install'];
-
-var githubReposOwner = 'FabMo';
 
 switch(argv.product) {
 	case 'engine':
@@ -34,36 +44,50 @@ switch(argv.product) {
 		process.exit(1);
 }
 
+var IGNORE_NPM_ERROR = argv['ignore-npm-error'];
+var SKIP_NPM_INSTALL = argv['skip-npm-install'];
+
 // Globals that are setup by the build process
+var githubReposOwner = 'FabMo';
+
+// Directories for build
 var buildDirectory = path.resolve(reposDirectory, 'build');
 var stagingDirectory = path.resolve(buildDirectory, 'stage');
 var distDirectory = path.resolve(buildDirectory, 'dist');
 var nodeModulesDirectory = path.resolve(reposDirectory, 'node_modules');
 var scriptDirectory = path.resolve(__dirname);
 
+// Path to specific files
 var versionFilePath = path.resolve(stagingDirectory, 'version.json');
 var firmwarePath = path.resolve(reposDirectory, 'firmware/g2.bin');
 
-
+// Package Destination
 var fmpArchivePath;
-var version;
-var versionString;
-var candidateVersion;
-var isFinalRelease = false;
+var fmpArchiveBaseName;
+
+var version;					// dev, rc, or the released version number (eg: v1.2.3)
+var versionString;				// The version string associated with the build (eg: v1.2.3-gabcde)
+var candidateVersion;			// The version of the next release, if this build is a release candidate
+var isFinalRelease = false;		// Set to true if this is going to be a final release
+var releaseName = '';			// The name of the release on github.  This will be dev, release_candidate, or the versioned release number (eg v1.2.3)
+var package = {};				// The package object that will appear in the package listing
+var githubCredentials;
 
 if(argv['rc']) {
 	version = 'rc';
+	releaseName = 'release_candidate';
 } else if(argv['dev']) {
 	version = 'master';
+	releaseName = 'dev';
 } else if(argv['release']) {
 	version = 'release';
 	isFinalRelease = true;
-
 }
 else {
 	version = argv.version ? argv.version.trim() : null;
 	if(version) {
 		isFinalRelease = true;
+		releaseName = version;
 	}
 }
 
@@ -77,6 +101,11 @@ function stagePath(pth) { return path.resolve(stagingDirectory, pth); }
 function distPath(pth) { return path.resolve(distDirectory, pth); }
 function scriptPath(pth) { return path.resolve(scriptDirectory, pth); }
 
+/*
+ * Conduct the specified shell operation, and return a promise that resolves upon completion of the command.
+ * If the command was successful (0 error code) the promise resolves with all the stdout data from the process.
+ * If the command fails (nonzero error code) the promise rejects with all the stderr data from the process.
+ */
 function doshell(command, options) {
 	deferred = Q.defer();
 	log.command(command);
@@ -122,9 +151,12 @@ function getProductVersion() {
 			versionString += '-' + parts[2];
 			if(version === 'master') {
 				versionString += '-dev';
+			} else {
+				releaseName = versionString;
 			}
 		} 
-		fmpArchiveName = 'fabmo-' + product + '_' + manifest.os + '_' + manifest.platform + '_' + versionString + '.fmp';
+		fmpArchiveBaseName = 'fabmo-' + product + '_' + manifest.os + '_' + manifest.platform 
+		fmpArchiveName = fmpArchiveBaseName + '_' + versionString + '.fmp';
 		fmpArchivePath = distPath(fmpArchiveName);
 	});
 }
@@ -232,8 +264,59 @@ function createFMPArchive() {
 	doshell('tar -czf ' + fmpArchivePath + ' ./*', {cwd:stagingDirectory})
 }
 
-function printPackageEntry() {
-	var package = {}
+function updatePackagesList() {
+	var thisVersion = fmp.parseVersion(package.version);
+	var packageLists = {
+		'dev' :  'manifest/packages-dev.json',
+		'rc' :  'manifest/packages-rc.json',
+		'release' :  'manifest/packages.json'
+	}
+
+	log.info("Updating package entry on fabmo.github.io/" + packageLists[thisVersion.type]);
+
+	return github.getFileContents(githubReposOwner, 'fabmo.github.io', packageLists[thisVersion.type], githubCredentials)
+		.then(function(file) {
+			switch(thisVersion.type) {
+				case 'rc':
+				case 'dev':
+					var updated = false;
+					oldPackageList = JSON.parse(file.content.toString());						
+					for(var i=0; i<oldPackageList.packages.length; i++) {
+						if(oldPackageList.packages[i].product === package.product) {
+							oldPackageList.packages[i] = package;
+							updated = true;
+						}
+					}
+					if(!updated) {
+						oldPackageList.packages.push(package);
+					}
+					//console.log(oldPackageList);
+					return github.updateFileContents(file, JSON.stringify(oldPackageList), "Add version " + versionString, githubCredentials)
+				case 'release':
+					var updated = false;
+					oldPackageList = JSON.parse(file.content.toString());
+					for(var i=0; i<oldPackageList.packages.length; i++) {
+						if(oldPackageList.packages[i].product === package.product && oldPackageList.packages[i].version === package.version) {
+							oldPackageList.packages[i] = package;
+							updated = true;
+						}
+					}
+					if(!updated) {
+						oldPackageList.packages.push(package);
+					}
+					return github.updateFileContents(file, JSON.stringify(oldPackageList), "Add version " + versionString, githubCredentials)
+				break;
+
+				default:
+					throw new Error("Unknown release type: " + thisVersion.type);
+					break;
+			}
+		});
+}
+
+function createPackageEntry() {
+
+	log.info("Creating package entry");
 	var fields = ['os','product','platform','system','updaterNeeded','version']
 
 	fields.forEach(function(item) {
@@ -245,28 +328,47 @@ function printPackageEntry() {
 	package.changelog = changelog;
 	package.date = (new Date()).toISOString();
 
-	console.log(JSON.stringify(package,null, 3));
-	return Q();
+	return Q(package);
 }
 
 function publishGithubRelease() {
-
+	var release;
 	if(argv.publish) {
-		if(!isFinalRelease) {
-			log.warn("Cannot publish " + versionString + " to github because it is not a final release.");
-			return Q();
-		}
-
 		log.info("Publishing Github release...")
-		var githubCredentials;
 		return github.getCredentials()
 			.then(function(creds) {
 				githubCredentials = creds;
-				return github.createRelease(githubReposOwner, githubRepos, version, githubCredentials)
 			})
-			.then(function(release) {
+			.then(function() {
+				if(releaseName === 'dev' || releaseName === 'release_candidate') {
+					log.info("Deleting remote tag '" + releaseName + "'")
+					return doshell('git push origin :refs/tags/' + releaseName, {cwd : reposDirectory})
+						.then(function() {
+							return github.getReleaseByTag(githubReposOwner, githubRepos, releaseName, githubCredentials);
+						})
+						.then(function(r) {
+							return (r ? github.deleteRelease(r, githubCredentials) : Q())
+								.then(function() {
+									return github.createRelease(githubReposOwner, githubRepos, releaseName, version, githubCredentials);
+								});
+						})
+						.then(function(r) {
+							release = r;
+						})
+				} else {
+					return github.createRelease(githubReposOwner, githubRepos, releaseName, version, githubCredentials)
+						.then(function(r) {
+							release = r;
+						})
+				}
+			})
+			.then(function() {
+				return github.deleteReleaseAssets(release, new RegExp(fmpArchiveBaseName + '.*'), githubCredentials);
+			})
+			.then(function() {
 				changelog = release.body || '';
-				log.info("Uploading FMP package to github...")
+				log.info("Uploading FMP package " + fmpArchiveName + " to github...")
+
 				return github.addReleaseAsset(release, fmpArchivePath, githubCredentials);
 			}).then(function(downloadURL) {
 				packageDownloadURL = downloadURL;
@@ -295,7 +397,8 @@ clean()
 .then(createFMPArchive)
 .then(getMD5Hash)					// Set md5
 .then(publishGithubRelease)			// Set changelog
-.then(printPackageEntry)
+.then(createPackageEntry)
+.then(updatePackagesList)
 .catch(function(err) {
 	log.error(err);
 }).done();
