@@ -52,28 +52,28 @@ util.inherits(Updater, events.EventEmitter);
 Updater.prototype.getVersion = function(callback) {
     require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
         .then(function(data) {
-        parts = data.split('-');
-        var versionString = parts[0].trim() + '-' + parts[2].trim() + '-dev';
-        this.version = {};
-        this.version.number = versionString;
-        this.version.type = 'dev'
-        fs.readFile('version.json', 'utf8', function(err, data) {
-            if(err) {
-                return callback(null, this.version);
-            }
-            try {
-                data = JSON.parse(data);
-                if(data.number) {
-                    this.version.number = data.number;
-                    this.version.type = 'release';
-                    this.version.date = data.date;
+            parts = data.split('-');
+            var versionString = parts[0].trim() + '-' + parts[2].trim() + '-dev';
+            this.version = {};
+            this.version.number = versionString;
+            this.version.type = 'dev'
+            fs.readFile('version.json', 'utf8', function(err, data) {
+                if(err) {
+                    return callback(null, this.version);
                 }
-            } catch(e) {
-                this.version.type = 'dev';
-                this.version.number = null;
-            } finally {
-                callback(null, this.version);
-            }
+                try {
+                    data = JSON.parse(data);
+                    if(data.number) {
+                        this.version.number = data.number;
+                        this.version.type = 'release';
+                        this.version.date = data.date;
+                    }
+                } catch(e) {
+                    log.warn("Could not read version.json: " + (e.message || e))
+                    log.warn(e);
+                } finally {
+                    callback(null, this.version);
+                }
         }.bind(this))
     }.bind(this));
 }
