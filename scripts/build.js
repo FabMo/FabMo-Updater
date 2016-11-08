@@ -131,6 +131,7 @@ function getLatestReleasedVersion() {
 		return doshell('git tag --sort=v:refname | tail -1', {cwd : reposDirectory})
 			.then(function(v) {
 				version = v.trim();
+				releaseName = version;
 			});
 	} else {
 		return Q();
