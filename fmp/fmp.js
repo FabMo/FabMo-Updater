@@ -28,7 +28,8 @@ function parseVersion(v) {
 		type = parts[2];
 		hash = parts[1];
 	} else if(parts[1]) {
-		type = parts[1];
+		hash = parts[1];
+		type = 'dev';
 	} else {
 		type = 'release';
 	}
@@ -72,6 +73,7 @@ function parseVersion(v) {
 	if(retval.type === 'release' && (retval.dirty || retval.hash)) {
 		throw new Error('Invalid version string: ' + v);
 	}	
+	retval.number = v;
 	return retval;
 }
 

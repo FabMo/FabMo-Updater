@@ -53,10 +53,12 @@ Updater.prototype.getVersion = function(callback) {
     require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
         .then(function(data) {
             parts = data.split('-');
-            var versionString = parts[0].trim() + '-' + parts[2].trim() + '-dev';
-            this.version = {};
-            this.version.number = versionString;
-            this.version.type = 'dev'
+            var versionString = parts[0].trim() + '-' + parts[2].trim();
+            this.version = require('./fmp').parseVersion(versionString);
+            callback(null, this.version);
+        }.bind(this))
+        .catch(function(e) {
+            log.error(e);
             fs.readFile('version.json', 'utf8', function(err, data) {
                 if(err) {
                     return callback(null, this.version);
@@ -74,8 +76,8 @@ Updater.prototype.getVersion = function(callback) {
                 } finally {
                     callback(null, this.version);
                 }
-        }.bind(this))
-    }.bind(this));
+            }.bind(this))
+        }.bind(this));
 }
 
 Updater.prototype.startTask = function() {

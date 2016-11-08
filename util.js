@@ -275,8 +275,6 @@ function serveStatic(opts) {
 
     function serve(req, res, next) {
         var uricomp = decodeURIComponent(req.path());
-        //console.log("URI COMPONENT: " + uricomp);
-        //console.log("DIR: " + opts.directory);
         var file = path.join(opts.directory, uricomp);
 
         if (req.method !== 'GET' && req.method !== 'HEAD') {

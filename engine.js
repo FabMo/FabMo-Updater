@@ -9,11 +9,11 @@ exports.getVersion = function(callback) {
         .then(function(data) {
             parts = data.split('-');
             var versionString = parts[0] + '-' + parts[2];
-            var version = {};
-            version.hash = (data || '').trim();
-            version.number = versionString;
-            version.type = 'dev'
+            var version = require('./fmp').parseVersion(versionString);
+            callback(version);
+        }).catch(function(err) {
             fs.readFile(path.join(config.updater.get('engine_dir'), 'version.json'), 'utf8', function(err, data) {
+                var version = {number : null};
                 if(err) {
                     return callback(null, version);
                 }
@@ -21,7 +21,6 @@ exports.getVersion = function(callback) {
                     data = JSON.parse(data);
                     if(data.number) {
                         version.number = data.number;
-                        version.type = 'release';
                         version.date = data.date;
                     }
                 } catch(e) {
@@ -29,7 +28,5 @@ exports.getVersion = function(callback) {
                     callback(null, version);
                 }
             });
-        }).catch(function(err) {
-            callback(err);
         });
 }
