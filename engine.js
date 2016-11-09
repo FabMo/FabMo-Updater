@@ -5,7 +5,7 @@ var log = require('./log').logger('engine');
 
 
 exports.getVersion = function(callback) {
-    var version = {number : 'v0.0.0'};
+    var version = {number : 'v0.0.0', type : 'unknown'};
     return require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : config.updater.get('engine_dir'), silent : true})
         .then(function(data) {
             parts = data.split('-');

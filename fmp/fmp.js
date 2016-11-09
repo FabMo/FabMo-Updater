@@ -483,6 +483,15 @@ function checkForAvailablePackage(product) {
 			// Cut down the list of packages to only ones for the specified product
 			updates = filterPackages(registry, {platform : PLATFORM, os : OS, 'product' : product});
 			
+			if('type' in registry && registry.type === 'dev') {
+				updates = updates
+						.sort(function(a,b) {
+							if(a === b) { return 0;}
+							if(a < b) { return 1;}
+							return -1;
+						})
+			}
+
 			// If no updates are available for the product, end the process
 			if(updates.length == 0) {
 				return deferred.resolve();
@@ -511,7 +520,27 @@ function checkForAvailablePackage(product) {
 				// Determine if the newest package listed in the package registry is newer than the installed version
 				var newerPackageAvailable = false;
 				try {
-					var newerPackageAvailable = compareVersions(updates[0].version, version.number) > 0;
+					// A 'dev' package registry works differently:  More aggressive about updates, and uses dates.
+					if('type' in registry && registry.type === 'dev') {
+						if(version.type !== registry.type) {
+							log.debug("Installation type doesn't match registry.  Taking newest package.")
+							// If the registry type is dev, and the type of the current install is anything but dev, 
+							// take the newest package in the list
+							newerPackageAvailable = true;
+						} else if(!version.date) {
+							log.debug('No date on our installation - Taking newest package')
+							// If there's no date on the installed installation, take the newest package in the list
+							newerPackageAvailable = true;
+						}
+						else {
+							log.debug('No date on our installation - Taking newest package')
+							// If there's a date on our installed package, take the newest one in the list only if
+							// it's newer than the one we have installed.
+							newerPackageAvailable = updates[0].date > version.date;							
+						}
+					} else {
+						var newerPackageAvailable = compareVersions(updates[0].version, version.number) > 0;						
+					}
 				} catch(e) {
 					log.warn(e);
 					return deferred.resolve(updates[0]);
@@ -520,6 +549,7 @@ function checkForAvailablePackage(product) {
 				// If so, return it, or return nothing if not
 				if(newerPackageAvailable) {
 					log.info("A newer package update is available!");
+					console.log(updates[0])
 					return deferred.resolve(updates[0]);
 				}
 				return deferred.resolve();
