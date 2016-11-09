@@ -107,7 +107,7 @@ function scriptPath(pth) { return path.resolve(scriptDirectory, pth); }
  * If the command fails (nonzero error code) the promise rejects with all the stderr data from the process.
  */
 function doshell(command, options) {
-	deferred = Q.defer();
+	var deferred = Q.defer();
 	log.command(command);
     exec(command, options, function(err, stdout, stderr) {
     	log.stdout(stdout);
@@ -131,6 +131,7 @@ function getLatestReleasedVersion() {
 		return doshell('git tag --sort=v:refname | tail -1', {cwd : reposDirectory})
 			.then(function(v) {
 				version = v.trim();
+				releaseName = version;
 			});
 	} else {
 		return Q();
