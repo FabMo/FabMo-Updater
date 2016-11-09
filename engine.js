@@ -5,6 +5,7 @@ var log = require('./log').logger('engine');
 
 
 exports.getVersion = function(callback) {
+    var version = {number : 'v0.0.0'};
     return require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : config.updater.get('engine_dir'), silent : true})
         .then(function(data) {
             parts = data.split('-');
@@ -17,7 +18,6 @@ exports.getVersion = function(callback) {
             callback(null, version);
         }).catch(function(err) {
             fs.readFile(path.join(config.updater.get('engine_dir'), 'version.json'), 'utf8', function(err, data) {
-                var version = {number : 'v0.0.0'};
                 if(err) {
                     return callback(null, version);
                 }

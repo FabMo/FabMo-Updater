@@ -50,9 +50,9 @@ var Updater = function()
 util.inherits(Updater, events.EventEmitter);
 
 Updater.prototype.getVersion = function(callback) {
+    this.version = {number : 'v0.0.0'};
     require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
         .then(function(data) {
-	    this.version = {number : 'v0.0.0'};
 	    parts = data.split('-');
             if(parts.length === 1) {
 		var versionString = parts[0].trim();
