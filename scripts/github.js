@@ -272,10 +272,11 @@ function createRelease(owner, repos, tagName, targetCommitish, options) {
 			    	url : 'https://api.github.com/repos/' + owner + '/' + repos + '/releases',
 			    	auth : auth,
 			    	headers : HEADERS,
-			    	json : {
+		
+				json : {
 			    		tag_name : tagName,
-			    		target_commitish : targetCommitish
-			    	}
+			    		target_commitish : tagName === targetCommitish ? undefined : targetCommitish,
+				}
 				},
 				function(err, resp, body) {
 					if(err) {
