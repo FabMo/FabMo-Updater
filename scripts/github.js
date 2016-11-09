@@ -265,6 +265,8 @@ function createRelease(owner, repos, tagName, targetCommitish, options) {
     		}
     		log.info('Release for ' + tagName + ' does not already exist');
     		// Release doesn't already exist
+			console.log(tagName);
+			console.log(targetCommitish);
 			request.post(
 				{
 			    	url : 'https://api.github.com/repos/' + owner + '/' + repos + '/releases',
