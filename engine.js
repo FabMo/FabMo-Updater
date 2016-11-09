@@ -17,7 +17,7 @@ exports.getVersion = function(callback) {
             callback(null, version);
         }).catch(function(err) {
             fs.readFile(path.join(config.updater.get('engine_dir'), 'version.json'), 'utf8', function(err, data) {
-                var version = {number : null};
+                var version = {number : 'v0.0.0'};
                 if(err) {
                     return callback(null, version);
                 }
