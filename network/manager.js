@@ -9,7 +9,7 @@ var GenericNetworkManager = function(platform, os) {
 util.inherits(GenericNetworkManager, events.EventEmitter);
 
 function fail(instance, callback) {
-    callback(new Error('Function unavailable on ' + instance.os + '/' + instance.platform));
+    callback ? callback(new Error('Function unavailable on ' + instance.os + '/' + instance.platform)) : log.warn('Function unavailable on ' + instance.os + '/' + instance.platform+', no callback given');
 }
 
 GenericNetworkManager.prototype.init = function() {}

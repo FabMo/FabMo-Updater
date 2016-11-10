@@ -370,6 +370,11 @@ button.disabled {
 	cursor: pointer;
 }
 
+#btn-ethernet-network-save{
+  float: none;
+  margin-top: 1em;
+}
+
 /*
  *  Table Styles
  */

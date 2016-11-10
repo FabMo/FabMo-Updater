@@ -14,16 +14,16 @@
 	"firmware_file" : "/fabmo/engine/firmware/g2.bin",
 	"os_version" : "unknown",
 	"network" : {
-        "wifi":{
+       	    "wifi":{
             "mode" : "ap",
             "wifi_networks" : [],
             "default_config" : {
                 "ip_address":"192.168.42.1",
                 "netmask":"255.255.255.0",
-                "gateway":"192.168.42.1",
-                "dns":["8.8.8.8"]
-            }
-        },
+           	"gateway":"192.168.42.1",
+           	"dns":["8.8.8.8"]
+	    }
+	},
         "ethernet":{
             "mode" : "magic",
             "default_config" : {

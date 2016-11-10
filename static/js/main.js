@@ -38,7 +38,7 @@ function setOS(os) {
   } catch(e) {
     iconClass = 'fa fa-question';
   }
-  $("#network-id-icon").attr('class', iconClass)
+  $("#system-icon").attr('class', iconClass)
 }
 
 function setOnline(online) {
@@ -124,40 +124,41 @@ function clearConsole() {
     log.text('');
 }
 
-function updateNetworks(callback) {
+function updateWifiNetworks(callback) {
     updater.getWifiNetworks(function(err, networks) {
         if(err) {
-            $('#network-table').hide();
-            $('#message-no-networks').show();
+            $('#wifi-network-table').hide();
+            $('#message-no-wifi-networks').show();
             return callback(err);
         }
 
         // Clear the existing networks
-        var table = document.getElementById('network-table');
+        var table = document.getElementById('wifi-network-table');
         var rows = table.rows.length;
         for(var i=1; i<rows; i++) {
             table.deleteRow(1);
         }
 
         if(!networks || networks.length === 0) {
-            $('#network-table').hide();
-            $('#message-no-networks').show();
+            $('#wifi-network-table').hide();
+            $('#message-no-wifi-networks').show();
         } else {
-            $('#network-table').show();
-            $('#message-no-networks').hide();
+            $('#wifi-network-table').show();
+            $('#message-no-wifi-networks').hide();
         }
         // Add the newly defined ones
         networks.forEach(function(network) {
             var row = table.insertRow(table.rows.length);
       row.onclick = function(evt) {
-    $('#network-ssid').val(network.ssid);
-    $('#network-key').focus();
+    $('#wifi-network-ssid').val(network.ssid);
+    $('#wifi-network-key').focus();
       }
      var ssid = row.insertCell(0);
             var security = row.insertCell(1);
             var strength = row.insertCell(2);
             ssid.innerHTML = network.ssid || '<No SSID>';
             security.innerHTML = (network.security || []).join('/');
+            strength.innerHTML = network.strength|| '';
         });
         callback();
     });
@@ -238,7 +239,7 @@ function setState(state) {
     }
   $('#check-button-text').text(' Check for updates');
   $('#btn-check-for-updates').removeClass('disabled');
-  $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');  
+  $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
 }
 
 function showModal(options) {
@@ -318,20 +319,20 @@ $(document).ready(function() {
   updater.on('status', function(status) {
     setState(status.state);
     setOnline(status.online);
-     
+
     if(status.updates && status.updates.length > 0) {
       var update = status.updates[0];
       $('#message-changelog').text(update.changelog);
       $('#update-button-text').text('Update ' + update.product + ' to ' + update.version);
       $('#message-updates').removeClass('hide');
-      $('#message-noupdates').addClass('hide');   
-      $('.update-indicator').addClass('updates-available')  
-      $('#check-for-updates-controls').addClass('hide'); 
+      $('#message-noupdates').addClass('hide');
+      $('.update-indicator').addClass('updates-available')
+      $('#check-for-updates-controls').addClass('hide');
     } else {
-      $('#check-for-updates-controls').removeClass('hide'); 
+      $('#check-for-updates-controls').removeClass('hide');
       $('#message-updates').addClass('hide');
-      $('#message-noupdates').removeClass('hide');      
-      $('.update-indicator').removeClass('updates-available')   
+      $('#message-noupdates').removeClass('hide');
+      $('.update-indicator').removeClass('updates-available')
 
     }
     dismissModal();
@@ -412,12 +413,77 @@ $("#btn-factory-reset").click( function(evt) {
   //
   // Network Management
   //
-  $("#btn-network-ap-mode").click(function() {updater.enableHotspot()});
+  updater.getEthernetConfig(function(err,data){
+    if(err){
+      console.log(err);
+      //TODO: Hide ethernet section
+    }else{
+      // enable/disable default config
+      $("#ethernet-network-mode").change(function(e){
+        if($(this).val()==='dhcp' || $(this).val()==='off'){
+          $("#ethernet-network-ip-address").prop('disabled', true);
+          $("#ethernet-network-netmask").prop('disabled', true);
+          $("#ethernet-network-gateway").prop('disabled', true);
+          $("#ethernet-network-dns").prop('disabled', true);
+          $("#ethernet-network-dhcp-range-start").prop('disabled', true);
+          $("#ethernet-network-dhcp-range-end").prop('disabled', true);
+        }else{
+          $("#ethernet-network-ip-address").prop('disabled', false);
+          $("#ethernet-network-netmask").prop('disabled', false);
+          $("#ethernet-network-gateway").prop('disabled', false);
+          $("#ethernet-network-dns").prop('disabled', false);
+          $("#ethernet-network-dhcp-range-start").prop('disabled', false);
+          $("#ethernet-network-dhcp-range-end").prop('disabled', false);
+        }
+      })
 
-  $("#form-network-id").submit(function(evt) {
+
+      $("#ethernet-network-mode").val(data.mode || 'off');
+      $("#ethernet-network-ip-address").val(data.default_config.ip_address);
+      $("#ethernet-network-netmask").val(data.default_config.netmask);
+      $("#ethernet-network-gateway").val(data.default_config.gateway);
+      $("#ethernet-network-dns").val(data.default_config.dns.join(','));
+      $("#ethernet-network-dhcp-range-start").val(data.default_config.dhcp_range.start);
+      $("#ethernet-network-dhcp-range-end").val(data.default_config.dhcp_range.end);
+    }
+
+    $('#btn-ethernet-network-save').click(function(e){
+      var ethConf = {
+        mode : $("#ethernet-network-mode").val(),
+        default_config : {
+          ip_address : $("#ethernet-network-ip-address").val(),
+          netmask : $("#ethernet-network-netmask").val(),
+          gateway : $("#ethernet-network-gateway").val(),
+          dns : $("#ethernet-network-dns").val().split(','),
+          dhcp_range:{
+            start : $("#ethernet-network-dhcp-range-start").val(),
+            end : $("#ethernet-network-dhcp-range-end").val()
+          }
+        }
+      };
+
+      updater.setEthernetConfig(ethConf,function(err,data){
+        if(err){
+          console.log(err);
+        }else{
+          $("#ethernet-network-mode").val(data.mode || 'off');
+          $("#ethernet-network-ip-address").val(data.default_config.ip_address);
+          $("#ethernet-network-netmask").val(data.default_config.netmask);
+          $("#ethernet-network-gateway").val(data.default_config.gateway);
+          $("#ethernet-network-dns").val(data.default_config.dns.join(','));
+          $("#ethernet-network-dhcp-range-start").val(data.default_config.dhcp_range.start);
+          $("#ethernet-network-dhcp-range-end").val(data.default_config.dhcp_range.end);
+        }
+      });
+    })
+  });
+
+  $("#btn-wifi-network-ap-mode").click(function() {updater.enableHotspot()});
+
+  $("#form-wifi-network-id").submit(function(evt) {
     evt.preventDefault();
-    var name = $('#network-name').val();
-    var password = $('#network-password').val();
+    var name = $('#wifi-network-name').val();
+    var password = $('#wifi-network-password').val();
     var options = {};
     if(name) {
         options['name'] = name;
@@ -431,19 +497,19 @@ $("#btn-factory-reset").click( function(evt) {
           console.error(err);
         } else {
           updater.getNetworkIdentity(function(err, id) {
-            $(".label-network-id").text(id.name);
+            $(".label-wifi-network-id").text(id.name);
           });
         }
       });
   });
 
-  $("#form-join-network").submit(function(evt) {
+  $("#form-join-wifi-network").submit(function(evt) {
     evt.preventDefault();
-      var ssid = $('#network-ssid').val();
-      var key = $('#network-key').val();
+      var ssid = $('#wifi-network-ssid').val();
+      var key = $('#wifi-network-key').val();
       showModal({
-    title : 'Change Networks?',
-    message : 'Do you wish to join the network "' + ssid + '"? You will be <em>disconnected from the updater</em> and will need to reconnect to the target wireless network.',
+    title : 'Change wifi Network?',
+    message : 'Do you wish to join the Wifi network "' + ssid + '"? You will be <em>disconnected from the updater</em> and will need to reconnect to the target wireless network.',
     icon : 'fa-question-circle',
     okText : 'Yes',
     cancelText : 'No',
@@ -467,11 +533,11 @@ $("#btn-factory-reset").click( function(evt) {
 
   $("#btn-check-for-updates").click(function() {
     $("#btn-check-for-updates").addClass('disabled');
-    $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');  
+    $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
     $("#check-button-text").text('Checking...');
     updater.checkForUpdates();
   });
-  
+
   // Console clear
   $('#btn-console-clear').click(function() {clearConsole()});
 
@@ -502,25 +568,25 @@ $("#btn-factory-reset").click( function(evt) {
   updateVersions();
   // Start a polling loop for networks...
   function updateService() {
-    updateNetworks(function(err) {
+    updateWifiNetworks(function(err) {
         setTimeout(updateService,5000);
     });
   }
   updateService();
 
   updater.getNetworkIdentity(function(err, id) {
-    $(".label-network-id").text(id.name);
+    $(".label-wifi-network-id").text(id.name);
   });
 
 
   updater.getConfig(function(err, config) {
     var updater_version_number = 'unavailable';
     try{
-      updater_version_number = config.version.number || config.version.hash.substring(0,8) + '-' + config.version.type      
+      updater_version_number = config.version.number || config.version.hash.substring(0,8) + '-' + config.version.type
     } catch(e) {}
-    
+
     $('.label-updater-version').text(updater_version_number)
-    $('.label-network-mode').text(config.network.mode);
+    $('.label-wifi-network-mode').text(config.network.wifi.mode);
     $('.label-engine-git').text(config.engine_git_repos);
     $('.label-updater-git').text(config.updater_git_repos);
     $('.label-platform').text(config.os + '/' + config.platform);
@@ -558,9 +624,9 @@ $("#btn-factory-reset").click( function(evt) {
 
   updater.getEngineStatus(function(err, status) {
     if(err) {
-            $('.label-engine-status').removeClass('info-up').addClass('info-down').text("down");      
+            $('.label-engine-status').removeClass('info-up').addClass('info-down').text("down");
     } else {
-            $('.label-engine-status').removeClass('info-down').addClass('info-up').text(status.state);      
+            $('.label-engine-status').removeClass('info-down').addClass('info-up').text(status.state);
     }
   });
 
