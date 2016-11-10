@@ -1,4 +1,5 @@
 var log = require('../../../log').logger('network');
+var os = require('os');
 var config = require('../../../config')
 var async = require('async');
 var fs = require('fs');
