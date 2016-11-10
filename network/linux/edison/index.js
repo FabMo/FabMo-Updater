@@ -22,7 +22,7 @@ var WIFI_SCAN_RETRIES = 3;
 var wifiInterface = 'wlan0';
 var ethernetInterface = "enp0s17u1u1";
 var apModeGateway= '192.168.42.1';
-var tmpPath = '/tmp/'
+var tmpPath = os.tmpdir();
 
 
 var DEFAULT_NETMASK = "255.255.255.0";
