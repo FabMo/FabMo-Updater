@@ -188,9 +188,22 @@ function npmInstall() {
 	return npmPromise;
 }
 
+function webpack() {
+	if(SKIP_NPM_INSTALL || product !== 'engine') { return Q(); }
+	log.info("Webpacking")
+	var npmPromise = doshell('./node_modules/.bin/webpack -p', {cwd : reposDirectory});
+	return npmPromise;
+}
+
 function stageRepos() {
 	log.info('Copying repository into staging area')
-	return doshell('git archive --format=tar ' + version + ' | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
+	doshell('git archive --format=tar ' + version + ' | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
+	.then(function() {
+		if(product === 'engine') {
+			return doshell('cp -R ./dashboard/build/* ' + path.join(stagingDirectory, 'dashboard/build'), {cwd : reposDirectory});
+		}
+		return Q();
+	});
 }
 
 function stageNodeModules() {
@@ -387,6 +400,7 @@ clean()
 .then(getProductVersion)			// Set versionString, fmpArchiveName, fmpArchivePath
 .then(npmClean)						
 .then(npmInstall)
+.then(webpack)
 .then(stageRepos)
 .then(stageNodeModules)
 .then(stageVersionJSON)
