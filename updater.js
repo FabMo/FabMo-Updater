@@ -30,7 +30,7 @@ var BEACON_INTERVAL = 1*60*60*1000 // 1 Hour (in milliseconds)
 var Updater = function() 
 {   
     var task = (argv.task || '').trim();
-    this.version = null;
+    this.version = {};
     this.status = {
         'state' : ('task' in argv) ? 'updating' : 'idle',
         'online' : false,
@@ -50,20 +50,23 @@ var Updater = function()
 util.inherits(Updater, events.EventEmitter);
 
 Updater.prototype.getVersion = function(callback) {
+    this.version = {number : 'v0.0.0', type : 'unknown'};
     require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
         .then(function(data) {
 	    parts = data.split('-');
-            if(parts.length === 1) {
-		var versionString = parts[0].trim();
+        if(parts.length === 1) {
+		  var versionString = parts[0].trim();
 	    } else {
 	    	var versionString = parts[0].trim() + '-' + parts[2].trim();
 	    }
-	    this.version = require('./fmp').parseVersion(versionString);
-            callback(null, this.version);
+	       this.version = require('./fmp').parseVersion(versionString);
+           callback(null, this.version);
         }.bind(this))
         .catch(function(e) {
+            log.error(e)
             fs.readFile('version.json', 'utf8', function(err, data) {
-                if(err) {
+
+    		if(err) {
                     return callback(null, this.version);
                 }
                 try {

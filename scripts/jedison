@@ -319,7 +319,7 @@ def set_network(network_conf):
     time.sleep(5)
 
     ifarray = subprocess.check_output("wpa_cli ifname", shell=True).split()
-    subprocess.call("udhcpc -i " + ifarray[len(ifarray)-1] + " -n &> /dev/null", shell=True)
+    subprocess.call("udhcpc -q -i " + ifarray[len(ifarray)-1] + " -n &> /dev/null", shell=True)
 
 def init(name=None, password=None):
     from collections import namedtuple
