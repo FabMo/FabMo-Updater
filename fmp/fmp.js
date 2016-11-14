@@ -28,7 +28,8 @@ function parseVersion(v) {
 		type = parts[2];
 		hash = parts[1];
 	} else if(parts[1]) {
-		type = parts[1];
+		hash = parts[1];
+		type = 'dev';
 	} else {
 		type = 'release';
 	}
@@ -72,6 +73,7 @@ function parseVersion(v) {
 	if(retval.type === 'release' && (retval.dirty || retval.hash)) {
 		throw new Error('Invalid version string: ' + v);
 	}	
+	retval.number = v;
 	return retval;
 }
 
@@ -80,14 +82,14 @@ function parseVersion(v) {
 function compareVersions(a,b) {
 	a = parseVersion(a);
 	b = parseVersion(b);
+	if(a.type === 'release' && b.type !== 'release') {
+		return b.type === 'dev' ? 1 : -1;
+	} else if(b.type === 'release' && a.type !== 'release') {
+		return a.type === 'dev' ? -1 : 1;
+	} 
 	if(a.major === b.major) {
 		if(a.minor === b.minor) {
 			if(a.patch === b.patch) {
-				if(a.type === 'release' && b.type !== 'release') {
-					return b.type === 'dev' ? -1 : 1;
-				} else if(b.type === 'release' && a.type !== 'release') {
-					return a.type === 'dev' ? 1 : -1;
-				} 
 				return 0;
 			} else {
 				return a.patch > b.patch ? 1 : -1;
@@ -480,6 +482,15 @@ function checkForAvailablePackage(product) {
 
 			// Cut down the list of packages to only ones for the specified product
 			updates = filterPackages(registry, {platform : PLATFORM, os : OS, 'product' : product});
+			
+			if('type' in registry && registry.type === 'dev') {
+				updates = updates
+						.sort(function(a,b) {
+							if(a === b) { return 0;}
+							if(a < b) { return 1;}
+							return -1;
+						})
+			}
 
 			// If no updates are available for the product, end the process
 			if(updates.length == 0) {
@@ -500,7 +511,7 @@ function checkForAvailablePackage(product) {
 				default:
 					break;
 			}
-			// Read the version manifest for the currently installed engine
+			// Read the version manifest for the currently installed product
 			getVersion(function(err, version) {
 				if(err) {
 					deferred.reject(err);
@@ -509,15 +520,36 @@ function checkForAvailablePackage(product) {
 				// Determine if the newest package listed in the package registry is newer than the installed version
 				var newerPackageAvailable = false;
 				try {
-					var newerPackageAvailable = compareVersions(updates[0].version, version.number) > 0;
+					// A 'dev' package registry works differently:  More aggressive about updates, and uses dates.
+					if('type' in registry && registry.type === 'dev') {
+						if(version.type !== registry.type) {
+							log.debug("Installation type doesn't match registry.  Taking newest package.")
+							// If the registry type is dev, and the type of the current install is anything but dev, 
+							// take the newest package in the list
+							newerPackageAvailable = true;
+						} else if(!version.date) {
+							log.debug('No date on our installation - Taking newest package')
+							// If there's no date on the installed installation, take the newest package in the list
+							newerPackageAvailable = true;
+						}
+						else {
+							log.debug('No date on our installation - Taking newest package')
+							// If there's a date on our installed package, take the newest one in the list only if
+							// it's newer than the one we have installed.
+							newerPackageAvailable = updates[0].date > version.date;							
+						}
+					} else {
+						var newerPackageAvailable = compareVersions(updates[0].version, version.number) > 0;						
+					}
 				} catch(e) {
-					return deferred.resolve(updates[0]);
 					log.warn(e);
+					return deferred.resolve(updates[0]);
 				}
 
 				// If so, return it, or return nothing if not
 				if(newerPackageAvailable) {
 					log.info("A newer package update is available!");
+					console.log(updates[0])
 					return deferred.resolve(updates[0]);
 				}
 				return deferred.resolve();

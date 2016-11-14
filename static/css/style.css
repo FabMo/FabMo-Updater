@@ -297,7 +297,7 @@ fieldset input{
 
 fieldset label{
 	display: inline-block;
-	width: 110px;
+	width: 150px;
 	text-align: right;
 	padding: 0.4em;
 }
