@@ -215,9 +215,9 @@ function stageVersionJSON() {
 	log.info('Creating version.json for release package');
 
 	var versionObject = {
-		type : 'release',
+	type : isFinalRelease ? 'release' : 'dev',
 		date : new Date().toISOString(),
-		number : version
+		number : versionString
  	}
 
  	return Q.nfcall(fs.writeFile, versionFilePath, JSON.stringify(versionObject))
