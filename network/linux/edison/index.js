@@ -111,6 +111,14 @@ EdisonNetworkManager.prototype.runWifi = function() {
         this.runWifi();
       }.bind(this));
       break;
+    case 'off':
+      this.command = null;
+      this.wifiState = 'off'
+      this.mode = 'off'
+      this._disableWifi(function(err, data) {
+        this.runWifi();
+      }.bind(this));
+      break;
   }
   return;
 }
@@ -124,6 +132,7 @@ EdisonNetworkManager.prototype.runWifi = function() {
       break;
 
     case 'off':
+      setTimeout(this.runWifi.bind(this), 2000);
       break;
 
     default:
@@ -277,6 +286,25 @@ EdisonNetworkManager.prototype._joinAP = function(callback) {
   });
 }
 
+EdisonNetworkManager.prototype.disableWifi = function(){
+  this.command = {
+    'cmd' : 'off'
+  }
+}
+
+EdisonNetworkManager.prototype._disableWifi = function(callback){
+  log.info("Disable wifi...");
+  //var network_config = config.updater.get('network');
+  //network_config.mode = 'off';
+  //config.updater.set('network', network_config);
+  ifconfig.down(wifiInterface,function(err, result){
+    if(!err) {
+      log.info("wifi disabled.");
+    }
+    callback(err, result);
+  });
+}
+
 EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
   this.command = {
     'cmd' : 'join',
@@ -332,6 +360,9 @@ EdisonNetworkManager.prototype.applyWifiConfig = function() {
         log.warn("No wifi networks defined.");
       }
       break;
+    case 'off':
+      //this.disableWifi(); //TODO : discuss about this issue. it may be not recommended to do this as a reboot would remove wifi and the tool would be lost if you don't have a ethernet access.
+      break;
   }
 }
 
@@ -357,12 +388,18 @@ EdisonNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback
 
 EdisonNetworkManager.prototype.turnWifiOn=function(callback){
   //callback(new Error('Not available on the edison wifi manager.'));
-  ifconfig.up(wifiInterface,callback);
+  ifconfig.status(wifiInterface,function(err,status){
+    if(!status.up)
+      ifconfig.up(wifiInterface,callback);
+      this.mode=undefined;
+    else
+      callback();
+  });
 }
 
 EdisonNetworkManager.prototype.turnWifiOff=function(callback){
   //callback(new Error('Not available on the edison wifi manager.'));
-  ifconfig.down(wifiInterface,callback);
+  this.disableWifi();
 }
 
 EdisonNetworkManager.prototype.getWifiHistory=function(callback){
