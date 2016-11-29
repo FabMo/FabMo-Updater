@@ -297,12 +297,15 @@ EdisonNetworkManager.prototype._disableWifi = function(callback){
   //var network_config = config.updater.get('network');
   //network_config.mode = 'off';
   //config.updater.set('network', network_config);
-  ifconfig.down(wifiInterface,function(err, result){
-    if(!err) {
-      log.info("wifi disabled.");
-    }
-    callback(err, result);
-  });
+  doshell("systemctl stop hostapd wpa_supplicant",function(err,result){
+    if(err)log.warn(err);
+    ifconfig.down(wifiInterface,function(err, result){
+      if(!err) {
+        log.info("wifi disabled.");
+      }
+      callback(err, result);
+    });
+});
 }
 
 EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
@@ -389,11 +392,12 @@ EdisonNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback
 EdisonNetworkManager.prototype.turnWifiOn=function(callback){
   //callback(new Error('Not available on the edison wifi manager.'));
   ifconfig.status(wifiInterface,function(err,status){
-    if(!status.up)
+    if(!status.up){
       ifconfig.up(wifiInterface,callback);
       this.mode=undefined;
-    else
+    } else {
       callback();
+    }
   });
 }
 
