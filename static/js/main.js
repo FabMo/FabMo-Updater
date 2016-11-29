@@ -480,6 +480,8 @@ $("#btn-factory-reset").click( function(evt) {
 
   $("#btn-wifi-network-ap-mode").click(function() {updater.enableHotspot()});
 
+  $("#btn-wifi-network-disable").click(function() {updater.disableWifi()});
+  
   $("#form-wifi-network-id").submit(function(evt) {
     evt.preventDefault();
     var name = $('#wifi-network-name').val();
@@ -594,7 +596,7 @@ $("#btn-factory-reset").click( function(evt) {
     $('.label-os-version').text(config.os_version);
     $('.label-machine-id').text(config.id);
     $('#consent_for_beacon').val(config.consent_for_beacon);
-    
+
     setOS(config.os);
 
     config = flattenObject(config);
