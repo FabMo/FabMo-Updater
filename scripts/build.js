@@ -197,7 +197,7 @@ function webpack() {
 
 function stageRepos() {
 	log.info('Copying repository into staging area')
-	doshell('git archive --format=tar ' + version + ' | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
+	doshell('git archive --format=tar | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
 	.then(function() {
 		if(product === 'engine') {
 			return doshell('cp -R ./dashboard/build/* ' + path.join(stagingDirectory, 'dashboard/build'), {cwd : reposDirectory});
