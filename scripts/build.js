@@ -279,6 +279,7 @@ function createFMPArchive() {
 }
 
 function updatePackagesList() {
+	if(!argv.publish) { return Q(); }
 	var thisVersion = fmp.parseVersion(package.version);
 	var packageLists = {
 		'dev' :  'manifest/packages-dev.json',
