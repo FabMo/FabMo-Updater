@@ -1,4 +1,5 @@
 var log = require('./log').logger('updater');
+var detection_service = require('./detection_daemon');
 var Beacon = require('./beacon');
 var fmp = require('./fmp');
 var config = require('./config');
@@ -430,6 +431,11 @@ Updater.prototype.start = function(callback) {
             log.info('Loading configuration...');
             config.configureUpdater(callback);
         },
+        function launchDetectionService(callback) {
+            log.info("Launching Detection Service...");
+            detection_service();
+            callback();
+        },
         function first_time_configure(callback) {
             if(!config.updater.userConfigLoaded) {
                 UpdaterConfigFirstTime(callback);
@@ -606,7 +612,7 @@ Updater.prototype.start = function(callback) {
             });
 
             // Configure local directory for uploading files
-            log.info('Cofiguring upload directory...');
+            log.info("Configuring upload directory...");
             server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
             server.pre(restify.pre.sanitizePath());
 

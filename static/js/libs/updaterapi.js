@@ -9,7 +9,7 @@ var UpdaterAPI = function() {
 	};
 	var url = window.location.origin;
 	var port = location.port || (location.protocol === 'https:' ? '443' : '80');
-	
+
 	this.base_url = url.replace(/\/$/,'');
 	this.engine_url = location.protocol + '//' + location.hostname + ":" +  (port-1)
 
@@ -27,7 +27,7 @@ UpdaterAPI.prototype._initializeWebsocket = function() {
 		this.socket = io(this.base_url);
 	} catch(e) {
 		this.socket = null;
-		console.error('connection to the engine via websocket failed : '+ e.message);		
+		console.error('connection to the engine via websocket failed : '+ e.message);
 	}
 
 	if(this.socket) {
@@ -208,6 +208,14 @@ UpdaterAPI.prototype.getNetworkIdentity = function(callback) {
 	this._get('/network/identity', callback, callback);
 }
 
+UpdaterAPI.prototype.setEthernetConfig = function(ethConf, callback) {
+	this._post('/network/ethernet/config', ethConf, callback, callback);
+}
+
+UpdaterAPI.prototype.getEthernetConfig = function(callback) {
+	this._get('/network/ethernet/config', callback, callback);
+}
+
 // Factory Reset
 UpdaterAPI.prototype.factoryReset = function(callback) {
 	this._post('/update/factory', {}, callback, callback);
@@ -231,7 +239,7 @@ function makeFormData(obj, default_name, default_type) {
 	}
 	else if (obj instanceof FormData) {
 		var formData = obj;
-	} 
+	}
 	else {
 		var content = obj.data || '';
 		var description = obj.config.description || 'No Description'
@@ -302,7 +310,7 @@ UpdaterAPI.prototype._postUpload = function(url, data, metadata, errback, callba
 				console.log(data);
 				if(data.status === 'complete') {
 					if(key) {
-						callback(null, data.data[key]);						
+						callback(null, data.data[key]);
 					} else {
 						callback(null, data.data);
 					}
@@ -318,7 +326,7 @@ UpdaterAPI.prototype._postUpload = function(url, data, metadata, errback, callba
 
 UpdaterAPI.prototype._postup = function(url, formdata, errback, callback, key, redirect, progback) {
 	if(!redirect) {
-		var url = this._url(url);		
+		var url = this._url(url);
 	}
 	var callback = callback || function() {};
 	var errback = errback || function() {};
@@ -457,13 +465,13 @@ UpdaterAPI.prototype._del = function(url, data, errback, callback, key) {
 		url: url,
 		type: "DELETE",
 		dataType : 'json',
-		'data' : data, 
+		'data' : data,
 		success: function(result){
 			if(data.status === "success") {
 				if(key) {
 					callback(null, result.data.key);
 				} else {
-					callback(null,result.data);					
+					callback(null,result.data);
 				}
 			} else if(data.status==="fail") {
 				errback(result.data);
@@ -487,13 +495,13 @@ UpdaterAPI.prototype._get = function(url, errback, callback, key, engine) {
 	$.ajax({
 		url: url,
 		type: "GET",
-		dataType : 'json', 
+		dataType : 'json',
 		success: function(result){
 			if(result.status === "success") {
 				if(key) {
-					callback(null, result.data[key]);					
+					callback(null, result.data[key]);
 				} else {
-					callback(null, result.data);										
+					callback(null, result.data);
 				}
 			} else if(result.status==="fail") {
 				errback(result.data);
@@ -506,5 +514,3 @@ UpdaterAPI.prototype._get = function(url, errback, callback, key, engine) {
 		}
 	});
 }
-
-
