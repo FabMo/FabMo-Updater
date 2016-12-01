@@ -372,7 +372,31 @@ function UpdaterConfigFirstTime(callback) {
                         config.updater.set('name', hostname);
                         callback();
                     })
-                }
+                }else{
+	            require('./util').getCpuInfo(function(err,cpus){
+		        if(err) return log.warn(err);
+		        for( c in cpus ){
+			    if (cpus[c].Hardware === "BCM2708" || cpus[c].Hardware === "BCM2709"){
+			        log.info("RaspberryPi platform detected");
+				config.updater.set('platform', 'raspberrypi');
+                    hooks.getUniqueID(function(err, id) {
+                        if(err) {
+                            var id = '';
+                            log.error('There was a problem generating the factory ID:');
+                            log.error(err);
+                            for(var i=0; i<6; i++) {
+                                id += (Math.floor(Math.random()*15)).toString(16);
+                            }
+                        }
+                        var hostname = 'FabMo-' + id;
+                        config.updater.set('name', hostname.substring(0,30));
+                        callback();
+                    })
+
+                            }
+                        }
+                    });
+	        }
             } catch(e) {
             log.error(e);
         }
@@ -445,7 +469,7 @@ Updater.prototype.start = function(callback) {
             callback();
           });
         }.bind(this),
-        
+
         function start_leds_controller(callback){
           //start led state updater
           try{require('./leds_state_updater');}catch(ex){log.warn("system does not support led control.")}
