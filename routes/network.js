@@ -6,7 +6,6 @@ scan = function(req, res, next) {
   var network = require('../updater').networkManager;
   network.getAvailableWifiNetworks(function(err, data) {
     if (err) {
-      log.error(err);
       res.json({'status':'error', 'message':err.message});
     } else {
       res.json({'status':'success','data':{'wifi':data}});
@@ -27,7 +26,7 @@ connectWifi = function(req, res, next) {
       }
     });
   } else {
-    log.error('Not joining a network because no SSID provided.');
+    log.warn('Not joining a network because no SSID provided.');
     res.json({'status':'error', 'message':'No SSID provided'});
   }
 }
