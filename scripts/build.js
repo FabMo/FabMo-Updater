@@ -197,7 +197,7 @@ function webpack() {
 
 function stageRepos() {
 	log.info('Copying repository into staging area')
-	doshell('git archive --format=tar ' + version + ' | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
+	doshell('git archive --format=tar HEAD | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
 	.then(function() {
 		if(product === 'engine') {
 			return doshell('cp -R ./dashboard/build/* ' + path.join(stagingDirectory, 'dashboard/build'), {cwd : reposDirectory});
@@ -279,6 +279,7 @@ function createFMPArchive() {
 }
 
 function updatePackagesList() {
+	if(!argv.publish) { return Q(); }
 	var thisVersion = fmp.parseVersion(package.version);
 	var packageLists = {
 		'dev' :  'manifest/packages-dev.json',
