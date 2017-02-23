@@ -344,7 +344,9 @@ function createPackageEntry() {
 	package.url = packageDownloadURL;
 	package.changelog = changelog;
 	package.date = (new Date()).toISOString();
-
+	if(argv['branch']) {
+		package.branch = argv['branch'];
+	}
 	return Q(package);
 }
 
