@@ -27,7 +27,7 @@ git checkout $2
 sync
 
 echo "Installing dependencies..."
-npm install --production
+npm install --production --unsafe-perm
 
 echo "Synchronizing filesystem..."
 sync
