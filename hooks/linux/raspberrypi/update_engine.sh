@@ -57,7 +57,7 @@ git checkout $1 || fail "Could not checkout version [$1]"
 sync
 
 echo "Installing dependencies..."
-npm install --production || fail "Could not install dependencies with npm"
+npm install --production --unsafe-perm || fail "Could not install dependencies with npm"
 sync
 
 save_version_info
