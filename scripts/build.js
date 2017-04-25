@@ -1,11 +1,11 @@
 /**
  * FabMo Build Script
- * 
+ *
  * This script conducts the build for both the FabMo Engine and FabMo Updater
  * It also provides release/deployment automation.
- * 
+ *
  * Releases are done through github using the github Release API.
- * 
+ *
  * The process goes like this:
  * 1. Checkout the appropriate release for the specified product
  * 2. Check
@@ -77,7 +77,7 @@ if(argv['rc']) {
 	version = 'rc';
 	releaseName = 'release_candidate';
 } else if(argv['dev']) {
-	version = 'master';
+	version = argv['branch'] || 'master';
 	releaseName = 'dev';
 } else if(argv['release']) {
 	version = 'release';
@@ -150,13 +150,13 @@ function getProductVersion() {
 		versionString = parts[0]
 		if(parts[2]) {
 			versionString += '-' + parts[2];
-			if(version === 'master') {
+			if(version != 'release' && version != 'rc') {
 				versionString += '-dev';
 			} else {
 				releaseName = versionString;
 			}
-		} 
-		fmpArchiveBaseName = 'fabmo-' + product + '_' + manifest.os + '_' + manifest.platform 
+		}
+		fmpArchiveBaseName = 'fabmo-' + product + '_' + manifest.os + '_' + manifest.platform
 		fmpArchiveName = fmpArchiveBaseName + '_' + versionString + '.fmp';
 		fmpArchivePath = distPath(fmpArchiveName);
 	});
@@ -165,7 +165,9 @@ function getProductVersion() {
 function checkout() {
 	if(version) {
 		log.info("Checking out version " + version)
-		return doshell('git fetch origin --tags; git checkout ' + version, {cwd : reposDirectory});		
+		return doshell('git fetch origin --tags; git checkout ' + version, {cwd : reposDirectory});
+	} else {
+		log.info("Skipping checkout because version is " + version)
 	}
 	return Q();
 }
@@ -197,7 +199,7 @@ function webpack() {
 
 function stageRepos() {
 	log.info('Copying repository into staging area')
-	doshell('git archive --format=tar ' + version + ' | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
+	doshell('git archive --format=tar HEAD | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
 	.then(function() {
 		if(product === 'engine') {
 			return doshell('cp -R ./dashboard/build/* ' + path.join(stagingDirectory, 'dashboard/build'), {cwd : reposDirectory});
@@ -279,6 +281,7 @@ function createFMPArchive() {
 }
 
 function updatePackagesList() {
+	if(!argv.publish) { return Q(); }
 	var thisVersion = fmp.parseVersion(package.version);
 	var packageLists = {
 		'dev' :  'manifest/packages-dev.json',
@@ -294,7 +297,7 @@ function updatePackagesList() {
 				case 'rc':
 				case 'dev':
 					var updated = false;
-					oldPackageList = JSON.parse(file.content.toString());						
+					oldPackageList = JSON.parse(file.content.toString());
 					for(var i=0; i<oldPackageList.packages.length; i++) {
 						if(oldPackageList.packages[i].product === package.product) {
 							oldPackageList.packages[i] = package;
@@ -341,7 +344,9 @@ function createPackageEntry() {
 	package.url = packageDownloadURL;
 	package.changelog = changelog;
 	package.date = (new Date()).toISOString();
-
+	if(argv['branch']) {
+		package.branch = argv['branch'];
+	}
 	return Q(package);
 }
 
@@ -398,7 +403,7 @@ clean()
 .then(getLatestReleasedVersion)  	// Set version
 .then(checkout)
 .then(getProductVersion)			// Set versionString, fmpArchiveName, fmpArchivePath
-.then(npmClean)						
+.then(npmClean)
 .then(npmInstall)
 .then(webpack)
 .then(stageRepos)

@@ -17,7 +17,8 @@
 	"network" : {
        	    "wifi":{
             "mode" : "ap",
-            "wifi_networks" : [],
+            "enabled" : true,
+	    "wifi_networks" : [],
             "default_config" : {
                 "ip_address":"192.168.42.1",
                 "netmask":"255.255.255.0",
