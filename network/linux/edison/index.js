@@ -42,8 +42,8 @@ function jedison(cmdline, callback) {
                 callback(j.message)
             }
         } catch(e) {
-                log.error(e)
-        log.error('jedison ' + cmdline);
+            log.error(e)
+            log.error('jedison ' + cmdline);
             callback(e);
         }
     });
@@ -83,7 +83,6 @@ EdisonNetworkManager.prototype.scan = function(callback) {
 }
 
 EdisonNetworkManager.prototype.runWifi = function() {
-    log.debug("running wifi: " + JSON.stringify(this.command));
     if(this.command) {
   switch(this.command.cmd) {
     case 'join':
@@ -114,17 +113,12 @@ EdisonNetworkManager.prototype.runWifi = function() {
       }.bind(this));
       break;
     case 'off':
-      log.debug("Disabling Wifi...");
       this.command = null;
       this.wifiState = 'off'
       this.mode = 'off'
       if(this.wifiStatus != 'disabled') {
         this._disableWifi(function(err, data) {
             if(err) { log.error(err); }
-            else {
-                log.debug("Wifi Disabled.");
-                log.debug(data)
-            }
             this.wifiStatus = 'disabled';
             this.runWifi();
         }.bind(this));
@@ -144,7 +138,6 @@ EdisonNetworkManager.prototype.runWifi = function() {
   }
   return;
 }
-    log.debug("Checking mode: " + this.mode);
   switch(this.mode) {
     case 'ap':
       this.runWifiAP();
@@ -164,7 +157,6 @@ EdisonNetworkManager.prototype.runWifi = function() {
         if(!err) {
          var old_mode = this.mode;
          log.info("Wireless mode is '" + data.mode + "'");
-         log.debug(JSON.stringify(data));
          if(data.mode == 'managed') {this.mode = 'station';}
          else if(data.mode == 'master') { this.mode = 'ap';}
          else { log.warn('Unknown network mode: ' + data.mode)}
@@ -321,7 +313,7 @@ EdisonNetworkManager.prototype.disableWifi = function(){
 }
 
 EdisonNetworkManager.prototype._disableWifi = function(callback){
-  log.info("Disable wifi...");
+  log.info("Disabling wifi...");
   //var network_config = config.updater.get('network');
   //network_config.mode = 'off';
   //config.updater.set('network', network_config);
@@ -329,7 +321,7 @@ EdisonNetworkManager.prototype._disableWifi = function(callback){
     if(err)log.warn(err);
     ifconfig.down(wifiInterface,function(err, result){
       if(!err) {
-    log.info("wifi disabled.");
+    log.info("Wifi disabled.");
       }
       callback(err, result);
     });
@@ -381,7 +373,6 @@ EdisonNetworkManager.prototype.applyWifiConfig = function() {
   var network_config = config.updater.get('network');
   switch(network_config.wifi.mode) {
     case 'ap':
-      log.debug("unjoining ap");
       this.unjoinAP();
       break;
     case 'station':
@@ -420,7 +411,6 @@ EdisonNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback
 
 EdisonNetworkManager.prototype.turnWifiOn=function(callback){
   //callback(new Error('Not available on the edison wifi manager.'));
-    log.debug('Turning wifi on...');
     ifconfig.status(wifiInterface,function(err,status){
         if(!status.up){
             ifconfig.up(wifiInterface,function(err, data) {
@@ -652,28 +642,22 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
 EdisonNetworkManager.prototype.runEthernet = function(){
   var self = this;
   function checkEthernetState(){
-      log.debug("Checking ethernet state");
     var oldState = this.ethernetState;
     ifconfig.status(ethernetInterface,function(err,status){
         if(!err && status.up && status.running){
-            log.debug("Up and running...");
             this.ethernetState = "plugged";
             var network_config = config.updater.get('network')
             try {
                 if(!network_config.wifi.enabled) {
                     if(this.wifiStatus != 'disabled') {
-                        log.debug("Turning wifi off in the ethernet network manager");
                         this.turnWifiOff()
                     }
-                } else {
-                    log.debug("Not turning wifi off.  (not specified)")
                 }
             } catch(e) {
                 log.error(e);
             }
         }else{
             this.ethernetState = "unplugged";
-            log.debug("ok.");
         }
         if(this.ethernetState!==oldState){
             switch(this.ethernetState) {
