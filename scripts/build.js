@@ -51,7 +51,7 @@ var SKIP_NPM_INSTALL = argv['skip-npm-install'];
 var githubReposOwner = 'FabMo';
 
 // Directories for build
-var buildDirectory = path.resolve(reposDirectory, 'build');
+var buildDirectory = path.resolve('/root', 'build');
 var stagingDirectory = path.resolve(buildDirectory, 'stage');
 var distDirectory = path.resolve(buildDirectory, 'dist');
 var nodeModulesDirectory = path.resolve(reposDirectory, 'node_modules');
