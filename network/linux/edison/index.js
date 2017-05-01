@@ -645,6 +645,16 @@ EdisonNetworkManager.prototype.runEthernet = function(){
     var oldState = this.ethernetState;
     ifconfig.status(ethernetInterface,function(err,status){
         if(!err && status.up && status.running){
+            try {
+
+            this.network_history[null] = {
+                ssid : null,
+                ipaddress : status.ipv4_address,
+                last_seen : Date.now()
+            }
+            } catch(e) {
+                log.warn('Could not save ethernet address in network history.')
+            }
             this.ethernetState = "plugged";
             var network_config = config.updater.get('network')
             try {
