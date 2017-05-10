@@ -403,6 +403,37 @@ Updater.prototype.start = function(callback) {
             log.info('Checking updater data directory tree...');
             config.createDataDirectories(callback);
         },
+	function apply_config_shim(callback) {
+		var updaterPath = config.getDataDir('config') + '/updater.json';
+		try {
+			fs.readFile(updaterPath, function(err, data) {
+				try {
+					d = JSON.parse(data)
+					if(d['network']) {
+						if(!d['ethernet']) {
+							delete d['network']
+							log.info('Applying network configuration shim.');
+							fs.writeFile(updaterPath, JSON.stringify(d, null, 2), function(err, data) {
+								if(err) {
+									log.error(err);
+								}
+								callback();
+							});
+						} else {
+							callback();
+						}
+					} else {
+						callback();
+					}
+				} catch(e) {
+					log.error(e);
+					callback();
+				}
+			});
+		} catch(e) {
+			log.error(e);
+		}
+	},
         function configure(callback) {
             log.info('Loading configuration...');
             config.configureUpdater(callback);
