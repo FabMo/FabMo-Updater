@@ -308,7 +308,7 @@ function updatePackagesList() {
 						oldPackageList.packages.push(package);
 					}
 					//console.log(oldPackageList);
-					return github.updateFileContents(file, JSON.stringify(oldPackageList), "Add version " + versionString, githubCredentials)
+					return github.updateFileContents(file, JSON.stringify(oldPackageList,null,2), "Add version " + versionString, githubCredentials)
 				case 'release':
 					var updated = false;
 					oldPackageList = JSON.parse(file.content.toString());
@@ -321,7 +321,7 @@ function updatePackagesList() {
 					if(!updated) {
 						oldPackageList.packages.push(package);
 					}
-					return github.updateFileContents(file, JSON.stringify(oldPackageList), "Add version " + versionString, githubCredentials)
+					return github.updateFileContents(file, JSON.stringify(oldPackageList,null,2), "Add version " + versionString, githubCredentials)
 				break;
 
 				default:
