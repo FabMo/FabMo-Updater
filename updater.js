@@ -64,8 +64,8 @@ Updater.prototype.getVersion = function(callback) {
            callback(null, this.version);
         }.bind(this))
         .catch(function(e) {
-            log.error(e)
-            fs.readFile('version.json', 'utf8', function(err, data) {
+            log.debug('Updater is not a source installation.');
+	    fs.readFile('version.json', 'utf8', function(err, data) {
     		if(err) {
 		    log.error(err)
                     return callback(null, this.version);
