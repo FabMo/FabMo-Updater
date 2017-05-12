@@ -20,7 +20,8 @@ var github = require('./github');
 var fmp = require('../fmp');
 
 var log = require('../log').logger('build');
-
+var buildDate = new Date().toISOString();
+log.info('Build date: ' + buildDate);
 
 if(!('product' in argv)) {
 	log.error("You must specify a product (--product=engine|updater)")
@@ -218,7 +219,7 @@ function stageVersionJSON() {
 
 	var versionObject = {
 	type : isFinalRelease ? 'release' : 'dev',
-		date : new Date().toISOString(),
+		date : buildDate,
 		number : versionString
  	}
 
@@ -343,7 +344,7 @@ function createPackageEntry() {
 	package.md5 = md5;
 	package.url = packageDownloadURL;
 	package.changelog = changelog;
-	package.date = (new Date()).toISOString();
+	package.date = buildDate;
 	if(argv['branch']) {
 		package.branch = argv['branch'];
 	}

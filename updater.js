@@ -54,7 +54,7 @@ Updater.prototype.getVersion = function(callback) {
     this.version = {number : 'v0.0.0', type : 'unknown'};
     require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
         .then(function(data) {
-	    parts = data.split('-');
+	parts = data.split('-');
         if(parts.length === 1) {
 		  var versionString = parts[0].trim();
 	    } else {
@@ -64,19 +64,19 @@ Updater.prototype.getVersion = function(callback) {
            callback(null, this.version);
         }.bind(this))
         .catch(function(e) {
-            log.error(e)
-            fs.readFile('version.json', 'utf8', function(err, data) {
-
+            log.debug('Updater is not a source installation.');
+	    fs.readFile('version.json', 'utf8', function(err, data) {
     		if(err) {
+		    log.error(err)
                     return callback(null, this.version);
                 }
                 try {
                     data = JSON.parse(data);
                     if(data.number) {
-                        this.version.number = data.number;
-                        this.version.type = 'release';
+			this.version.number = data.number;
+			this.version.type = data['type'] ? data['type'] : 'release';
                         this.version.date = data.date;
-                    }
+		    }
                 } catch(e) {
                     log.warn("Could not read updater version.json: " + (e.message || e))
                     log.warn(e);

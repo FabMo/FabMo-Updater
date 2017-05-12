@@ -533,10 +533,15 @@ function checkForAvailablePackage(product) {
 							newerPackageAvailable = true;
 						}
 						else {
-							log.debug('No date on our installation - Taking newest package')
+							console.log(version)
 							// If there's a date on our installed package, take the newest one in the list only if
 							// it's newer than the one we have installed.
 							newerPackageAvailable = updates[0].date > version.date;							
+							if(newerPackageAvailable) {
+								log.debug('Newer package available.  ' + updates[0].date + ' > ' + version.date);
+							} else {
+								log.debug('No newer packages in the registry.');
+							}
 						}
 					} else {
 						var newerPackageAvailable = compareVersions(updates[0].version, version.number) > 0;						
