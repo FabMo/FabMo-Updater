@@ -75,7 +75,7 @@ Beacon.prototype.createMessage = function(reason) {
 		local_ips : []
 	}
 
-	this.localAddresses.forEach(function(idx, addr) {
+	this.localAddresses.forEach(function(addr, idx) {
 		msg.local_ips.push({'address':addr});
 	});
 
@@ -113,6 +113,7 @@ Beacon.prototype.report = function(reason) {
 		log.info('Sending beacon report (' + (reason || 'interval') + ') to ' + this.url);
 		return this.createMessage(reason)
 		.then(function(message) {
+			//console.log(message)
 			request({uri : this.url, json : true,body : message, method : 'POST'}, function(err, response, body) {
 				if(err) {
 					log.warn('Could not send message to beacon server: ' + err);
