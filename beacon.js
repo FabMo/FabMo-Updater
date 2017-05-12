@@ -14,6 +14,7 @@ var Beacon = function(options) {
 	this._timer = null;
 	this.running = false;
 	this.consent_for_beacon = "false";
+	this.localAddresses = []
 }
 
 function setURL(url) { this.set('url', url); }
@@ -71,7 +72,12 @@ Beacon.prototype.createMessage = function(reason) {
 		platform : config.updater.get('platform'),
 		os_version : config.updater.get('os_version'),
 		reason : reason || 'interval',
+		local_ips : []
 	}
+
+	this.localAddresses.forEach(function(idx, addr) {
+		msg.local_ips.push({'address':addr});
+	});
 
 	var deferred = Q.defer()
 	try {
@@ -112,6 +118,14 @@ Beacon.prototype.report = function(reason) {
 					log.warn('Could not send message to beacon server: ' + err);
 					deferred.reject(err);
 				} else if(response.statusCode != 200) {
+					if(response.statusCode === 301) {
+						if(response.headers.location) {
+							log.warn('Beacon URL has changed.  Updating configuration to new URL: ' + response.headers.location)
+							config.updater.set('beacon_url', response.headers.location);
+							deferred.resolve();
+							return;
+						}
+					}
 					var err = new Error("Beacon server responded with status code " + response.statusCode);
 					log.warn(err);
 					deferred.reject(err);
@@ -131,6 +145,10 @@ Beacon.prototype.report = function(reason) {
 	}
 
 	return deferred.promise()
+}
+
+Beacon.prototype.setLocalAddresses = function(localAddresses) {
+	this.localAddresses = localAddresses;
 }
 
 module.exports = Beacon

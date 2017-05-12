@@ -122,4 +122,7 @@ GenericNetworkManager.prototype.applyWifiConfig=function(callback) {
   fail(this, callback);
 }
 
+GenericNetworkManager.prototype.getLocalAddresses=function() {
+	return []
+}
 exports.NetworkManager = GenericNetworkManager;

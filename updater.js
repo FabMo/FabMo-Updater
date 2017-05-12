@@ -410,6 +410,7 @@ Updater.prototype.start = function(callback) {
 				try {
 					d = JSON.parse(data)
 					if(d['network']) {
+					
 						if(!d['ethernet']) {
 							delete d['network']
 							log.info('Applying network configuration shim.');
@@ -502,13 +503,14 @@ Updater.prototype.start = function(callback) {
 
             // Do a package check every time we join a wireless network
             this.networkManager.on('network', function(evt) {
-                    if(evt.mode === 'station') {
+                    if(evt.mode === 'station' || evt.mode === 'ethernet') {
                     // 30 Second delay is used here to make sure timesyncd has enough time to update network time
                     // before trying to pull an update (https requests will fail with an inaccurate system time)
                     log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')        
                     setTimeout(function() {
                         log.info('Doing beacon report due to network change');
-                        this.beacon.once('network');
+                        this.beacon.setLocalAddresses(this.networkManager.getLocalAddresses());
+			this.beacon.once('network');
                         log.info('Running package check due to network change');
                         this.runAllPackageChecks();
                     }.bind(this), PACKAGE_CHECK_DELAY*1000);

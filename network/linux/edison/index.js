@@ -57,6 +57,10 @@ var EdisonNetworkManager = function() {
   this.command = null;
   this.network_health_retries = 5;
   this.network_history = {};
+  this.networkInfo = {
+  	wireless: null,
+	  wired : null
+  };
 }
 util.inherits(EdisonNetworkManager, NetworkManager);
 
@@ -67,9 +71,25 @@ EdisonNetworkManager.prototype.getInfo = function(interface,callback) {
       if(err)return callback(err);
       iwconfig.status(interface,function(err,iwstatus){
         if(err)return callback(err);
-        callback(null,{ipaddress:ifstatus.ipv4_address,mode:iwstatus.mode})
+	callback(null,{ipaddress:ifstatus.ipv4_address,mode:iwstatus.mode})
       })
   })
+}
+
+EdisonNetworkManager.prototype.getLocalAddresses = function() {
+	var retval = [];
+	try {
+		if(this.networkInfo.wireless) {
+			retval.push(this.networkInfo.wireless);
+		}
+		if(this.networkInfo.wired) {
+			retval.push(this.networkInfo.wired);
+		}
+		log.debug('Returning a list of local addresses: ' + retval);
+		return retval;
+	} catch(e) {
+		return retval;
+	}
 }
 
 // return an object formatted like this :
@@ -161,7 +181,7 @@ EdisonNetworkManager.prototype.runWifi = function() {
          else if(data.mode == 'master') { this.mode = 'ap';}
          else { log.warn('Unknown network mode: ' + data.mode)}
          if(this.mode != old_mode) {
-           setImmediate(this.runWifi.bind(this));
+		setImmediate(this.runWifi.bind(this));
          }else{
            setTimeout(this.runWifi.bind(this), 5000);
     }
@@ -241,8 +261,9 @@ EdisonNetworkManager.prototype.runWifiStation = function() {
         }
         if(networkOK) {
           this.wifiState = 'idle';
-          this.wifiStatus = 'enabled'
-          this.network_history[data.ssid] = {
+          this.wifiStatus = 'enabled';
+          this.networkInfo.wireless = data.ipaddress;
+	  this.network_history[data.ssid] = {
             ssid : data.ssid,
             ipaddress : data.ipaddress,
             last_seen : Date.now()
@@ -537,7 +558,7 @@ EdisonNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
 }
 
 EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
-  if(!ip)return callback("no ip transmitted !");
+  if(!ip)return callback("no ip specified !");
   ifconfig.status(interface, function(err, status) {
     if(err)return callback(err,status);
     var options = {
@@ -551,7 +572,7 @@ EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
 }
 
 EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback) {
-  if(!netmask)return callback("no netmask transmitted !");
+  if(!netmask)return callback("no netmask specified !");
   ifconfig.status(interface, function(err, status) {
     if(err)return callback(err,status);
     if(!status.ipv4_address)return callback('interface ip address not configured !');
@@ -611,9 +632,13 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
               setTimeout(function(){
                 ifconfig.status(ethernetInterface,function(err,status){
                   if(err)log.warn(err);
-                  if(status.ipv4_address!==undefined)// we got a lease !
-                    return log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
-                  else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
+                  if(status.ipv4_address!==undefined) {// we got a lease !
+                    	this.networkInfo.wired = status.ipv4_address;
+			this.emit('network', {'mode':'ethernet'});
+		  	log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
+                    	return;
+		  }
+		  else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
                     async.series([
                       self.disableDHCP.bind(this,ethernetInterface),
                       self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
@@ -625,18 +650,18 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
                       else log.info("[magic mode] No dhcp server found, switched to static configuration and launched a dhcp server...");
                   });
                   }
-                });
-              },DHCP_MAGIC_TTL);
-            });
+                }.bind(this));
+              }.bind(this),DHCP_MAGIC_TTL);
+            }.bind(this));
             break;
 
           case 'off':
           default:
             break;
         }
-      });
+      }.bind(this));
     }
-  });
+  }.bind(this));
 }
 
 EdisonNetworkManager.prototype.runEthernet = function(){
@@ -652,6 +677,7 @@ EdisonNetworkManager.prototype.runEthernet = function(){
                 ipaddress : status.ipv4_address,
                 last_seen : Date.now()
             }
+	    this.networkInfo.wired = status.ipv4_address;
             } catch(e) {
                 log.warn('Could not save ethernet address in network history.')
             }
