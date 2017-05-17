@@ -607,6 +607,7 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
         self.stopDHCPServer.bind(this,ethernetInterface)
       ],function(err,results){
         if(err)log.warn(err);
+	this.emit('network', {'mode':'ethernet'});
         log.info("ethernet is in "+ethernet_config.mode+" mode");
         switch(ethernet_config.mode) {
           case 'static':
@@ -634,7 +635,6 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
                   if(err)log.warn(err);
                   if(status.ipv4_address!==undefined) {// we got a lease !
                     	this.networkInfo.wired = status.ipv4_address;
-			this.emit('network', {'mode':'ethernet'});
 		  	log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
                     	return;
 		  }

@@ -2,9 +2,10 @@ var config = require('./config')
 var engine = require('./engine')
 var hooks = require('./hooks')
 var log = require('./log').logger('beacon')
-
 var request = require('request')
 var Q = require('q');
+
+var RETRY_INTERVAL = 5000
 
 var Beacon = function(options) {
 	var options = options || {}
@@ -130,6 +131,7 @@ Beacon.prototype.report = function(reason) {
 					var err = new Error("Beacon server responded with status code " + response.statusCode);
 					log.warn(err);
 					deferred.reject(err);
+					setTimeout(this.report, RETRY_INTERVAL, reason);
 				} else {
 					//log.debug('Beacon response code: ' + response.statusCode)
 					//log.debug('Beacon response body: ' + body);
