@@ -131,14 +131,16 @@ Beacon.prototype.report = function(reason) {
 					var err = new Error("Beacon server responded with status code " + response.statusCode);
 					log.warn(err);
 					deferred.reject(err);
-					setTimeout(this.report, RETRY_INTERVAL, reason);
+					setTimeout(function() {
+						this.report('retry');	
+					}.bind(this), RETRY_INTERVAL);
 				} else {
 					//log.debug('Beacon response code: ' + response.statusCode)
 					//log.debug('Beacon response body: ' + body);
 					log.info('Post to beacon server successful.');
 					deferred.resolve();
 				}
-			});
+			}.bind(this));
 		}.bind(this)).catch(function(err){
 			log.error(err)
 			deferred.reject(err);
