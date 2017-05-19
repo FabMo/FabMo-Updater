@@ -9,8 +9,9 @@ var RETRY_INTERVAL = 5000
 
 var Beacon = function(options) {
 	var options = options || {}
-	this.url = options.url 
-	if(!this.url) { throw new Error('Beacon needs a URL.'); }
+	this.url = options.url
+    this.retry_url = null
+    if(!this.url) { throw new Error('Beacon needs a URL.'); }
 	this.interval = options.interval || 1*60*60*1000;
 	this._timer = null;
 	this.running = false;
@@ -26,7 +27,7 @@ Beacon.prototype.set = function(key, value) {
 	this[key] = value;
 	var wasRunning = this.running;
 	this.stop();
-	if(wasRunning) { this.run('config'); }	
+	if(wasRunning) { this.run('config'); }
 }
 
 // Start reporting with the beacon
@@ -88,7 +89,7 @@ Beacon.prototype.createMessage = function(reason) {
 				log.warn("Engine version could not be determined");
 				log.warn(err);
 			} else {
-				msg.engine_version = version;		
+				msg.engine_version = version;
 			}
 			require('./updater').getVersion(function(err, version) {
 				if(err) {
@@ -96,11 +97,11 @@ Beacon.prototype.createMessage = function(reason) {
 					log.warn("Updater version could not be determined");
 					log.warn(err);
 				} else {
-					msg.updater_version = version					
+					msg.updater_version = version
 				}
 				deferred.resolve(msg);
 			})
-		})		
+		})
 	} catch(e) {
 		deferred.reject(e)
 	}
@@ -111,11 +112,13 @@ Beacon.prototype.createMessage = function(reason) {
 Beacon.prototype.report = function(reason) {
 	deferred = Q.defer()
 	if(this.url) {
-		log.info('Sending beacon report (' + (reason || 'interval') + ') to ' + this.url);
 		return this.createMessage(reason)
 		.then(function(message) {
 			//console.log(message)
-			request({uri : this.url, json : true,body : message, method : 'POST'}, function(err, response, body) {
+			var url = reason == 'retry' ? this.retry_url : this.url;
+            this.retry_url = this.url;
+		    log.info('Sending beacon report (' + (reason || 'interval') + ') to ' + url);
+            request({uri : url, json : true,body : message, method : 'POST'}, function(err, response, body) {
 				if(err) {
 					log.warn('Could not send message to beacon server: ' + err);
 					deferred.reject(err);
@@ -127,12 +130,18 @@ Beacon.prototype.report = function(reason) {
 							deferred.resolve();
 							return;
 						}
-					}
+					} else if(response.statusCode === 307) {
+						if(response.headers.location) {
+                            this.retry_url = response.headers.location;
+                        }
+                    }
+
 					var err = new Error("Beacon server responded with status code " + response.statusCode);
 					log.warn(err);
 					deferred.reject(err);
-					setTimeout(function() {
-						this.report('retry');	
+
+                    setTimeout(function() {
+						this.report('retry');
 					}.bind(this), RETRY_INTERVAL);
 				} else {
 					//log.debug('Beacon response code: ' + response.statusCode)
