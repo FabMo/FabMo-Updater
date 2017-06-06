@@ -24,7 +24,7 @@ var wifiInterface = 'wlan0';
 var ethernetInterface = "enp0s17u1u1";
 var apModeGateway= '192.168.42.1';
 var tmpPath = os.tmpdir();
-
+if(!tmpPath.endsWith('/')) { tmpPath = tmpPath+'/'; }
 
 var DEFAULT_NETMASK = "255.255.255.0";
 var DEFAULT_BROADCAST = "192.168.1.255"
