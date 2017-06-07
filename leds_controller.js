@@ -1,8 +1,8 @@
 
 var mraa = require("mraa")
 spi = new mraa.Spi(0);
-spi.mode(0);
-spi.frequency(8000);
+spi.mode(1);
+spi.frequency(250000);
 
 
 LedStrip = function(spi,ledCount){
