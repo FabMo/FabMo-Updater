@@ -12,12 +12,13 @@
 	"name" : "FabMo",
 	"password" : "go2fabmo",
 	"firmware_file" : "/fabmo/engine/firmware/g2.bin",
-	"consent_for_beacon" : "none",
+	"consent_for_beacon" : "true",
 	"os_version" : "unknown",
 	"network" : {
        	    "wifi":{
             "mode" : "ap",
-            "wifi_networks" : [],
+            "enabled" : true,
+	    "wifi_networks" : [],
             "default_config" : {
                 "ip_address":"192.168.42.1",
                 "netmask":"255.255.255.0",

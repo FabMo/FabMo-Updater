@@ -11,7 +11,8 @@
 		{
 			"op" : "deleteFiles",
 			"paths" : [
-				"/fabmo/updater"
+				"/fabmo/updater",
+				"/opt/fabmo/config/updater.json"
 			]
 		},
 		{

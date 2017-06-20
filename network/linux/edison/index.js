@@ -23,8 +23,7 @@ var WIFI_SCAN_RETRIES = 3;
 var wifiInterface = 'wlan0';
 var ethernetInterface = "enp0s17u1u1";
 var apModeGateway= '192.168.42.1';
-var tmpPath = os.tmpdir();
-
+var tmpPath = os.tmpdir() + '/';
 
 var DEFAULT_NETMASK = "255.255.255.0";
 var DEFAULT_BROADCAST = "192.168.1.255"
@@ -42,8 +41,9 @@ function jedison(cmdline, callback) {
                 callback(j.message)
             }
         } catch(e) {
+            log.error(e)
             log.error('jedison ' + cmdline);
-      callback(e);
+            callback(e);
         }
     });
 }
@@ -56,6 +56,10 @@ var EdisonNetworkManager = function() {
   this.command = null;
   this.network_health_retries = 5;
   this.network_history = {};
+  this.networkInfo = {
+  	wireless: null,
+	  wired : null
+  };
 }
 util.inherits(EdisonNetworkManager, NetworkManager);
 
@@ -66,9 +70,25 @@ EdisonNetworkManager.prototype.getInfo = function(interface,callback) {
       if(err)return callback(err);
       iwconfig.status(interface,function(err,iwstatus){
         if(err)return callback(err);
-        callback(null,{ipaddress:ifstatus.ipv4_address,mode:iwstatus.mode})
+	callback(null,{ipaddress:ifstatus.ipv4_address,mode:iwstatus.mode})
       })
   })
+}
+
+EdisonNetworkManager.prototype.getLocalAddresses = function() {
+	var retval = [];
+	try {
+		if(this.networkInfo.wireless) {
+			retval.push(this.networkInfo.wireless);
+		}
+		if(this.networkInfo.wired) {
+			retval.push(this.networkInfo.wired);
+		}
+		log.debug('Returning a list of local addresses: ' + retval);
+		return retval;
+	} catch(e) {
+		return retval;
+	}
 }
 
 // return an object formatted like this :
@@ -82,7 +102,7 @@ EdisonNetworkManager.prototype.scan = function(callback) {
 }
 
 EdisonNetworkManager.prototype.runWifi = function() {
-  if(this.command) {
+    if(this.command) {
   switch(this.command.cmd) {
     case 'join':
       var ssid = this.command.ssid;
@@ -115,10 +135,25 @@ EdisonNetworkManager.prototype.runWifi = function() {
       this.command = null;
       this.wifiState = 'off'
       this.mode = 'off'
-      this._disableWifi(function(err, data) {
-        this.runWifi();
+      if(this.wifiStatus != 'disabled') {
+        this._disableWifi(function(err, data) {
+            if(err) { log.error(err); }
+            this.wifiStatus = 'disabled';
+            this.runWifi();
+        }.bind(this));
+      } else {
+        setTimeout(this.runWifi.bind(this), 1000);
+      }
+      break;
+   case 'on':
+      this.command = null;
+      this.wifiState = 'idle'
+      this.mode = 'idle'
+      this.turnWifiOn(function() {
+         this.runWifi();
       }.bind(this));
       break;
+
   }
   return;
 }
@@ -141,12 +176,11 @@ EdisonNetworkManager.prototype.runWifi = function() {
         if(!err) {
          var old_mode = this.mode;
          log.info("Wireless mode is '" + data.mode + "'");
-         log.debug(JSON.stringify(data));
          if(data.mode == 'managed') {this.mode = 'station';}
          else if(data.mode == 'master') { this.mode = 'ap';}
          else { log.warn('Unknown network mode: ' + data.mode)}
          if(this.mode != old_mode) {
-           setImmediate(this.runWifi.bind(this));
+		setImmediate(this.runWifi.bind(this));
          }else{
            setTimeout(this.runWifi.bind(this), 5000);
     }
@@ -194,10 +228,8 @@ EdisonNetworkManager.prototype.runWifiStation = function() {
           if(new_networks > 0) {
               log.info('Found ' + new_networks + ' new networks. (' + new_network_names.join(',') + ')')
           }
-        } else {
-          log.warn(err);
         }
-        if(data.length === 0 && this.scan_retries > 0) {
+        if((err || data.length === 0) && (this.scan_retries > 0)) {
           log.warn("No networks?!  Retrying...");
           this.wifiState = 'scan'
           this.scan_retries--;
@@ -228,7 +260,9 @@ EdisonNetworkManager.prototype.runWifiStation = function() {
         }
         if(networkOK) {
           this.wifiState = 'idle';
-          this.network_history[data.ssid] = {
+          this.wifiStatus = 'enabled';
+          this.networkInfo.wireless = data.ipaddress;
+	  this.network_history[data.ssid] = {
             ssid : data.ssid,
             ipaddress : data.ipaddress,
             last_seen : Date.now()
@@ -286,6 +320,12 @@ EdisonNetworkManager.prototype._joinAP = function(callback) {
   });
 }
 
+EdisonNetworkManager.prototype.enableWifi = function(){
+  this.command = {
+    'cmd' : 'on'
+  }
+}
+
 EdisonNetworkManager.prototype.disableWifi = function(){
   this.command = {
     'cmd' : 'off'
@@ -293,7 +333,7 @@ EdisonNetworkManager.prototype.disableWifi = function(){
 }
 
 EdisonNetworkManager.prototype._disableWifi = function(callback){
-  log.info("Disable wifi...");
+  log.info("Disabling wifi...");
   //var network_config = config.updater.get('network');
   //network_config.mode = 'off';
   //config.updater.set('network', network_config);
@@ -301,7 +341,7 @@ EdisonNetworkManager.prototype._disableWifi = function(callback){
     if(err)log.warn(err);
     ifconfig.down(wifiInterface,function(err, result){
       if(!err) {
-        log.info("wifi disabled.");
+    log.info("Wifi disabled.");
       }
       callback(err, result);
     });
@@ -391,14 +431,17 @@ EdisonNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback
 
 EdisonNetworkManager.prototype.turnWifiOn=function(callback){
   //callback(new Error('Not available on the edison wifi manager.'));
-  ifconfig.status(wifiInterface,function(err,status){
-    if(!status.up){
-      ifconfig.up(wifiInterface,callback);
-      this.mode=undefined;
-    } else {
-      callback();
-    }
-  });
+    ifconfig.status(wifiInterface,function(err,status){
+        if(!status.up){
+            ifconfig.up(wifiInterface,function(err, data) {
+                this.mode=undefined;
+                this.wifiStatus = 'enabled';
+                callback(err);
+            }.bind(this));
+        } else {
+            callback();
+        }
+  }.bind(this));
 }
 
 EdisonNetworkManager.prototype.turnWifiOff=function(callback){
@@ -514,7 +557,7 @@ EdisonNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
 }
 
 EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
-  if(!ip)return callback("no ip transmitted !");
+  if(!ip)return callback("no ip specified !");
   ifconfig.status(interface, function(err, status) {
     if(err)return callback(err,status);
     var options = {
@@ -528,7 +571,7 @@ EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
 }
 
 EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback) {
-  if(!netmask)return callback("no netmask transmitted !");
+  if(!netmask)return callback("no netmask specified !");
   ifconfig.status(interface, function(err, status) {
     if(err)return callback(err,status);
     if(!status.ipv4_address)return callback('interface ip address not configured !');
@@ -563,6 +606,7 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
         self.stopDHCPServer.bind(this,ethernetInterface)
       ],function(err,results){
         if(err)log.warn(err);
+	this.emit('network', {'mode':'ethernet'});
         log.info("ethernet is in "+ethernet_config.mode+" mode");
         switch(ethernet_config.mode) {
           case 'static':
@@ -588,9 +632,12 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
               setTimeout(function(){
                 ifconfig.status(ethernetInterface,function(err,status){
                   if(err)log.warn(err);
-                  if(status.ipv4_address!==undefined)// we got a lease !
-                    return log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
-                  else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
+                  if(status.ipv4_address!==undefined) {// we got a lease !
+                    	this.networkInfo.wired = status.ipv4_address;
+		  	log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
+                    	return;
+		  }
+		  else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
                     async.series([
                       self.disableDHCP.bind(this,ethernetInterface),
                       self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
@@ -602,18 +649,18 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
                       else log.info("[magic mode] No dhcp server found, switched to static configuration and launched a dhcp server...");
                   });
                   }
-                });
-              },DHCP_MAGIC_TTL);
-            });
+                }.bind(this));
+              }.bind(this),DHCP_MAGIC_TTL);
+            }.bind(this));
             break;
 
           case 'off':
           default:
             break;
         }
-      });
+      }.bind(this));
     }
-  });
+  }.bind(this));
 }
 
 EdisonNetworkManager.prototype.runEthernet = function(){
@@ -621,19 +668,50 @@ EdisonNetworkManager.prototype.runEthernet = function(){
   function checkEthernetState(){
     var oldState = this.ethernetState;
     ifconfig.status(ethernetInterface,function(err,status){
-      if(!err && status.up && status.running){
-        this.ethernetState = "plugged";
-      }else{
-        if(err) log.warn(err);
-        this.ethernetState = "unplugged";
-      }
-      if(this.ethernetState!==oldState && this.ethernetState !=="unplugged"){
-        log.info("ethernet cable was plugged");
-        this.applyEthernetConfig();
-      }
+        if(!err && status.up && status.running){
+            try {
+
+            this.network_history[null] = {
+                ssid : null,
+                ipaddress : status.ipv4_address,
+                last_seen : Date.now()
+            }
+	    this.networkInfo.wired = status.ipv4_address;
+            } catch(e) {
+                log.warn('Could not save ethernet address in network history.')
+            }
+            this.ethernetState = "plugged";
+            var network_config = config.updater.get('network')
+            try {
+                if(!network_config.wifi.enabled) {
+                    if(this.wifiStatus != 'disabled') {
+                        this.turnWifiOff()
+                    }
+                }
+            } catch(e) {
+                log.error(e);
+            }
+        }else{
+            this.ethernetState = "unplugged";
+        }
+        if(this.ethernetState!==oldState){
+            switch(this.ethernetState) {
+                case "plugged":
+                    log.info("ethernet cable was plugged");
+                    this.applyEthernetConfig();
+                    break;
+                case "unplugged":
+                    log.info("Ethernet cable was unplugged.");
+                    this.enableWifi();
+                    break;
+                default:
+                    log.error("Unknown ethernet state. (Bad error)");
+                    break;
+            }
+        }
     }.bind(this));
   }
-checkEthernetState.bind(this)();
+    checkEthernetState.bind(this)();
   setInterval(checkEthernetState.bind(this),ETHERNET_SCAN_INTERVAL);
 
 }

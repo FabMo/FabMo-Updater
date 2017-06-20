@@ -54,7 +54,7 @@ Updater.prototype.getVersion = function(callback) {
     this.version = {number : 'v0.0.0', type : 'unknown'};
     require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
         .then(function(data) {
-	    parts = data.split('-');
+	parts = data.split('-');
         if(parts.length === 1) {
 		  var versionString = parts[0].trim();
 	    } else {
@@ -64,19 +64,19 @@ Updater.prototype.getVersion = function(callback) {
            callback(null, this.version);
         }.bind(this))
         .catch(function(e) {
-            log.error(e)
-            fs.readFile('version.json', 'utf8', function(err, data) {
-
+            log.debug('Updater is not a source installation.');
+	    fs.readFile('version.json', 'utf8', function(err, data) {
     		if(err) {
+		    log.error(err)
                     return callback(null, this.version);
                 }
                 try {
                     data = JSON.parse(data);
                     if(data.number) {
-                        this.version.number = data.number;
-                        this.version.type = 'release';
+			this.version.number = data.number;
+			this.version.type = data['type'] ? data['type'] : 'release';
                         this.version.date = data.date;
-                    }
+		    }
                 } catch(e) {
                     log.warn("Could not read updater version.json: " + (e.message || e))
                     log.warn(e);
@@ -427,6 +427,38 @@ Updater.prototype.start = function(callback) {
             log.info('Checking updater data directory tree...');
             config.createDataDirectories(callback);
         },
+	function apply_config_shim(callback) {
+		var updaterPath = config.getDataDir('config') + '/updater.json';
+		try {
+			fs.readFile(updaterPath, function(err, data) {
+				try {
+					d = JSON.parse(data)
+					if(d['network']) {
+					
+						if(!d['ethernet']) {
+							delete d['network']
+							log.info('Applying network configuration shim.');
+							fs.writeFile(updaterPath, JSON.stringify(d, null, 2), function(err, data) {
+								if(err) {
+									log.error(err);
+								}
+								callback();
+							});
+						} else {
+							callback();
+						}
+					} else {
+						callback();
+					}
+				} catch(e) {
+					log.error(e);
+					callback();
+				}
+			});
+		} catch(e) {
+			log.error(e);
+		}
+	},
         function configure(callback) {
             log.info('Loading configuration...');
             config.configureUpdater(callback);
@@ -501,13 +533,14 @@ Updater.prototype.start = function(callback) {
 
             // Do a package check every time we join a wireless network
             this.networkManager.on('network', function(evt) {
-                    if(evt.mode === 'station') {
+                    if(evt.mode === 'station' || evt.mode === 'ethernet') {
                     // 30 Second delay is used here to make sure timesyncd has enough time to update network time
                     // before trying to pull an update (https requests will fail with an inaccurate system time)
                     log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')
                     setTimeout(function() {
                         log.info('Doing beacon report due to network change');
-                        this.beacon.once('network');
+                        this.beacon.setLocalAddresses(this.networkManager.getLocalAddresses());
+			this.beacon.once('network');
                         log.info('Running package check due to network change');
                         this.runAllPackageChecks();
                     }.bind(this), PACKAGE_CHECK_DELAY*1000);

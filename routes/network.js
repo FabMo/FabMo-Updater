@@ -2,7 +2,7 @@ var log = require('../log').logger('network');
 var config =  require('../config');
 var util =  require('../util');
 
-scan = function(req, res, next) {
+var scan = function(req, res, next) {
   var network = require('../updater').networkManager;
   network.getAvailableWifiNetworks(function(err, data) {
     if (err) {

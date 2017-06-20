@@ -26,7 +26,8 @@
           </a>
       </li>
       <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> System Info</a></li>
-      <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-wifi"></i> Network</a></li>
+      <li class="menu-item" data-id="view-wireless"><a href="#"><i class="fa fa-wifi"></i> Wireless</a></li>
+      <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-plug"></i> Network</a></li>
       <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download update-indicator"></i><span class="update-indicator"> Software Updates</span></a></li>
       <li class="menu-item" data-id="view-settings"><a href="#"><i class="fa fa-wrench"></i> Settings</a></li>
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
@@ -134,8 +135,8 @@
       NETWORK
 
     -->
-    <div class="content-pane" id="view-network">
-      <h1><i class="fa fa-wifi"></i> Network</h1>
+    <div class="content-pane" id="view-wireless">
+      <h1><i class="fa fa-wifi"></i> Wireless Network</h1>
       <h2>Wifi</h2>
       <div id="wifi-section">
         <p>Below is a list of available wireless networks.  Enter an SSID and key at the bottom of the table to join a network.  You can click a network in the list to fill in that network's SSID.  <em>Note that when you join a network, you will lose your connection to the updater and will need to reconnect from the chosen network.</em></p>
@@ -170,6 +171,9 @@
         <p>Clicking this button will disable the Wifi for this session (if you reboot your machine, wifi will come back). <span class="emphasis">Be carefull, if you press this button while connected through wifi, you will loose the connnection !</span></p>
         <button id="btn-wifi-network-disable" class="btn-blue"><i class="fa fa-wifi"></i> Disable Wifi</button>
       </div>
+    </div>
+
+    <div class="content-pane" id="view-network">
       <div id="ethernet-section">
         <h2>Ethernet</h2>
         <form id="form-ethernet-network" class="form-vertical">
