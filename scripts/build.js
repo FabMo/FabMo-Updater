@@ -18,7 +18,7 @@ var argv = require('minimist')(process.argv);
 var fs = require('fs');
 var github = require('./github');
 var fmp = require('../fmp');
-
+var util = require('../util');
 var log = require('../log').logger('build');
 var buildDate = new Date().toISOString();
 log.info('Build date: ' + buildDate);
@@ -47,6 +47,7 @@ switch(argv.product) {
 
 var IGNORE_NPM_ERROR = argv['ignore-npm-error'];
 var SKIP_NPM_INSTALL = argv['skip-npm-install'];
+var RETRIES = argv['retries'] || 0;
 
 // Globals that are setup by the build process
 var githubReposOwner = 'FabMo';
@@ -417,9 +418,9 @@ clean()
 .then(stageManifestJSON)
 .then(createFMPArchive)
 .then(getMD5Hash)					// Set md5
-.then(publishGithubRelease)			// Set changelog
+.then(util.retry(publishGithubRelease, RETRIES, 1000))
 .then(createPackageEntry)
-.then(updatePackagesList)
+.then(util.retry(updatePackagesList, RETRIES, 1000))
 .catch(function(err) {
 	log.error(err);
 }).done();
