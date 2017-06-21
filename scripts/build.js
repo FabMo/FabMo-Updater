@@ -79,6 +79,12 @@ if(argv['rc']) {
 	version = 'rc';
 	releaseName = 'release_candidate';
     candidateVersion = argv['rc'];
+    if(!candidateVersion) {
+        throw new Error('No candidate version specified with --rc');
+    }
+    if(candidateVersion[0] != 'v') {
+        candidateVersion = 'v' + candidateVersion;
+    }
 } else if(argv['dev']) {
 	version = argv['branch'] || 'master';
 	releaseName = 'dev';
