@@ -78,6 +78,7 @@ var githubCredentials;
 if(argv['rc']) {
 	version = 'rc';
 	releaseName = 'release_candidate';
+    candidateVersion = argv['rc'];
 } else if(argv['dev']) {
 	version = argv['branch'] || 'master';
 	releaseName = 'dev';
@@ -146,17 +147,24 @@ function createBuildDirectories() {
 }
 
 function getProductVersion() {
-	return doshell('git describe --dirty', {cwd : reposDirectory}).then(function(v) {
+    return doshell('git describe --dirty', {cwd : reposDirectory}).then(function(v) {
 		v = v.trim().replace('-dirty', '!');
 		parts = v.split('-');
-		versionString = parts[0]
+		console.log(parts)
+        versionString = parts[0]
 		if(parts[2]) {
 			versionString += '-' + parts[2];
-			if(version != 'release' && version != 'rc') {
-				versionString += '-dev';
-			} else {
-				releaseName = versionString;
-			}
+            switch(version) {
+                case 'dev':
+                    versionString += '-dev';
+                    break;
+                case 'rc':
+                    versionString += '-rc';
+                    break;
+                case 'release':
+                    releaseName = versionString;
+                    break;
+            }
 		}
 		fmpArchiveBaseName = 'fabmo-' + product + '_' + manifest.os + '_' + manifest.platform
 		fmpArchiveName = fmpArchiveBaseName + '_' + versionString + '.fmp';
