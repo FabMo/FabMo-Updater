@@ -150,12 +150,11 @@ function getProductVersion() {
     return doshell('git describe --dirty', {cwd : reposDirectory}).then(function(v) {
 		v = v.trim().replace('-dirty', '!');
 		parts = v.split('-');
-		console.log(parts)
-        versionString = parts[0]
+		versionString = version === 'rc' ? candidateVersion : parts[0]
 		if(parts[2]) {
 			versionString += '-' + parts[2];
-            switch(version) {
-                case 'dev':
+		    switch(version) {
+                case 'master':
                     versionString += '-dev';
                     break;
                 case 'rc':
@@ -166,6 +165,7 @@ function getProductVersion() {
                     break;
             }
 		}
+        console.log("product version = " + versionString);
 		fmpArchiveBaseName = 'fabmo-' + product + '_' + manifest.os + '_' + manifest.platform
 		fmpArchiveName = fmpArchiveBaseName + '_' + versionString + '.fmp';
 		fmpArchivePath = distPath(fmpArchiveName);
