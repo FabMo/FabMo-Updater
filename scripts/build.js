@@ -67,7 +67,9 @@ var firmwarePath = path.resolve(reposDirectory, 'firmware/g2.bin');
 var fmpArchivePath;
 var fmpArchiveBaseName;
 
-var version;					// dev, rc, or the released version number (eg: v1.2.3)
+var buildType                   // dev, rc, or release (the type of requested build)
+var branch                      // The branch to build from
+var versionNumber;				// The released version number, in the case of a release build. (eg: v1.2.3)
 var versionString;				// The version string associated with the build (eg: v1.2.3-gabcde)
 var candidateVersion;			// The version of the next release, if this build is a release candidate
 var isFinalRelease = false;		// Set to true if this is going to be a final release
@@ -76,9 +78,9 @@ var package = {};				// The package object that will appear in the package listi
 var githubCredentials;
 
 if(argv['rc']) {
-	version = 'rc';
-	releaseName = 'release_candidate';
-    candidateVersion = argv['rc'];
+	buildType = 'rc';
+    branch = 'rc';
+    candidateVersion = argv['rc'].trim();
     if(!candidateVersion) {
         throw new Error('No candidate version specified with --rc');
     }
@@ -86,18 +88,26 @@ if(argv['rc']) {
         candidateVersion = 'v' + candidateVersion;
     }
 } else if(argv['dev']) {
-	version = argv['branch'] || 'master';
-	releaseName = 'dev';
+	buildType = 'dev';
+    branch = argv['branch'] || 'master';
 } else if(argv['release']) {
-	version = 'release';
-	isFinalRelease = true;
+	buildType = 'release';
+	branch = 'release';
+} else if(argv['version']) {
+    buildType = 'release';
+	versionNumber = argv['version'] ? argv['version'].trim() : null;
+} else {
+    buildType = 'release'
+	branch = 'release';
 }
-else {
-	version = argv.version ? argv.version.trim() : null;
-	if(version) {
-		isFinalRelease = true;
-		releaseName = version;
-	}
+
+if(argv['version'] && argv['branch']) {
+    throw new Error('You can specify a version number or a branch, but not both.');
+}
+if(versionNumber) {
+    commitish = versionNumber
+} else {
+    commitish = branch
 }
 
 var manifest = {};
@@ -130,17 +140,21 @@ function doshell(command, options) {
     return deferred.promise;
 }
 
+/*
+ * Clear the build directory
+ */
 function clean() {
 	log.info('Cleaning the build directory');
 	return doshell('rm -rf ' + buildDirectory);
 }
 
 function getLatestReleasedVersion() {
-	if(version === 'release') {
+	if(buildType === 'release' && !versionNumber) {
 		return doshell('git tag --sort=v:refname | tail -1', {cwd : reposDirectory})
 			.then(function(v) {
-				version = v.trim();
-				releaseName = version;
+				versionNumber = v.trim();
+                commitish = versionNumber;
+				releaseName = versionNumber;
 			});
 	} else {
 		return Q();
@@ -156,22 +170,27 @@ function getProductVersion() {
     return doshell('git describe --dirty', {cwd : reposDirectory}).then(function(v) {
 		v = v.trim().replace('-dirty', '!');
 		parts = v.split('-');
-		versionString = version === 'rc' ? candidateVersion : parts[0]
+		versionString = buildType === 'rc' ? candidateVersion : parts[0]
 		if(parts[2]) {
 			versionString += '-' + parts[2];
-		    switch(version) {
-                case 'master':
+		    switch(buildType) {
+                case 'dev':
                     versionString += '-dev';
+	                releaseName = 'dev';
                     break;
                 case 'rc':
                     versionString += '-rc';
+	                releaseName = 'release_candidate';
                     break;
                 case 'release':
                     releaseName = versionString;
                     break;
             }
-		}
-        console.log("product version = " + versionString);
+		} else {
+            if(buildType == 'rc') {
+                throw new Error('Cannot build a candidate release from this version.  This is the same as released version ' + parts[0] + '!')
+            }
+        }
 		fmpArchiveBaseName = 'fabmo-' + product + '_' + manifest.os + '_' + manifest.platform
 		fmpArchiveName = fmpArchiveBaseName + '_' + versionString + '.fmp';
 		fmpArchivePath = distPath(fmpArchiveName);
@@ -179,12 +198,8 @@ function getProductVersion() {
 }
 
 function checkout() {
-	if(version) {
-		log.info("Checking out version " + version)
-		return doshell('git fetch origin --tags; git checkout ' + version, {cwd : reposDirectory});
-	} else {
-		log.info("Skipping checkout because version is " + version)
-	}
+	log.info("Checking out version " + commitish)
+	return doshell('git fetch origin --tags; git checkout ' + commitish, {cwd : reposDirectory});
 	return Q();
 }
 
@@ -233,7 +248,7 @@ function stageVersionJSON() {
 	log.info('Creating version.json for release package');
 
 	var versionObject = {
-	type : isFinalRelease ? 'release' : 'dev',
+	    type : buildType,
 		date : buildDate,
 		number : versionString
  	}
@@ -323,7 +338,6 @@ function updatePackagesList() {
 					if(!updated) {
 						oldPackageList.packages.push(package);
 					}
-					//console.log(oldPackageList);
 					return github.updateFileContents(file, JSON.stringify(oldPackageList,null,2), "Add version " + versionString, githubCredentials)
 				case 'release':
 					var updated = false;
@@ -384,14 +398,14 @@ function publishGithubRelease() {
 						.then(function(r) {
 							return (r ? github.deleteRelease(r, githubCredentials) : Q())
 								.then(function() {
-									return github.createRelease(githubReposOwner, githubRepos, releaseName, version, githubCredentials);
+									return github.createRelease(githubReposOwner, githubRepos, releaseName, commitish, githubCredentials);
 								});
 						})
 						.then(function(r) {
 							release = r;
 						})
 				} else {
-					return github.createRelease(githubReposOwner, githubRepos, releaseName, version, githubCredentials)
+					return github.createRelease(githubReposOwner, githubRepos, releaseName, commitish, githubCredentials)
 						.then(function(r) {
 							release = r;
 						})

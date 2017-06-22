@@ -24,7 +24,7 @@ function getFileContents(owner, repos, file, options) {
     	},
     	function(err, resp, body) {
     		try {
-    			var file = JSON.parse(body);  
+    			var file = JSON.parse(body);
     			file.content = new Buffer(file.content, 'base64')
     			deferred.resolve(file);
     		} catch(e) {
@@ -87,7 +87,7 @@ function getReleaseAssets(release, options) {
     	},
     	function(err, resp, body) {
     		try {
-    			var assets = JSON.parse(body);    			
+    			var assets = JSON.parse(body);
     			deferred.resolve(assets);
     		} catch(e) {
     			deferred.reject(e);
@@ -107,7 +107,7 @@ function deleteReleaseAssets(release, regex, options) {
     					log.info("Deleting release asset: " + asset.name)
        	 				return deleteReleaseAsset(asset, options)
     				} else {
-       	 				return Q();    					
+       	 				return Q();
     				}
     			});
 			}, Q());
@@ -139,7 +139,7 @@ function deleteReleaseAsset(asset, options) {
 			}
 			deferred.resolve(null);
 		}
-	);	
+	);
 	return deferred.promise;
 }
 
@@ -167,7 +167,7 @@ function deleteRelease(release, options) {
 			}
 			deferred.resolve(null);
 		}
-	);	
+	);
 	return deferred.promise;
 }
 
@@ -265,14 +265,12 @@ function createRelease(owner, repos, tagName, targetCommitish, options) {
     		}
     		log.info('Release for ' + tagName + ' does not already exist');
     		// Release doesn't already exist
-			console.log(tagName);
-			console.log(targetCommitish);
 			request.post(
 				{
 			    	url : 'https://api.github.com/repos/' + owner + '/' + repos + '/releases',
 			    	auth : auth,
 			    	headers : HEADERS,
-		
+
 				json : {
 			    		tag_name : tagName,
 			    		target_commitish : tagName === targetCommitish ? undefined : targetCommitish,
@@ -346,7 +344,7 @@ function addReleaseAsset(release, filename, options) {
 							body = JSON.parse(body);
 							deferred.resolve(body.browser_download_url);
 						}
-					
+
 					)
 				);
 		})
