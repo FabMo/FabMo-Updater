@@ -425,7 +425,6 @@ function publishGithubRelease() {
 				packageDownloadURL = downloadURL;
 				return Q();
 			});
-        });
 	}
 	return Q();
 }
