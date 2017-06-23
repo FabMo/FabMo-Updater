@@ -47,7 +47,7 @@ function parseVersion(v) {
 			throw new Error('Unknown release type ' + type);
 		break;
 	}
-	
+
 	if(hash) {
 		hash = hash.trim()
 		if(hash[0] === 'g') {
@@ -72,7 +72,7 @@ function parseVersion(v) {
 
 	if(retval.type === 'release' && (retval.dirty || retval.hash)) {
 		throw new Error('Invalid version string: ' + v);
-	}	
+	}
 	retval.number = v;
 	return retval;
 }
@@ -83,10 +83,10 @@ function compareVersions(a,b) {
 	a = parseVersion(a);
 	b = parseVersion(b);
 	if(a.type === 'release' && b.type !== 'release') {
-		return b.type === 'dev' ? 1 : -1;
+		return (b.type === 'dev') || (b.type === 'rc') ? 1 : -1;
 	} else if(b.type === 'release' && a.type !== 'release') {
-		return a.type === 'dev' ? -1 : 1;
-	} 
+		return (a.type === 'dev') || (b.type === 'rc') ? -1 : 1;
+	}
 	if(a.major === b.major) {
 		if(a.minor === b.minor) {
 			if(a.patch === b.patch) {
@@ -122,7 +122,7 @@ function fetchPackagesList(url) {
 		  		return deferred.reject(error);
 		  	}
 		  	if (response.statusCode == 200) {
-		    	
+
 		    	try {
 		    		var p = JSON.parse(body);
 					return deferred.resolve(p);
@@ -132,7 +132,7 @@ function fetchPackagesList(url) {
 		  	} else {
 		  		return deferred.reject(new Error(response.statusMessage));
 		  	}
-		});		
+		});
 	} catch(err) {
 		deferred.reject(err);
 	}
@@ -142,7 +142,7 @@ function fetchPackagesList(url) {
 // Given the filename for a package manifest, return a promise that fulfills with the manifest object
 // Basic checks are performed on the manifest to determine whether or not it is legitimate
 function loadManifest(filename) {
-	log.info('Loading the package manifest ' + filename);	
+	log.info('Loading the package manifest ' + filename);
 	var deferred = Q.defer()
 	fs.readFile(filename, 'utf8', function (err, data) {
 		if(err) {
@@ -152,7 +152,7 @@ function loadManifest(filename) {
 		try {
 	    	// Parse the data
 	    	var manifest = JSON.parse(data);
-			
+
 	    	// Check for mandatory fields
 			var requiredFields = ['product', 'repository', 'os', 'platform', 'version', 'operations', 'updaterNeeded']
 			requiredFields.forEach(function(field) {
@@ -163,7 +163,7 @@ function loadManifest(filename) {
 
 			// Clean up object manifest
 			manifest.services = manifest.services || [];
-		
+
 			manifest.operations.forEach(function(operation) {
 				if(!(operation.op in fmpOperations)) {
 					throw new Error('Operation "' + operation + '" found in the manifest is unknown.');
@@ -186,9 +186,9 @@ function loadManifest(filename) {
 function unpackPackage(filename) {
 	log.info('Unpacking update from '  + filename);
 	var deferred = Q.defer();
-	try {	
+	try {
 		var updateDir = path.resolve(TEMP_DIRECTORY, 'fmp-update');
-		
+
 		// Trash the update directory if it already exists
 		fs.remove(updateDir, function(err) {
 			// Create a new empty one
@@ -215,7 +215,7 @@ function executeOperation(operation) {
 		if(!(operation.op in fmpOperations)) {
 			throw new Error('Operation "' + operation.op + '" found in the manifest is unknown.');
 		}
-		log.info('Executing operation: ' + operation.op)		
+		log.info('Executing operation: ' + operation.op)
 		// Execute the operation (return the operations promise to complete)
 		return fmpOperations[operation.op](operation);
 	} catch(e) {
@@ -237,8 +237,8 @@ function executeOperations(manifest) {
 				.catch(callback)
 		},
 		function(err) {
-			if(err) { 
-				return deferred.reject(err); 
+			if(err) {
+				return deferred.reject(err);
 			}
 			return deferred.resolve(manifest);
 		}
@@ -268,7 +268,7 @@ function clearToken(manifest) {
 // Return a promise that resolves with the manifest object
 function setToken(manifest) {
 	var deferred = Q.defer();
-	
+
 	if(!manifest) { deferred.reject(new Error('No manifest was provided.')); }
 	else if(manifest.token) {
 		log.info('Setting update token ' + manifest.token)
@@ -277,7 +277,7 @@ function setToken(manifest) {
 	        	return deferred.reject(err);
 		    }
 		    deferred.resolve(manifest);
-		}); 
+		});
 	}
 	return deferred.promise;
 }
@@ -339,10 +339,10 @@ function startServices(manifest) {
 function unlock(manifest) {
 	try {
 		if(manifest) {
-			log.info('Unlocking the installation');	
-			return require('../hooks').unlock().then(function() { return manifest; });		
+			log.info('Unlocking the installation');
+			return require('../hooks').unlock().then(function() { return manifest; });
 		}
-		return Q(manifest);	
+		return Q(manifest);
 	} catch(err) {
 		return Q.reject(err);
 	}
@@ -350,8 +350,8 @@ function unlock(manifest) {
 
 function lock(manifest) {
 	try {
-		log.info('Locking the installation');	
-		return require('../hooks').lock().then(function() { return manifest; });		
+		log.info('Locking the installation');
+		return require('../hooks').lock().then(function() { return manifest; });
 	} catch(err) {
 		return Q.reject(err);
 	}
@@ -406,7 +406,7 @@ function filterPackages(registry, options) {
 						if(field === package[key] || package[key] === '*') {
 							accept = true;
 							break;
-						}			
+						}
 					}
 					if(!accept) {
 						return false;
@@ -429,7 +429,6 @@ function filterPackages(registry, options) {
 }
 
 function downloadPackage(package) {
-	
 	// Deal with insane package
 	if(!package) {return Q();}
 	if(!package.url) {
@@ -454,7 +453,7 @@ function downloadPackage(package) {
 		.pipe(file).on('finish', function() {
 			file.close(function(err) {
       			if(err) {
-      				return deferred.reject(err); 
+      				return deferred.reject(err);
       			}
       			if(statusCode !== 200) {
       				return deferred.reject(new Error(statusCode + ' ' + statusMessage));
@@ -479,11 +478,10 @@ function checkForAvailablePackage(product) {
 	return fetchPackagesList(updateSource)
 		.then(function(registry) {
 			var deferred = Q.defer();
-
 			// Cut down the list of packages to only ones for the specified product
 			updates = filterPackages(registry, {platform : PLATFORM, os : OS, 'product' : product});
-			
-			if('type' in registry && registry.type === 'dev') {
+
+			if('type' in registry && (registry.type === 'dev' || registry.type === 'rc')) {
 				updates = updates
 						.sort(function(a,b) {
 							if(a === b) { return 0;}
@@ -521,10 +519,10 @@ function checkForAvailablePackage(product) {
 				var newerPackageAvailable = false;
 				try {
 					// A 'dev' package registry works differently:  More aggressive about updates, and uses dates.
-					if('type' in registry && registry.type === 'dev') {
+					if('type' in registry && (registry.type === 'dev' || registry.type === 'rc')) {
 						if(version.type !== registry.type) {
 							log.debug("Installation type doesn't match registry.  Taking newest package.")
-							// If the registry type is dev, and the type of the current install is anything but dev, 
+							// If the registry type is dev, and the type of the current install is anything but dev,
 							// take the newest package in the list
 							newerPackageAvailable = true;
 						} else if(!version.date) {
@@ -533,10 +531,9 @@ function checkForAvailablePackage(product) {
 							newerPackageAvailable = true;
 						}
 						else {
-							console.log(version)
 							// If there's a date on our installed package, take the newest one in the list only if
 							// it's newer than the one we have installed.
-							newerPackageAvailable = updates[0].date > version.date;							
+							newerPackageAvailable = updates[0].date > version.date;
 							if(newerPackageAvailable) {
 								log.debug('Newer package available.  ' + updates[0].date + ' > ' + version.date);
 							} else {
@@ -544,7 +541,7 @@ function checkForAvailablePackage(product) {
 							}
 						}
 					} else {
-						var newerPackageAvailable = compareVersions(updates[0].version, version.number) > 0;						
+						var newerPackageAvailable = compareVersions(updates[0].version, version.number) > 0;
 					}
 				} catch(e) {
 					log.warn(e);
