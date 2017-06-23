@@ -20,7 +20,7 @@ var github = require('./github');
 var fmp = require('../fmp');
 var util = require('../util');
 var log = require('../log').logger('build');
-require('longjohn');
+//require('longjohn');
 
 var buildDate = new Date().toISOString();
 log.info('Build date: ' + buildDate);
