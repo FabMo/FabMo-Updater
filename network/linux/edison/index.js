@@ -360,8 +360,8 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   var self = this;
   log.info("Attempting to join wifi network: " + ssid + " with password: " + password);
   var network_config = config.updater.get('network');
-  network_config.mode = 'station';
-  network_config.wifi_networks = [{'ssid' : ssid, 'password' : password}];
+  network_config.wifi.mode = 'station';
+  network_config.wifi.wifi_networks = [{'ssid' : ssid, 'password' : password}];
   config.updater.set('network', network_config);
   jedison('join wifi --ssid="' + ssid + '" --password="' + password + '"', function(err, result) {
     if(err) {
