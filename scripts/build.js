@@ -235,7 +235,7 @@ function stageRepos() {
 	doshell('git archive --format=tar HEAD | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
 	.then(function() {
 		if(product === 'engine') {
-			return doshell('cp -R ./dashboard/build/* ' + path.join(stagingDirectory, 'dashboard/build'), {cwd : reposDirectory});
+			return doshell('cp -R ./dashboard/build/* ' + path.join(stagingDirectory, 'dashboard/build'), {cwd : reposDirectory})
 		    .then(function() { doshell('cp -R ./profiles/* ' + path.join(stagingDirectory, 'profiles'), {cwd : reposDirectory});
         }
 		return Q();
