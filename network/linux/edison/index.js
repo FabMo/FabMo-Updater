@@ -310,7 +310,7 @@ EdisonNetworkManager.prototype.joinAP = function() {
 EdisonNetworkManager.prototype._joinAP = function(callback) {
   log.info("Entering AP mode...");
   var network_config = config.updater.get('network');
-  network_config.mode = 'ap';
+  network_config.wifi.mode = 'ap';
   config.updater.set('network', network_config);
   jedison('join ap', function(err, result) {
     if(!err) {
