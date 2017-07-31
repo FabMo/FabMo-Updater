@@ -70,7 +70,7 @@ EdisonNetworkManager.prototype.getInfo = function(interface,callback) {
       if(err)return callback(err);
       iwconfig.status(interface,function(err,iwstatus){
         if(err)return callback(err);
-	callback(null,{ipaddress:ifstatus.ipv4_address,mode:iwstatus.mode})
+        callback(null,{ssid : iwstatus.ssid || '<Unknown>', ipaddress:ifstatus.ipv4_address,mode:iwstatus.mode})
       })
   })
 }
