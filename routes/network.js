@@ -21,11 +21,9 @@ connectWifi = function(req, res, next) {
   if(ssid) {
     network.connectToAWifiNetwork(ssid,key,function(err, data){
       if(err) {
-        log.error(err);
         res.json({'status':'error', 'message' : err.message});
       } else {
-        console.log('Connect success.');
-          res.json({'status':'success'})
+        res.json({'status':'success'})
       }
     });
   } else {
