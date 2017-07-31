@@ -9,7 +9,7 @@ UpdaterConfig = function() {
 util.inherits(UpdaterConfig, Config);
 
 UpdaterConfig.prototype.update = function(data, callback) {
-	try {
+    try {
 		for(var key in data) {
 			switch(key) {
 				case 'os':
@@ -20,7 +20,7 @@ UpdaterConfig.prototype.update = function(data, callback) {
 					var o = {}
 					o[key] = data[key];
 					this.emit('change', o);
-				break;				
+				break;
 			}
 		}
 	} catch (e) {

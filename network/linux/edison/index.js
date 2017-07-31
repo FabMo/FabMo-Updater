@@ -414,8 +414,11 @@ EdisonNetworkManager.prototype.applyWifiConfig = function() {
  */
 
 EdisonNetworkManager.prototype.init = function() {
+  log.info('Initializing network manager...');
   jedison("init --name='" + config.updater.get('name') + "' --password='" + config.updater.get('password') + "'", function(err, data) {
-    this.applyNetworkConfig();
+    log.info('Applying network configuration...');
+      this.applyNetworkConfig();
+    log.info('Running wifi...');
     this.runWifi();
     this.runEthernet();
   }.bind(this));
