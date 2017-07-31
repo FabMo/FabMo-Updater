@@ -348,12 +348,13 @@ EdisonNetworkManager.prototype._disableWifi = function(callback){
 });
 }
 
-EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
-  this.command = {
+EdisonNetworkManager.prototype.joinWifi = function(ssid, password, callback) {
+    this.command = {
     'cmd' : 'join',
     'ssid' : ssid,
     'password' : password
   }
+  setImmediate(callback);
 }
 
 EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
