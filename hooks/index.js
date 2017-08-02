@@ -208,7 +208,7 @@ exports.doFMU = function(filename, callback) {
 	var callback = callback || function() {};
 	var key = updater.startTask();
 	updater.setState('updating');
-	
+
 	var deferred = Q.defer();
 	execute('do_fmu', filename, function(err,stdout) {
 		if(err) {
@@ -222,7 +222,7 @@ exports.doFMU = function(filename, callback) {
 		}
 		updater.setState('idle');
 	});
-	callback(null, key);	
+	callback(null, key);
 	return deferred.promise;
 }
 
@@ -260,7 +260,7 @@ exports.updateFirmware = function(filename, callback) {
 }
 
 exports.factoryReset = function(callback) {
-	var updater = require('./updater');
+	var updater = require('../updater');
 	updater.setState('updating');
 	spawn('factory_reset');
 }
