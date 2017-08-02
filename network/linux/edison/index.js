@@ -29,7 +29,8 @@ var DEFAULT_NETMASK = "255.255.255.0";
 var DEFAULT_BROADCAST = "192.168.1.255"
 var DHCP_MAGIC_TTL = 5000;
 var ETHERNET_SCAN_INTERVAL = 2000;
-var NETWORK_HEALTH_RETRIES = 5;
+var NETWORK_HEALTH_RETRIES = 8;
+var NETWORK_HEALTH_RETRY_INTERVAL = 1500;
 
 function jedison(cmdline, callback) {
     var callback = callback || function() {}
@@ -279,7 +280,7 @@ EdisonNetworkManager.prototype.runWifiStation = function() {
               setImmediate(this.runWifi.bind(this));
     } else {
              this.network_health_retries--;
-             setTimeout(this.runWifi.bind(this),1000);
+             setTimeout(this.runWifi.bind(this),NETWORK_HEALTH_RETRY_INTERVAL);
     }
   }
       }.bind(this));
