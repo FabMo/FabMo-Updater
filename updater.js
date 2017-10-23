@@ -28,8 +28,8 @@ var PACKAGE_CHECK_DELAY = 30;   // Seconds
 var UPDATE_PRODUCTS = 'FabMo-Engine|FabMo-Updater'
 var BEACON_INTERVAL = 1*60*60*1000 // 1 Hour (in milliseconds)
 
-var Updater = function() 
-{   
+var Updater = function()
+{
     var task = (argv.task || '').trim();
     this.version = {};
     this.status = {
@@ -255,7 +255,7 @@ Updater.prototype.runPackageCheck = function(product) {
             .catch(function(err) {
                 log.error(err);
             })
-	    .finally(function() { 
+	    .finally(function() {
 		  log.info('Package check complete.');
           this.packageDownloadInProgress = false;
 	    }.bind(this));
@@ -266,7 +266,7 @@ Updater.prototype.runAllPackageChecks = function() {
         .then(function(updaterPackage) {
             if(!updaterPackage) {
                 this.runPackageCheck('FabMo-Engine')
-            }                            
+            }
         }.bind(this))
         .then(function() {
             this.emit('status',this.status);
@@ -409,9 +409,8 @@ Updater.prototype.start = function(callback) {
 			fs.readFile(updaterPath, function(err, data) {
 				try {
 					d = JSON.parse(data)
-					if(d['network']) {
-					
-						if(!d['ethernet']) {
+                    if(d['network']) {
+						if(!d['network']['ethernet']) {
 							delete d['network']
 							log.info('Applying network configuration shim.');
 							fs.writeFile(updaterPath, JSON.stringify(d, null, 2), function(err, data) {
@@ -494,7 +493,7 @@ Updater.prototype.start = function(callback) {
                     this.networkManager = new GenericNetworkManager(OS, PLATFORM);
                     return callback();
                 } else {
-                    this.networkManager = network.createNetworkManager();                    
+                    this.networkManager = network.createNetworkManager();
                 }
             } catch(e) {
                 log.warn(e);
@@ -506,7 +505,7 @@ Updater.prototype.start = function(callback) {
                     if(evt.mode === 'station' || evt.mode === 'ethernet') {
                     // 30 Second delay is used here to make sure timesyncd has enough time to update network time
                     // before trying to pull an update (https requests will fail with an inaccurate system time)
-                    log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')        
+                    log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')
                     setTimeout(function() {
                         log.info('Doing beacon report due to network change');
                         this.beacon.setLocalAddresses(this.networkManager.getLocalAddresses());
@@ -543,7 +542,7 @@ Updater.prototype.start = function(callback) {
             if(selfUpdateFile) { return callback(); }
             log.info('Checking for startup FMUs...')
             fs.readdir(path.join(config.getDataDir(), 'fmus'), function(err, files) {
-                files = files.map(function(filename) { 
+                files = files.map(function(filename) {
                     return path.join(config.getDataDir(),'fmus', filename);
                 });
                 fmu_files = files.filter(function(filename) { return filename.match(/.*\.fmu$/);})
@@ -574,7 +573,7 @@ Updater.prototype.start = function(callback) {
             log.info('Setting up the webserver...');
             var server = restify.createServer({name:'FabMo Updater'});
             this.server = server;
-            
+
 
             ///Handle options request in firefox
             function unknownMethodHandler(req, res) {
@@ -634,10 +633,10 @@ Updater.prototype.start = function(callback) {
             });
 
         }.bind(this),
-    
+
     function setup_config_events(callback) {
         config.updater.on('change', function(evt) {
-            
+
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
@@ -684,13 +683,13 @@ Updater.prototype.start = function(callback) {
   function start_beacon(callback) {
         var url = config.updater.get('beacon_url');
         var consent = config.updater.get('consent_for_beacon');
-        
+
         log.info("Starting beacon service");
         this.beacon = new Beacon({
             url : url,
             interval : BEACON_INTERVAL
         });
-        
+
         if (consent === "true"){
             this.beacon.set("consent_for_beacon", consent);
             log.info("Beacon is enabled");

@@ -29,6 +29,8 @@ var DEFAULT_NETMASK = "255.255.255.0";
 var DEFAULT_BROADCAST = "192.168.1.255"
 var DHCP_MAGIC_TTL = 5000;
 var ETHERNET_SCAN_INTERVAL = 2000;
+var NETWORK_HEALTH_RETRIES = 8;
+var NETWORK_HEALTH_RETRY_INTERVAL = 1500;
 
 function jedison(cmdline, callback) {
     var callback = callback || function() {}
@@ -54,7 +56,7 @@ var EdisonNetworkManager = function() {
   this.ethernetState = 'idle';
   this.networks = [];
   this.command = null;
-  this.network_health_retries = 5;
+  this.network_health_retries = NETWORK_HEALTH_RETRIES;
   this.network_history = {};
   this.networkInfo = {
   	wireless: null,
@@ -70,7 +72,7 @@ EdisonNetworkManager.prototype.getInfo = function(interface,callback) {
       if(err)return callback(err);
       iwconfig.status(interface,function(err,iwstatus){
         if(err)return callback(err);
-	callback(null,{ipaddress:ifstatus.ipv4_address,mode:iwstatus.mode})
+        callback(null,{ssid : (iwstatus.ssid || '<Unknown>'), ipaddress:ifstatus.ipv4_address,mode:iwstatus.mode})
       })
   })
 }
@@ -235,7 +237,7 @@ EdisonNetworkManager.prototype.runWifiStation = function() {
           this.scan_retries--;
         } else {
           this.wifiState = 'check_network';
-          this.network_health_retries = 5;
+          this.network_health_retries = NETWORK_HEALTH_RETRIES;
         }
         setImmediate(this.runWifi.bind(this));
       }.bind(this));
@@ -270,14 +272,15 @@ EdisonNetworkManager.prototype.runWifiStation = function() {
           setImmediate(this.runWifi.bind(this));
         } else {
           log.warn("Network health in question...");
+	  log.warn(JSON.stringify(data));
           if(this.network_health_retries == 0) {
               log.error("Network is down.  Going to AP mode.");
-              this.network_health_retries = 5;
+              this.network_health_retries = NETWORK_HEALTH_RETRIES;
               this.joinAP();
               setImmediate(this.runWifi.bind(this));
     } else {
              this.network_health_retries--;
-             setTimeout(this.runWifi.bind(this),1000);
+             setTimeout(this.runWifi.bind(this),NETWORK_HEALTH_RETRY_INTERVAL);
     }
   }
       }.bind(this));
@@ -310,7 +313,7 @@ EdisonNetworkManager.prototype.joinAP = function() {
 EdisonNetworkManager.prototype._joinAP = function(callback) {
   log.info("Entering AP mode...");
   var network_config = config.updater.get('network');
-  network_config.mode = 'ap';
+  network_config.wifi.mode = 'ap';
   config.updater.set('network', network_config);
   jedison('join ap', function(err, result) {
     if(!err) {
@@ -360,8 +363,8 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   var self = this;
   log.info("Attempting to join wifi network: " + ssid + " with password: " + password);
   var network_config = config.updater.get('network');
-  network_config.mode = 'station';
-  network_config.wifi_networks = [{'ssid' : ssid, 'password' : password}];
+  network_config.wifi.mode = 'station';
+  network_config.wifi.wifi_networks = [{'ssid' : ssid, 'password' : password}];
   config.updater.set('network', network_config);
   jedison('join wifi --ssid="' + ssid + '" --password="' + password + '"', function(err, result) {
     if(err) {
@@ -414,8 +417,11 @@ EdisonNetworkManager.prototype.applyWifiConfig = function() {
  */
 
 EdisonNetworkManager.prototype.init = function() {
+  log.info('Initializing network manager...');
   jedison("init --name='" + config.updater.get('name') + "' --password='" + config.updater.get('password') + "'", function(err, data) {
-    this.applyNetworkConfig();
+    log.info('Applying network configuration...');
+      this.applyNetworkConfig();
+    log.info('Running wifi...');
     this.runWifi();
     this.runEthernet();
   }.bind(this));
@@ -529,10 +535,12 @@ EdisonNetworkManager.prototype.turnEthernetOff=function(callback) {
 
 // interface specific - static addressing
 EdisonNetworkManager.prototype.enableDHCP=function(interface, callback) {
-  udhcpc.enable({interface: interface},callback)
+log.debug('Enabling DHCP on ' + interface);
+udhcpc.enable({interface: interface},callback)
 }
 
 EdisonNetworkManager.prototype.disableDHCP=function(interface, callback) {
+log.debug('Disabling DHCP on ' + interface);
   udhcpc.disable(interface,callback);
 }
 

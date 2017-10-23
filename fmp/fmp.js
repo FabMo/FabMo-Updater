@@ -524,7 +524,7 @@ function checkForAvailablePackage(product) {
 					// A 'dev' package registry works differently:  More aggressive about updates, and uses dates.
 					if('type' in registry && (registry.type === 'dev' || registry.type === 'rc')) {
 						if(version.type !== registry.type) {
-							log.debug("Installation type doesn't match registry.  Taking newest package.")
+							log.debug("Installation type doesn't match registry. (" + version.type + "!=" + registry.type + ") Taking newest package.")
 							// If the registry type is dev, and the type of the current install is anything but dev,
 							// take the newest package in the list
 							newerPackageAvailable = true;
