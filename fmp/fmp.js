@@ -165,8 +165,11 @@ function loadManifest(filename) {
 			manifest.services = manifest.services || [];
 
 			manifest.operations.forEach(function(operation) {
+				if(!operation.op) {
+					throw new Error('Malformed operation in manifest.')
+				}
 				if(!(operation.op in fmpOperations)) {
-					throw new Error('Operation "' + operation + '" found in the manifest is unknown.');
+					throw new Error('Operation "' + operation.op + '" found in the manifest is unknown.');
 				}
 			});
 

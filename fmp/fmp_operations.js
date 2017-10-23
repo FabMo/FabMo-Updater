@@ -60,7 +60,8 @@ function deleteFiles(operation) {
 						},
 						// If any removal fails 
 						function(err) {
-							callback(err);
+							log.warn(err);
+							callback();
 						}
 					);
 				});
@@ -163,9 +164,45 @@ function sleep(operation) {
 	return deferred.promise;
 }
 
+function updateJSONFile(operation) {
+	var deferred = Q.defer();
+	try {
+
+		if(!operation.path) {
+			throw new Error('No path specified.');
+		}
+
+		if(!operation.data) {
+			throw new Error('No update data specified.');
+		}
+		log.info("Reading " + operation.path + '...')
+		var data = fs.readJSON(operation.path, function(err, json) {
+			if(err) {
+				return deferred.reject(err);
+			}
+			for(key in operation.data) {
+				log.info('Updating key ' + key + '->' + operation.data[key])
+				json[key] = operation.data[key];
+			}
+			log.info('Writing ' + operation.path + '...')
+			fs.writeJSON(operation.path, json, function(err) {
+				if(err) {
+					return deferred.reject(err);
+				}
+				log.info('Done.')
+				deferred.resolve()
+			});
+		});
+	} catch(e) {
+		deferred.reject(e);
+	}
+	return deferred.promise;
+}
+
 exports.deleteFiles = deleteFiles;
 exports.expandArchive = expandArchive;
 exports.installFirmware = installFirmware;
 exports.createDirectories = createDirectories;
 exports.createDirectory = createDirectories;
 exports.sleep = sleep;
+exports.updateJSONFile = updateJSONFile;
