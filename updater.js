@@ -464,8 +464,16 @@ Updater.prototype.start = function(callback) {
         function get_version(callback) {
             this.getVersion(function(err, version) {
                 if(!err) {
-                    config.updater.set('version', version);
-                } else {
+		    if(version) {
+			    try {
+			if(config.updater.get('version')['number'] != version['number']) {
+				log.info('New updater version.  Clearing beacon consent...')
+				config.updater.set('consent_for_beacon', 'none')
+			} } finally {
+                    	config.updater.set('version', version);
+			}
+                    }
+		} else {
                     config.updater.set('version', {});
                 }
                 callback();
@@ -690,11 +698,11 @@ Updater.prototype.start = function(callback) {
             interval : BEACON_INTERVAL
         });
 
-        if (consent === "true"){
-            this.beacon.set("consent_for_beacon", consent);
+        if (consent != "false"){
+            this.beacon.set("consent_for_beacon", "true");
             log.info("Beacon is enabled");
-        } else if (consent === "false"){
-            this.beacon.set("consent_for_beacon", consent);
+        } else {
+            this.beacon.set("consent_for_beacon", "false");
             log.info("Beacon is disabled");
         }
         this.beacon.start();
