@@ -302,7 +302,7 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
 		    log.info('See you, space cowboy.');
 		    // Give a second for those log messages to head out the door before falling on our sword
 		    setTimeout(function() {
-		    	require('./util').eject(process.argv[0], ['server.js', '--selfupdate', package.local_filename, '--task', key]);
+		    	require('./util').eject(process.argv[0], ['/tmp/temp-updater/server.js', '--selfupdate', package.local_filename, '--task', key]);
 		    },1000);
 		});
             } catch(err) {
