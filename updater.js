@@ -698,13 +698,23 @@ Updater.prototype.start = function(callback) {
             interval : BEACON_INTERVAL
         });
 
-        if (consent != "false"){
-            this.beacon.set("consent_for_beacon", "true");
-            log.info("Beacon is enabled");
-        } else {
-            this.beacon.set("consent_for_beacon", "false");
-            log.info("Beacon is disabled");
-        }
+	switch(consent) {
+		case "true":
+		case true:
+            		log.info("Beacon is enabled");
+            		this.beacon.set("consent_for_beacon", "true");
+			break;
+
+		case "false":
+		case false:
+			log.info("Beacon is disabled");
+            		this.beacon.set("consent_for_beacon", "false");
+			break;
+		default:
+			log.info("Beacon consent is unspecified");
+            		this.beacon.set("consent_for_beacon", "false");
+			break;
+	}
         this.beacon.start();
     }.bind(this)
     ],
