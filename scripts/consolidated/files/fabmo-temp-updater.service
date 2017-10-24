@@ -1,0 +1,10 @@
+[Unit]
+Description=One time updater consolidated update
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/node /tmp/temp-updater/server.js --selfupdate /tmp/consolidated.fmp --task abcd
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

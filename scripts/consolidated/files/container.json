@@ -1,0 +1,36 @@
+{
+   "product":"FabMo-Engine",
+   "os":"linux",
+   "platform":"edison",
+   "system":"handibot",
+   "token":"/fabmo/engine/install_token",
+   "repository":"https://github.com/FabMo/FabMo-Updater",
+   "updaterNeeded":"v2.0.0",
+   "services":[
+      "fabmo"
+   ],
+   "operations":[
+      {
+         "op":"deleteFiles",
+         "paths":[
+            "/fabmo/updater/install_token"
+         ]
+      },
+      {
+         "op":"expandArchive",
+         "src":"updater-stub.tar.gz",
+         "dest":"/fabmo/engine"
+      },
+      {
+         "op":"expandArchive",
+         "src":"consolidated.tar.gz",
+         "dest":"/tmp"
+      },
+      {
+         "op":"expandArchive",
+         "src":"service.tar.gz",
+         "dest":"/etc/systemd/system"
+      }
+   ],
+   "version":"v2.3.0-gc851de8-rc"
+}

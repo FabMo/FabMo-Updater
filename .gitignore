@@ -36,3 +36,13 @@ node_modules
 *.tmp
 *~
 *.swp
+
+scripts/consolidated/tmp
+scripts/consolidated/dl
+scripts/consolidated/build
+scripts/consolidated/*.tar.gz
+scripts/consolidated/*.bin
+scripts/consolidated/*.json
+
+
+
