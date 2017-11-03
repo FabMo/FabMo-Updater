@@ -465,12 +465,18 @@ Updater.prototype.start = function(callback) {
             this.getVersion(function(err, version) {
                 if(!err) {
 		    if(version) {
-			    try {
-			if(config.updater.get('version')['number'] != version['number']) {
-				log.info('New updater version.  Clearing beacon consent...')
+			try {
+				if(config.updater.get('version')['number'] != version['number']) {
+					log.info('New updater version.  Clearing beacon consent...')
+					config.updater.set('consent_for_beacon', 'none')
+				}
+			} catch(e) {
+                    		log.warn("Could not read updater version.json: " + (e.message || e))
+                    		log.warn(e);
 				config.updater.set('consent_for_beacon', 'none')
-			} } finally {
-                    	config.updater.set('version', version);
+
+			} finally {
+                    		config.updater.set('version', version);
 			}
                     }
 		} else {
