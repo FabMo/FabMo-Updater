@@ -48,8 +48,8 @@ switch(argv.product) {
 }
 
 var IGNORE_NPM_ERROR = argv['ignore-npm-error'];
-var SKIP_NPM_INSTALL = argv['skip-npm-install'];
-var RETRIES = argv['retries'] || 0;
+var SKIP_NPM_INSTALL = !argv['do-npm-install'];
+var RETRIES = argv['retries'] || 5;
 
 // Globals that are setup by the build process
 var githubReposOwner = 'FabMo';
@@ -423,12 +423,14 @@ function publishGithubRelease() {
 				log.info("Uploading FMP package " + fmpArchiveName + " to github...")
 
 				return github.addReleaseAsset(release, fmpArchivePath, githubCredentials);
+
 			}).then(function(downloadURL) {
 				packageDownloadURL = downloadURL;
 				return Q();
 			});
+	} else {
+		return Q();
 	}
-	return Q();
 }
 
 clean()
@@ -454,5 +456,6 @@ clean()
 .then(createPackageEntry)
 .then(util.retry(updatePackagesList, RETRIES, 1000))
 .catch(function(err) {
+	log.error("Final catch:");
 	log.error(err);
 }).done();

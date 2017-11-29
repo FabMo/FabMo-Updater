@@ -43,6 +43,6 @@ scripts/consolidated/build
 scripts/consolidated/*.tar.gz
 scripts/consolidated/*.bin
 scripts/consolidated/*.json
-
+scripts/credentials.json
 
 

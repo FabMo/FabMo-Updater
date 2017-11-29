@@ -16,6 +16,7 @@ function getFileContents(owner, repos, file, options) {
     	auth.user = options.username
     	auth.pass = options.password
     }
+    try {
     request.get(
     	{
     	url : 'https://api.github.com/repos/' + owner + '/' + repos + '/contents/' + file,
@@ -33,6 +34,9 @@ function getFileContents(owner, repos, file, options) {
 
     	}
     );
+    } catch(e) {
+	deferred.reject(e);
+    }
     return deferred.promise;
 }
 
@@ -44,7 +48,7 @@ function updateFileContents(file, newContents, commitMessage, options) {
     	auth.user = options.username
     	auth.pass = options.password
     }
-
+    try {
     request.put(
     	{
     	url : file.url,
@@ -66,6 +70,9 @@ function updateFileContents(file, newContents, commitMessage, options) {
 
     	}
     );
+    } catch(e) {
+	deferred.reject(e);
+    }
     return deferred.promise;
 }
 
@@ -209,7 +216,7 @@ function updateRelease(release, object, options) {
     	auth.user = options.username
     	auth.pass = options.password
     }
-
+	try {
 	// Release doesn't already exist
 	request.patch(
 		{
@@ -232,6 +239,9 @@ function updateRelease(release, object, options) {
 			}
 		}
 	);
+	} catch(e) {
+		deferred.reject(e);
+	}
 	return deferred.promise;
 }
 
@@ -356,28 +366,39 @@ function addReleaseAsset(release, filename, options) {
 }
 function getCredentials() {
 	var deferred = Q.defer();
-	var schema = {
-		properties: {
-		  username: {
-		    required: true,
-		    message: 'Github Username:'
-		  },
-		  password: {
-		  	required: true,
-		    hidden: true,
-		    message: 'Github Password:'
-		  }
-		}
-	};
-	prompt.start();
-	prompt.message = '';
-	prompt.delimiter = '';
-	prompt.get(schema, function(err, result) {
-		if(err) {
-			return deferred.reject(err);
-		}
-		return deferred.resolve(result);
-	});
+	creds = null;
+	try {
+		creds = require('/fabmo/updater/scripts/credentials.json')
+		creds.username;
+		creds.password;
+	} catch(e) {	
+	}
+	if(!creds) {
+		var schema = {
+			properties: {
+			  username: {
+			    required: true,
+			    message: 'Github Username:'
+			  },
+			  password: {
+				required: true,
+			    hidden: true,
+			    message: 'Github Password:'
+			  }
+			}
+		};
+		prompt.start();
+		prompt.message = '';
+		prompt.delimiter = '';
+		prompt.get(schema, function(err, result) {
+			if(err) {
+				return deferred.reject(err);
+			}
+			return deferred.resolve(result);
+		});
+	} else {
+		deferred.resolve(creds);
+	}
 	return deferred.promise;
 }
 
