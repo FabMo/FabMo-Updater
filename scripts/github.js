@@ -86,6 +86,7 @@ function getReleaseAssets(release, options) {
     	auth.pass = options.password
     }
 
+    try {
     request.get(
     	{
     	url : release.assets_url,
@@ -102,6 +103,9 @@ function getReleaseAssets(release, options) {
 
     	}
     );
+    } catch(e) {
+	deferred.reject(e);
+    }
     return deferred.promise;
 }
 
@@ -130,7 +134,7 @@ function deleteReleaseAsset(asset, options) {
     	auth.user = options.username
     	auth.pass = options.password
     }
-
+	try {
 	request.delete(
 		{
 	    	url : asset.url,
@@ -147,6 +151,9 @@ function deleteReleaseAsset(asset, options) {
 			deferred.resolve(null);
 		}
 	);
+	} catch(e) {
+		deferred.reject(e);
+	}
 	return deferred.promise;
 }
 
@@ -159,7 +166,8 @@ function deleteRelease(release, options) {
     	auth.pass = options.password
     }
     log.info("Deleting release: " + release.tag_name);
-	request.delete(
+	try {
+    	request.delete(
 		{
 	    	url : release.url,
 	    	auth : auth,
@@ -175,6 +183,9 @@ function deleteRelease(release, options) {
 			deferred.resolve(null);
 		}
 	);
+	} catch(e) {
+		deferred.reject(e);
+	}
 	return deferred.promise;
 }
 
@@ -186,7 +197,7 @@ function getReleaseByTag(owner, repos, tagName, options) {
     	auth.user = options.username
     	auth.pass = options.password
     }
-
+    try {
     request.get(
     	{
     	url : 'https://api.github.com/repos/' + owner + '/' + repos + '/releases',
@@ -205,7 +216,10 @@ function getReleaseByTag(owner, repos, tagName, options) {
     		}
     		return deferred.resolve(null);
     	}
-    );
+    ); }
+    catch(e) {
+	deferred.reject(e)
+    }
     return deferred.promise;
 }
 
@@ -253,6 +267,7 @@ function createRelease(owner, repos, tagName, targetCommitish, options) {
     	auth.user = options.username
     	auth.pass = options.password
     }
+    try {
 
     request.get(
     	{
@@ -301,7 +316,9 @@ function createRelease(owner, repos, tagName, targetCommitish, options) {
 				}
 			);
     	}
-    );
+    ); } catch(e) {
+	deferred.reject(e);
+    }
     return deferred.promise;
 }
 
