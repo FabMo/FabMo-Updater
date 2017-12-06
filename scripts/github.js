@@ -27,13 +27,15 @@ function getFileContents(owner, repos, file, options) {
     		try {
     			var file = JSON.parse(body);
     			file.content = new Buffer(file.content, 'base64')
-    			deferred.resolve(file);
+    			return deferred.resolve(file);
     		} catch(e) {
     			deferred.reject(e);
     		}
 
     	}
-    );
+    ).on('error', function(err) {
+	log.error(err);	    
+    });
     } catch(e) {
 	deferred.reject(e);
     }
@@ -49,6 +51,7 @@ function updateFileContents(file, newContents, commitMessage, options) {
     	auth.pass = options.password
     }
     try {
+    log.info('Putting ' + file.url);
     request.put(
     	{
     	url : file.url,
@@ -62,10 +65,13 @@ function updateFileContents(file, newContents, commitMessage, options) {
     	}
     	},
     	function(err, resp, body) {
-    		try {
-    			deferred.resolve(body);
-    		} catch(e) {
-    			deferred.reject(e);
+    		if(err) {
+			return deferred.reject(err);
+		}
+		try {
+    			return deferred.resolve(body);
+		} catch(e) {
+			deferred.reject(e);
     		}
 
     	}
@@ -146,7 +152,7 @@ function deleteReleaseAsset(asset, options) {
 				return deferred.reject(err);
 			}
 			if(resp.statusCode != 204) {
-				deferred.reject(new Error(resp.statusMessage));
+				return deferred.reject(new Error(resp.statusMessage));
 			}
 			deferred.resolve(null);
 		}
@@ -351,34 +357,39 @@ function addReleaseAsset(release, filename, options) {
 	    }
 
 		var size = fs.stat(filename, function(err, stat) {
-			fs.createReadStream(filename)
-				.pipe(request.post(
+				var data = fs.readFileSync(filename);	
+				request.post(
 						{
 							url : uploadURL,
 							auth : auth,
-				    		headers : {
+				    			body : data,
+							headers : {
 				    			'User-Agent' : USER_AGENT,
-				    			'Content-Length' : stat.size
-				    		}
+				    			'Content-Type' : 'application/octet-stream'
+							}
 						},
 						function(err, resp, body) {
 							if(err) {
 								return deferred.reject(err);
 							}
 							if(resp.statusCode != 201) {
-								deferred.reject(new Error(body))
+								return deferred.reject(new Error(body))
 							}
-							body = JSON.parse(body);
-							deferred.resolve(body.browser_download_url);
+							try {
+								log.info('Added release asset: ' + filename);
+								body = JSON.parse(body);
+								deferred.resolve(body.browser_download_url);
+							} catch(e) {
+								deferred.reject(e);
+							}
 						}
 
-					)
-				);
+					).on("error", function(e) {log.error(e); })
+				
 		})
 	} catch(e) {
 		deferred.reject(e);
 	}
-
 	return deferred.promise
 }
 function getCredentials() {

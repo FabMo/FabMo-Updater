@@ -10,7 +10,6 @@
  * 1. Checkout the appropriate release for the specified product
  * 2. Check
  */
-
 var exec = require('child_process').exec;
 var Q = require('q');
 var path = require('path');
@@ -246,7 +245,7 @@ function stageRepos() {
 function stageNodeModules() {
 	log.info('Copying other stuff into staging area')
 	return doshell('cp -R ' + nodeModulesDirectory + ' ' + path.resolve(stagingDirectory, 'node_modules'), {cwd : reposDirectory});
-}
+	}
 
 function stageVersionJSON() {
 	log.info('Creating version.json for release package');
@@ -312,7 +311,7 @@ function stageManifestJSON() {
 
 function createFMPArchive() {
 	log.info("Creating FMP archive")
-	doshell('tar -czf ' + fmpArchivePath + ' ./*', {cwd:stagingDirectory})
+	return doshell('tar -czf ' + fmpArchivePath + ' ./*', {cwd:stagingDirectory})
 }
 
 function updatePackagesList() {
@@ -342,6 +341,7 @@ function updatePackagesList() {
 					if(!updated) {
 						oldPackageList.packages.push(package);
 					}
+					
 					return github.updateFileContents(file, JSON.stringify(oldPackageList,null,2), "Add version " + versionString, githubCredentials)
 				case 'release':
 					var updated = false;
@@ -381,6 +381,7 @@ function createPackageEntry() {
 	if(argv['branch']) {
 		package.branch = argv['branch'];
 	}
+	log.info("Done creating package entry.");
 	return Q(package);
 }
 

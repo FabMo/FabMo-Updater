@@ -34,7 +34,7 @@ function retry(fn, retries, timeout) {
                 log.warn('Retrying...');
             }
             return Q.delay(timeout).then(function() {
-                return retry(fn, retries-1, timeout);
+                return retry(fn, retries-1, timeout)();
             });
         });
     }
