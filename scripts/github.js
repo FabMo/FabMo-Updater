@@ -357,15 +357,14 @@ function addReleaseAsset(release, filename, options) {
 	    }
 
 		var size = fs.stat(filename, function(err, stat) {
-				var data = fs.readFileSync(filename);	
+				fs.createReadStream(filename).pipe(	
 				request.post(
 						{
 							url : uploadURL,
 							auth : auth,
-				    			body : data,
 							headers : {
 				    			'User-Agent' : USER_AGENT,
-				    			'Content-Type' : 'application/octet-stream'
+							'Content-Length' : stat.size
 							}
 						},
 						function(err, resp, body) {
@@ -385,7 +384,7 @@ function addReleaseAsset(release, filename, options) {
 						}
 
 					).on("error", function(e) {log.error(e); })
-				
+						);	
 		})
 	} catch(e) {
 		deferred.reject(e);

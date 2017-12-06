@@ -236,8 +236,9 @@ function stageRepos() {
 		if(product === 'engine') {
 			var profilesDir = path.resolve(reposDirectory, 'profiles')
             return doshell('cp -R ./dashboard/build/* ' + path.join(stagingDirectory, 'dashboard/build'), {cwd : reposDirectory})
-		    .then(function() { return doshell('cp -R ' + profilesDir + ' ' + stagingDirectory)}, {cwd : reposDirectory});
-        }
+		    .then(function() { return doshell('cp -R ' + profilesDir + ' ' + stagingDirectory)}, {cwd : reposDirectory})
+        	    .then(function() { return doshell('rm -rf profiles/*/.git*', {cwd : stagingDirectory}); })
+	}
 		return Q();
 	});
 }
