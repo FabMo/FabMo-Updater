@@ -15,6 +15,30 @@
 			"version" : "v99.99.99",
 			"changelog" : "Dummy package for updating the FabMo Updater",
 			"url" : "https://github.com/FabMo/FabMo-Updater/raw/mayhem/fmp/example/empty/empty-updater.fmp"
+ 		},
+ 		 {
+			"product" : "FabMo-Updater",
+			"os" : "*",
+			"platform" : "*",
+			"version" : "v99.99.99-rc",
+			"changelog" : "Dummy package for updating the FabMo Updater",
+			"url" : "https://github.com/FabMo/FabMo-Updater/raw/mayhem/fmp/example/empty/empty-updater.fmp"
+ 		},
+ 		{
+			"product" : "FabMo-Updater",
+			"os" : "*",
+			"platform" : "*",
+			"version" : "v99.99.100-dev",
+			"changelog" : "Dummy package for updating the FabMo Updater",
+			"url" : "https://github.com/FabMo/FabMo-Updater/raw/mayhem/fmp/example/empty/empty-updater.fmp"
+ 		},
+ 		{
+			"product" : "FabMo-Updater",
+			"os" : "*",
+			"platform" : "*",
+			"version" : "v99.99.100-dev",
+			"changelog" : "Dummy package for updating the FabMo Updater",
+			"url" : "https://github.com/FabMo/FabMo-Updater/raw/mayhem/fmp/example/empty/empty-updater.fmp"
  		}
 
 	]

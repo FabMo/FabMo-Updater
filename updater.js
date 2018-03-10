@@ -1,4 +1,5 @@
 var log = require('./log').logger('updater');
+var detection_service = require('./detection_daemon');
 var Beacon = require('./beacon');
 var fmp = require('./fmp');
 var config = require('./config');
@@ -27,10 +28,10 @@ var PACKAGE_CHECK_DELAY = 30;   // Seconds
 var UPDATE_PRODUCTS = 'FabMo-Engine|FabMo-Updater'
 var BEACON_INTERVAL = 1*60*60*1000 // 1 Hour (in milliseconds)
 
-var Updater = function() 
-{   
+var Updater = function()
+{
     var task = (argv.task || '').trim();
-    this.version = null;
+    this.version = {};
     this.status = {
         'state' : ('task' in argv) ? 'updating' : 'idle',
         'online' : false,
@@ -50,31 +51,40 @@ var Updater = function()
 util.inherits(Updater, events.EventEmitter);
 
 Updater.prototype.getVersion = function(callback) {
-    require('./util').doshell('git rev-parse --verify HEAD', function(data) {
-        this.version = {};
-        this.version.hash = (data || '').trim();
-        this.version.number = '';
-        this.version.debug = ('debug' in argv);
-        this.version.type = 'dev'
-        fs.readFile('version.json', 'utf8', function(err, data) {
-            if(err) {
-                return callback(null, this.version);
-            }
-            try {
-                data = JSON.parse(data);
-                if(data.number) {
-                    this.version.number = data.number;
-                    this.version.type = 'release';
-                    this.version.date = data.date;
-                }
-            } catch(e) {
-                this.version.type = 'dev';
-                this.version.number = null;
-            } finally {
-                callback(null, this.version);
-            }
+    this.version = {number : 'v0.0.0', type : 'unknown'};
+    require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
+        .then(function(data) {
+	parts = data.split('-');
+        if(parts.length === 1) {
+		  var versionString = parts[0].trim();
+	    } else {
+	    	var versionString = parts[0].trim() + '-' + parts[2].trim();
+	    }
+	       this.version = require('./fmp').parseVersion(versionString);
+           callback(null, this.version);
         }.bind(this))
-    }.bind(this));
+        .catch(function(e) {
+            log.debug('Updater is not a source installation.');
+	    fs.readFile('version.json', 'utf8', function(err, data) {
+    		if(err) {
+		    log.error(err)
+                    return callback(null, this.version);
+                }
+                try {
+                    data = JSON.parse(data);
+                    if(data.number) {
+			this.version.number = data.number;
+			this.version.type = data['type'] ? data['type'] : 'release';
+                        this.version.date = data.date;
+		    }
+                } catch(e) {
+                    log.warn("Could not read updater version.json: " + (e.message || e))
+                    log.warn(e);
+                } finally {
+                    callback(null, this.version);
+                }
+            }.bind(this))
+        }.bind(this));
 }
 
 Updater.prototype.startTask = function() {
@@ -117,15 +127,15 @@ Updater.prototype.setOnline = function(online) {
 }
 
 Updater.prototype.addAvailablePackage = function(package) {
-    this.status.updates.forEach(function(update) {
-        try {
-            if(update.local_filename === package.local_filename) {
-                return package;
-            }
-        } catch(e) {}
-
-    });
-
+    for(var i=0; i<this.status.updates.length; i++) {
+	try {
+		if(package.local_filename === this.status.updates[i].local_filename) {
+			this.status.updates[i] = package;
+    			this.emit('status',this.status);
+			return package;
+		}
+	} catch(e) {}
+    }
     this.status.updates.push(package);
     this.emit('status',this.status);
     return package;
@@ -225,7 +235,7 @@ Updater.prototype.runPackageCheck = function(product) {
     this.packageDownloadInProgress = true;
     return fmp.checkForAvailablePackage(product)
             .catch(function(err) {
-                log.warn('There was a problem retrieving the list of packages: ' + err)
+                log.warn('There was a problem retrieving the list of packages: ' + JSON.stringify(err))
             })
             .then(fmp.downloadPackage)
             .catch(function(err) {
@@ -245,7 +255,7 @@ Updater.prototype.runPackageCheck = function(product) {
             .catch(function(err) {
                 log.error(err);
             })
-	    .finally(function() { 
+	    .finally(function() {
 		  log.info('Package check complete.');
           this.packageDownloadInProgress = false;
 	    }.bind(this));
@@ -256,7 +266,7 @@ Updater.prototype.runAllPackageChecks = function() {
         .then(function(updaterPackage) {
             if(!updaterPackage) {
                 this.runPackageCheck('FabMo-Engine')
-            }                            
+            }
         }.bind(this))
         .then(function() {
             this.emit('status',this.status);
@@ -292,7 +302,7 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
 		    log.info('See you, space cowboy.');
 		    // Give a second for those log messages to head out the door before falling on our sword
 		    setTimeout(function() {
-		    	require('./util').eject(process.argv[0], ['server.js', '--selfupdate', package.local_filename, '--task', key]);
+		    	require('./util').eject(process.argv[0], ['/tmp/temp-updater/server.js', '--selfupdate', package.local_filename, '--task', key]);
 		    },1000);
 		});
             } catch(err) {
@@ -417,9 +427,45 @@ Updater.prototype.start = function(callback) {
             log.info('Checking updater data directory tree...');
             config.createDataDirectories(callback);
         },
+	function apply_config_shim(callback) {
+		var updaterPath = config.getDataDir('config') + '/updater.json';
+		try {
+			fs.readFile(updaterPath, function(err, data) {
+				try {
+					d = JSON.parse(data)
+                    if(d['network']) {
+						if(!d['network']['ethernet']) {
+							delete d['network']
+							log.info('Applying network configuration shim.');
+							fs.writeFile(updaterPath, JSON.stringify(d, null, 2), function(err, data) {
+								if(err) {
+									log.error(err);
+								}
+								callback();
+							});
+						} else {
+							callback();
+						}
+					} else {
+						callback();
+					}
+				} catch(e) {
+					log.error(e);
+					callback();
+				}
+			});
+		} catch(e) {
+			log.error(e);
+		}
+	},
         function configure(callback) {
             log.info('Loading configuration...');
             config.configureUpdater(callback);
+        },
+        function launchDetectionService(callback) {
+            log.info("Launching Detection Service...");
+            detection_service();
+            callback();
         },
         function first_time_configure(callback) {
             if(!config.updater.userConfigLoaded) {
@@ -442,8 +488,22 @@ Updater.prototype.start = function(callback) {
         function get_version(callback) {
             this.getVersion(function(err, version) {
                 if(!err) {
-                    config.updater.set('version', version);                    
-                } else {
+		    if(version) {
+			try {
+				if(config.updater.get('version')['number'] != version['number']) {
+					log.info('New updater version.  Clearing beacon consent...')
+					config.updater.set('consent_for_beacon', 'none')
+				}
+			} catch(e) {
+                    		log.warn("Could not read updater version.json: " + (e.message || e))
+                    		log.warn(e);
+				config.updater.set('consent_for_beacon', 'none')
+
+			} finally {
+                    		config.updater.set('version', version);
+			}
+                    }
+		} else {
                     config.updater.set('version', {});
                 }
                 callback();
@@ -471,7 +531,7 @@ Updater.prototype.start = function(callback) {
                     this.networkManager = new GenericNetworkManager(OS, PLATFORM);
                     return callback();
                 } else {
-                    this.networkManager = network.createNetworkManager();                    
+                    this.networkManager = network.createNetworkManager();
                 }
             } catch(e) {
                 log.warn(e);
@@ -480,13 +540,14 @@ Updater.prototype.start = function(callback) {
 
             // Do a package check every time we join a wireless network
             this.networkManager.on('network', function(evt) {
-                    if(evt.mode === 'station') {
+                    if(evt.mode === 'station' || evt.mode === 'ethernet') {
                     // 30 Second delay is used here to make sure timesyncd has enough time to update network time
                     // before trying to pull an update (https requests will fail with an inaccurate system time)
-                    log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')        
+                    log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')
                     setTimeout(function() {
                         log.info('Doing beacon report due to network change');
-                        this.beacon.once('network');
+                        this.beacon.setLocalAddresses(this.networkManager.getLocalAddresses());
+			this.beacon.once('network');
                         log.info('Running package check due to network change');
                         this.runAllPackageChecks();
                     }.bind(this), PACKAGE_CHECK_DELAY*1000);
@@ -519,7 +580,7 @@ Updater.prototype.start = function(callback) {
             if(selfUpdateFile) { return callback(); }
             log.info('Checking for startup FMUs...')
             fs.readdir(path.join(config.getDataDir(), 'fmus'), function(err, files) {
-                files = files.map(function(filename) { 
+                files = files.map(function(filename) {
                     return path.join(config.getDataDir(),'fmus', filename);
                 });
                 fmu_files = files.filter(function(filename) { return filename.match(/.*\.fmu$/);})
@@ -550,7 +611,7 @@ Updater.prototype.start = function(callback) {
             log.info('Setting up the webserver...');
             var server = restify.createServer({name:'FabMo Updater'});
             this.server = server;
-            
+
 
             ///Handle options request in firefox
             function unknownMethodHandler(req, res) {
@@ -591,7 +652,7 @@ Updater.prototype.start = function(callback) {
             });
 
             // Configure local directory for uploading files
-            log.info('Cofiguring upload directory...');
+            log.info("Configuring upload directory...");
             server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
             server.pre(restify.pre.sanitizePath());
 
@@ -610,17 +671,22 @@ Updater.prototype.start = function(callback) {
             });
 
         }.bind(this),
-    
+
     function setup_config_events(callback) {
         config.updater.on('change', function(evt) {
+
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
             if(evt.beacon_url) {
-                this.beacon.set(config.updater.get('beacon_url'));
+                this.beacon.set('url', config.updater.get('beacon_url'));
             }
             if(evt.name) {
                 this.beacon.once('config');
+            }
+            if (evt.consent_for_beacon) {
+                this.beacon.set("consent_for_beacon", evt.consent_for_beacon);
+                log.info("Consent for beacon is " + evt.consent_for_beacon);
             }
         }.bind(this));
         callback();
@@ -652,13 +718,33 @@ Updater.prototype.start = function(callback) {
         }
     }.bind(this),
 
-    function start_beacon(callback) {
+  function start_beacon(callback) {
         var url = config.updater.get('beacon_url');
+        var consent = config.updater.get('consent_for_beacon');
+
         log.info("Starting beacon service");
         this.beacon = new Beacon({
             url : url,
             interval : BEACON_INTERVAL
         });
+
+	switch(consent) {
+		case "true":
+		case true:
+            		log.info("Beacon is enabled");
+            		this.beacon.set("consent_for_beacon", "true");
+			break;
+
+		case "false":
+		case false:
+			log.info("Beacon is disabled");
+            		this.beacon.set("consent_for_beacon", "false");
+			break;
+		default:
+			log.info("Beacon consent is unspecified");
+            		this.beacon.set("consent_for_beacon", "false");
+			break;
+	}
         this.beacon.start();
     }.bind(this)
     ],

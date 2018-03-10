@@ -12,9 +12,32 @@
 	"name" : "FabMo",
 	"password" : "go2fabmo",
 	"firmware_file" : "/fabmo/engine/firmware/g2.bin",
+	"consent_for_beacon" : "true",
 	"os_version" : "unknown",
 	"network" : {
-		"mode" : "ap",
-		"wifi_networks" : []
+       	    "wifi":{
+            "mode" : "ap",
+            "enabled" : true,
+	    "wifi_networks" : [],
+            "default_config" : {
+                "ip_address":"192.168.42.1",
+                "netmask":"255.255.255.0",
+           	"gateway":"192.168.42.1",
+           	"dns":["8.8.8.8"]
+	    }
+	},
+        "ethernet":{
+            "mode" : "magic",
+            "default_config" : {
+                "ip_address":"192.168.44.1",
+                "netmask":"255.255.255.0",
+                "gateway":"192.168.44.1",
+                "dns":["8.8.8.8"],
+                "dhcp_range":{
+                    "start": "192.168.44.20",
+                    "end": "192.168.44.254"
+                }
+            }
+        }
 	}
 }

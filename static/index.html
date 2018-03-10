@@ -22,11 +22,12 @@
       <li class="menu-title"><span>FabMo Updater</span></li>
       <li class="menu-label">
         <a href="#">
-          <i id="network-id-icon" class="fa fa-question"></i> <span class="label-network-id">&lt;name&gt;</span>
+          <i id="system-icon" class="fa fa-question"></i> <span class="label-wifi-network-id">&lt;name&gt;</span>
           </a>
       </li>
       <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> System Info</a></li>
-      <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-wifi"></i> Network</a></li>
+      <li class="menu-item" data-id="view-wireless"><a href="#"><i class="fa fa-wifi"></i> Wireless</a></li>
+      <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-plug"></i> Network</a></li>
       <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download update-indicator"></i><span class="update-indicator"> Software Updates</span></a></li>
       <li class="menu-item" data-id="view-settings"><a href="#"><i class="fa fa-wrench"></i> Settings</a></li>
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
@@ -56,20 +57,20 @@
         <tr><td class="info-key">Platform:</td> <td><span class="info-value label-platform"/></td></tr>
         <tr><td class="info-key">Machine ID:</td> <td class="cell-value"><span class="info-value label-machine-id"/></td></tr>
         <tr><td class="info-key">OS Version:</td> <td><span class="info-value label-os-version"/></td></tr>
-        
-        <tr class="info-header-row"><td class="info-key-header">Network</td><td>&nbsp;</td></tr>
-        <tr><td class="info-key">Network ID:</td> <td><span class="info-value label-network-id"></span></td></tr>
-        <tr><td class="info-key">Network Mode:</td> <td><span class="info-value label-network-mode"></span></td></tr>
-        
-        <tr class="info-header-row"><td class="info-key-header">Updater</td><td>&nbsp;</td></tr>        
+
+        <tr class="info-header-row"><td class="info-key-header">Wifi Network</td><td>&nbsp;</td></tr>
+        <tr><td class="info-key">Wifi Network ID:</td> <td><span class="info-value label-wifi-network-id"></span></td></tr>
+        <tr><td class="info-key">Wifi Network Mode:</td> <td><span class="info-value label-wifi-network-mode"></span></td></tr>
+
+        <tr class="info-header-row"><td class="info-key-header">Updater</td><td>&nbsp;</td></tr>
         <tr><td class="info-key">Updater Repository:</td> <td><span class="info-value label-updater-git"></span></td></tr>
         <tr><td class="info-key">Updater Version:</td> <td><span class="info-value label-updater-version"></span></td></tr>
-        
+
         <tr class="info-header-row"><td class="info-key-header">Engine</td><td>&nbsp;</td></tr>
         <tr><td class="info-key">Engine Repository:</td> <td><span class="info-value label-engine-git"></span></td></tr>
         <tr><td class="info-key">Engine Status:</td> <td><span class="info-value label-engine-status"/></td></tr>
         <tr><td class="info-key">Engine Version:</td> <td><span class="info-value label-engine-version"></span></td></tr>
-        
+
         <tr class="info-header-row"><td class="info-key-header">Firmware</td><td>&nbsp;</td></tr>
         <tr><td class="info-key">Firmware Build:</td> <td><span class="info-value label-fw-build"/></td></tr>
         <tr><td class="info-key">Firmware Version:</td> <td><span class="info-value label-fw-version"/></td></tr>
@@ -134,37 +135,76 @@
       NETWORK
 
     -->
-    <div class="content-pane" id="view-network">
-    <h1><i class="fa fa-wifi"></i> Network</h1>
-    <p>Below is a list of available wireless networks.  Enter an SSID and key at the bottom of the table to join a network.  You can click a network in the list to fill in that network's SSID.  <em>Note that when you join a network, you will lose your connection to the updater and will need to reconnect from the chosen network.</em></p>
-    <div id="message-no-networks">
-      <h3>No wireless networks are currently visible.</h3>
-      <p>If you know a nearby network is active but not listed here, you can enter its SSID and network key in the form below, and an attempt will be made to join it anyway.</p>
+    <div class="content-pane" id="view-wireless">
+      <h1><i class="fa fa-wifi"></i> Wireless Network</h1>
+      <h2>Wifi</h2>
+      <div id="wifi-section">
+        <p>Below is a list of available wireless networks.  Enter an SSID and key at the bottom of the table to join a network.  You can click a network in the list to fill in that network's SSID.  <em>Note that when you join a network, you will lose your connection to the updater and will need to reconnect from the chosen network.</em></p>
+        <div id="message-no-wifi-networks">
+          <h3>No wireless networks are currently visible.</h3>
+          <p>If you know a nearby network is active but not listed here, you can enter its SSID and network key in the form below, and an attempt will be made to join it anyway.</p>
+        </div>
+        <table id="wifi-network-table">
+          <thead>
+            <tr>
+              <th>SSID</th>
+              <th>Security</th>
+              <th>Strength</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr></tr>
+          </tbody>
+        </table>
+        <form id="form-join-wifi-network" class="form-horizontal">
+          <fieldset>
+            <label>Network ID: </label>
+            <input id="wifi-network-ssid" type="text" placeholder="SSID" />
+            <input id="wifi-network-key" type="password" placeholder="Wifi Network Key" />
+            <button id="btn-wifi-network-join" class="btn-green"><i class="fa fa-wifi"></i> Join Wifi Network</button>
+          </fieldset>
+        </form>
+        <h2>AP Mode</h2>
+        <p>In AP mode, the system acts as its own wireless access point, which can be connected to by any wifi-capable device.  In this mode, no internet access is available, so updates and other operations that require an internet connection cannot be performed. <span class="emphasis">Switching to AP mode will disconnect you from the updater.  You will have to change to the AP network once the operation is complete.</span></p>
+        <button id="btn-wifi-network-ap-mode" class="btn-blue"><i class="fa fa-wifi"></i> Switch to AP Mode</button>
+        <h2>Disable Wifi</h2>
+        <p>Clicking this button will disable the Wifi for this session (if you reboot your machine, wifi will come back). <span class="emphasis">Be carefull, if you press this button while connected through wifi, you will loose the connnection !</span></p>
+        <button id="btn-wifi-network-disable" class="btn-blue"><i class="fa fa-wifi"></i> Disable Wifi</button>
+      </div>
     </div>
-    <table id="network-table">
-	   <thead>
-	   <tr>
-		<th>SSID</th>
-		<th>Security</th>
-		<th>Strength</th>
-	   </tr>
-	    </thead>
-	    <tbody>
-      <tr></tr>
-	    </tbody>
-    </table>
-      <form id="form-join-network" class="form-horizontal">
-        <fieldset>
-         <label>Network ID: </label>
-         <input id="network-ssid" type="text" placeholder="SSID" />
-         <input id="network-key" type="password" placeholder="Network Key" />
-	       <button id="btn-network-join" class="btn-green"><i class="fa fa-wifi"></i> Join Wifi Network</button>
-        </fieldset>
-      </form>
-      <h2>AP Mode</h2>
-      <p>In AP mode, the system acts as its own wireless access point, which can be connected to by any wifi-capable device.  In this mode, no internet access is available, so updates and other operations that require an internet connection cannot be performed. <span class="emphasis">Switching to AP mode will disconnect you from the updater.  You will have to change to the AP network once the operation is complete.</p>
-         <button id="btn-network-ap-mode" class="btn-blue"><i class="fa fa-wifi"></i> Switch to AP Mode</button>
 
+    <div class="content-pane" id="view-network">
+      <div id="ethernet-section">
+        <h2>Ethernet</h2>
+        <form id="form-ethernet-network" class="form-vertical">
+          <fieldset>
+            <label>Mode :</label>
+            <select id="ethernet-network-mode">
+              <option value="magic">Magic</option>
+              <option value="dhcp">DHCP</option>
+              <option value="static">Static</option>
+              <option value="off">Off</option>
+            </select>
+            <h3>Default Configuration</h3>
+            <label>Ip Address :</label>
+            <input id="ethernet-network-ip-address" type="text" placeholder="ip address" />
+            <label>Netmask :</label>
+            <input id="ethernet-network-netmask" type="text" placeholder="netmask" />
+            <br/>
+            <label>Gateway :</label>
+            <input id="ethernet-network-gateway" type="text" placeholder="gateway" />
+            <label>DNS :</label>
+            <input id="ethernet-network-dns" type="text" placeholder="dns seperated by comma" />
+            <h3>DHCP range</h3>
+            <label>start :</label>
+            <input id="ethernet-network-dhcp-range-start" type="text" placeholder="dhcp range start" />
+            <label>end :</label>
+            <input id="ethernet-network-dhcp-range-end" type="text" placeholder="dhcp range end" />
+            <br/>
+            <button id="btn-ethernet-network-save" class="btn-green"><i class="fa fa-sitemap"></i> Change ethernet configuration</button>
+          </fieldset>
+        </form>
+      </div>
     </div>
 
     <!--
@@ -176,12 +216,12 @@
       <h1><i class="fa fa-wrench"></i> Settings</h1>
       <h2>System Identity</h2>
       <p>The name selected here will be used both as the system hostname as well as the SSID when in AP mode.  The password will be used both as the root password as well as the network key for AP mode.  <em>You do not need to enter both values.  Only non-blank values will be changed.</em></p>
-      <form class="form-horizontal" id="form-network-id">
+      <form class="form-horizontal" id="form-wifi-network-id">
         <fieldset>
          <label>System ID: </label>
-         <input id="network-name" type="text" placeholder="Name" />
-         <input id="network-password" type="password" placeholder="Root Password" />
-         <button id="btn-network-id" class="btn-green">Set System ID</button>
+         <input id="wifi-network-name" type="text" placeholder="Name" />
+         <input id="wifi-network-password" type="password" placeholder="Root Password" />
+         <button id="btn-wifi-network-id" class="btn-green">Set System ID</button>
         </fieldset>
       </form>
       <!--
@@ -200,6 +240,13 @@
           <li>
             <label class="settings" for="config-beacon_url">Beacon URL: </label>
             <input class="config-input long" id="config-beacon_url" type="text" placeholder="URL for the beacon server" />
+          </li>
+          <li>
+            <label class="settings" for="config-beacon_consent">Beacon Consent: </label>
+            <select class="config-input long" id="consent_for_beacon"/>
+              <option value="true">True</option>
+              <option value="false">False</option>
+            </select>
           </li>
         <ul>
       </fieldset>

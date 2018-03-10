@@ -3,7 +3,7 @@
 	"os" : "linux",
 	"platform" : "edison",
 	"system" : "handibot",
-	"token" : "/fabmo/engine/install_token",
+	"token" : "/fabmo/updater/install_token",
 	"repository" : "https://github.com/FabMo/FabMo-Updater",
 	"updaterNeeded" : "v2.0.0",
 	"services" : ["fabmo"],

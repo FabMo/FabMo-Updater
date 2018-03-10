@@ -9,7 +9,7 @@ var GenericNetworkManager = function(platform, os) {
 util.inherits(GenericNetworkManager, events.EventEmitter);
 
 function fail(instance, callback) {
-    callback(new Error('Function unavailable on ' + instance.os + '/' + instance.platform));
+    callback ? callback(new Error('Function unavailable on ' + instance.os + '/' + instance.platform)) : log.warn('Function unavailable on ' + instance.os + '/' + instance.platform+', no callback given');
 }
 
 GenericNetworkManager.prototype.init = function() {}
@@ -65,4 +65,64 @@ GenericNetworkManager.prototype.getStatus=function(callback) {
   fail(this, callback);
 }
 
+//Ethernet section
+GenericNetworkManager.prototype.turnEthernetOn=function(callback) {
+  log.warn('Unimplemented: turnEthernetOn()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.turnEthernetOff=function(callback) {
+  log.warn('Unimplemented: turnEthernetOff()');
+  fail(this, callback);
+}
+
+// interface specific - static addressing
+GenericNetworkManager.prototype.enableDHCP=function(interface, callback) {
+  log.warn('Unimplemented: enableDHCP()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.disableDHCP=function(interface, callback) {
+  log.warn('Unimplemented: disableDHCP()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.startDHCPServer=function(interface, callback) {
+  log.warn('Unimplemented: enableDHCP()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
+  log.warn('Unimplemented: disableDHCP()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
+  log.warn('Unimplemented: setIpAddress()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.setNetmask=function(interface, netmask, callback) {
+  log.warn('Unimplemented: setNetmask()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.setGateway=function(gateway, callback) {
+  log.warn('Unimplemented: setGateway()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.applyEthernetConfig=function(callback) {
+  log.warn('Unimplemented: applyEthernetConfig()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.applyWifiConfig=function(callback) {
+  log.warn('Unimplemented: applyWifiConfig()');
+  fail(this, callback);
+}
+
+GenericNetworkManager.prototype.getLocalAddresses=function() {
+	return []
+}
 exports.NetworkManager = GenericNetworkManager;

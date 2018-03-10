@@ -1,7 +1,6 @@
 var path = require('path');
 var log = require('./log').logger('util');
 var fs = require('fs');
-var q = require('q');
 var fs = require('fs');
 var uuid = require('node-uuid');
 var fs = require('fs');
@@ -17,6 +16,31 @@ var MethodNotAllowedError = errors.MethodNotAllowedError;
 var NotAuthorizedError = errors.NotAuthorizedError;
 var ResourceNotFoundError = errors.ResourceNotFoundError;
 
+function retry(fn, retries, timeout) {
+    retries = retries || 0;
+    timeout = timeout || 0;
+
+    return function() {
+        return fn().then(function(data) {
+            return data;
+        }, function(err) {
+            if(retries  === 0) {
+                throw err;
+            }
+            if(err) { log.warn(err); }
+            if(timeout) {
+                log.warn('Retrying after ' + timeout + 'ms...');
+            } else {
+                log.warn('Retrying...');
+            }
+            return Q.delay(timeout).then(function() {
+                return retry(fn, retries-1, timeout)();
+            });
+        });
+    }
+}
+
+
 function listify(x) {
     if(x instanceof Array) {
         return x;
@@ -26,9 +50,40 @@ function listify(x) {
 }
 
 function doshell(command, callback){
-    exec(command, function(error, stdout, stderr) { 
-        callback(stdout); 
+    exec(command, function(error, stdout, stderr) {
+        callback(stdout);
     });
+}
+
+/*
+ * Conduct the specified shell operation, and return a promise that resolves upon completion of the command.
+ * If the command was successful (0 error code) the promise resolves with all the stdout data from the process.
+ * If the command fails (nonzero error code) the promise rejects with all the stderr data from the process.
+ */
+function doshell_promise(command, options) {
+    var deferred = Q.defer();
+    options = options || {};
+
+    if(!options.silent) {
+        log.command(command);
+    }
+    try {
+        exec(command, options, function(err, stdout, stderr) {
+            if(!options.silent) {
+                log.stdout(stdout);
+                log.stderr(stderr);
+            }
+            if(err) {
+                deferred.reject(err);
+            } else {
+                deferred.resolve(stdout);
+            }
+        });
+    } catch(e) {
+        deferred.reject(e);
+    }
+
+    return deferred.promise;
 }
 
 function extend(a,b, force) {
@@ -128,7 +183,7 @@ function Queue(){
  */
 var move = function (src, dest, cb) {
 	var renameDeferred = q.defer();
- 
+
 	fs.rename(src, dest, function (err) {
 		if (err) {
 			renameDeferred.reject(err);
@@ -137,29 +192,29 @@ var move = function (src, dest, cb) {
 			renameDeferred.resolve();
 		}
 	});
- 
+
 	renameDeferred.promise.then(function () {
 		// rename worked
 		return cb(null);
 	}, function (err) {
- 
+
 		log.warn('io.move: standard rename failed, trying stream pipe... (' + err + ')');
- 
+
 		// rename didn't work, try pumping
 		var is = fs.createReadStream(src),
 			os = fs.createWriteStream(dest);
- 
+
 		is.pipe(os);
- 
+
 		is.on('end', function () {
 			fs.unlinkSync(src);
 			cb(null);
 		});
- 
+
 		is.on('error', function (err) {
 			return cb(err);
 		});
- 
+
 		os.on('error', function (err) {
 			return cb(err);
 		});
@@ -244,8 +299,6 @@ function serveStatic(opts) {
 
     function serve(req, res, next) {
         var uricomp = decodeURIComponent(req.path());
-        console.log("URI COMPONENT: " + uricomp);
-        console.log("DIR: " + opts.directory);
         var file = path.join(opts.directory, uricomp);
 
         if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -325,7 +378,7 @@ function fixJSON(json) {
                 } else if(json[key] === 'false') {
                     value = false;
                 } else {
-                    value = json[key];                    
+                    value = json[key];
                 }
             }
         }
@@ -337,7 +390,7 @@ function fixJSON(json) {
     return retval;
 }
 var getClientAddress = function (req) {
-        return (req.headers['x-forwarded-for'] || '').split(',')[0] 
+        return (req.headers['x-forwarded-for'] || '').split(',')[0]
         || req.connection.remoteAddress;
 };
 
@@ -350,56 +403,6 @@ function eject(command, args) {
     process.exit(0);
 }
 
-function getCpuInfo( callback )
-{
-  fs.readFile( '/proc/cpuinfo', function( err, filedata )
-  {
-    if ( err ) return callback( err );
-
-    cpuinfoString = filedata.toString();
-
-    // Split Multiple Processors
-    var procs = cpuinfoString.split("\n\n");
-
-    var cpuinfo = [];
-
-    // Format Each Processor
-    for( p in procs )
-    {
-      if ( procs[p].length < 1 ) continue;
-
-      var sep = ":";
-
-      lines = procs[p].trim().split( "\n" );
-
-      var proc_obj = {};
-
-      for( key in lines )
-      {
-        line = lines[ key ].trim().split( sep );
-
-        if ( line.length != 2 ) continue;
-
-        line[0] = line[0].trim();
-        line[1] = line[1].trim();
-
-        // Convert kB values to bytes
-        if ( line[1].slice( -3 ) == ' kB' || line[1].slice( -3 ) == ' KB' )
-          line[1] = parseInt( line[1].substr( 0, line[1].length -3 ) ) * 1024;
-
-        // Append To Response
-        proc_obj[ line[0] ] = line[1];
-      }
-
-      // Parse and append to response
-      cpuinfo.push( proc_obj);
-    }
-
-    return callback( null, cpuinfo );
-  });
-};
-
-exports.getCpuInfo = getCpuInfo;
 exports.getClientAddress = getClientAddress;
 exports.serveStatic = serveStatic;
 exports.Queue = Queue;
@@ -409,5 +412,6 @@ exports.createUniqueFilename = createUniqueFilename;
 exports.fixJSON = fixJSON;
 exports.extend = extend;
 exports.doshell = doshell;
+exports.doshell_promise = doshell_promise;
 exports.eject = eject;
-
+exports.retry = retry;
