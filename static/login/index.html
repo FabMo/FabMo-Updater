@@ -1,0 +1,34 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
+    <title>FabMo Dashboard</title>
+    <link rel="stylesheet" href="/login/css/style.css"/>
+   </head>
+<body>
+<div class="main">
+    <div class="err" id="add_err"></div>
+    <div class = "login_panel">
+      <div class="login_panel_header"><h1>Log In</h1><hr></div>
+      <form id= "login_form" action="/authentication/login" method="post">
+        <div>
+            <label>Username
+              <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"   type="text" name="username"/>
+            </label>
+        </div>
+        <div>
+            <label>Password
+              <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"  type="password" name="password"/>
+            </label>
+        </div>
+        <div>
+            <input class="button" type="submit" value="Log In"/>
+            
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="/login/js/auth.js"></script>
+</body>
+</html>

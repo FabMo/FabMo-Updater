@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var log = require('../log').logger('routes');
 var restify = require('restify');
+var authentication = require('../authentication');
 
 // Load all the files in the 'routes' directory and process them as route-producing modules
 module.exports = function(server) {
@@ -24,10 +25,25 @@ module.exports = function(server) {
 	}
 	});
 
+	server.get('/login', restify.serveStatic({
+
+        directory: './static',
+        default: 'index.html'
+    }));
+	
+
 
 	// Define a route for serving static files
 	// This has to be defined after all the other routes, or it plays havoc with things
-	server.get(/.*/, restify.serveStatic({
+	server.get(/.*/, function(req, res, next) {
+		var currentUser = authentication.getCurrentUser();
+		if(currentUser) {
+			next();
+		} else {
+			res.redirect('/login' , next);
+		}
+	},
+	restify.serveStatic({
 		//directory: './static'
 		directory: './static',
 		default: 'index.html'
