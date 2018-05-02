@@ -1,3 +1,37 @@
-body{
-	background-color: red;
+body {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background: #aaa;
+	font-family: sans-serif;
+	color: #494949;
+}
+
+h2 {
+	margin: 0.5rem;
+}
+.main {
+	background: #fff;
+	padding: 2em;
+	border-radius: 5px;
+
+}
+
+form div{
+	margin: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+input {
+	width: 100px;
+	float: right;
+	margin-left: 10px;
+}
+
+button {
+	float: left;
+}
+
+.err {
+	font-size: 14px;
 }

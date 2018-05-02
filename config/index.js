@@ -16,7 +16,6 @@ function configureUpdater(callback) {
 
 function configureUser(callback){
 	exports.user = new UserConfig();
-	console.log('gonna get config');
 	var userFile = exports.user.getConfigFile();
 	exports.user.load(userFile, function(err, data) {
 		if(err) {

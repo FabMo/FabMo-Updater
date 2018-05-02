@@ -3,7 +3,6 @@ var authentication = require('../authentication');
 var passport = authentication.passport;
 
 var login = function(req, res, next) {
-    console.log('wooo');
   passport.authenticate('local', function(err, user, info) {
     if (err) {
       return next(err); // will generate a 500 error
@@ -49,10 +48,9 @@ var addUser = function(req, res, next) {
 };
 
 var logout = function(req, res, next) {
-  log.error(req);
   req.logout();
   authentication.setCurrentUser(null);
-  res.redirect('',next);
+  res.send(200, {status:'success', data : "User logged out"});
   return;
 };
 

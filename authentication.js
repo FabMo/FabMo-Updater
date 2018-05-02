@@ -26,14 +26,14 @@ function userTimeout(){
 
 function logOutUser(user){
   var property = 'user';
-if (this._passport && this._passport.instance) {
-  property = this._passport.instance._userProperty || 'user';
-}
+  if (this._passport && this._passport.instance) {
+    property = this._passport.instance._userProperty || 'user';
+  }
 
-this[property] = null;
-if (this._passport && this._passport.session) {
-  delete this._passport.session.user;
-}
+  this[property] = null;
+  if (this._passport && this._passport.session) {
+    delete this._passport.session.user;
+  }
 }
 
 
@@ -99,7 +99,6 @@ exports.configure = function(){
         isCurrentUserKickeable = false;
         startUserTimer();
         }
-        console.log(user);
         return done(null, user);
       });
     }
@@ -112,7 +111,6 @@ var addUser = function(username,password,callback){
       callback(err);
       return;
     } else {
-      console.log('added');
       var user = {
         'username': username,
         'password': user.password,
@@ -126,7 +124,6 @@ var addUser = function(username,password,callback){
 };
 
 var getUsers = function(callback){
-  console.log('getUsers');
   var users = [];
   config.user.getAll(function(data){
     for(key in data){
@@ -162,7 +159,6 @@ var getUser = function(username,callback){
 };
 
 var modifyUser = function(username, user_fields,callback){
-  console.log('modify')
   config.user.findOne(username, function(err, data) {
     var user = {
       'username': username,

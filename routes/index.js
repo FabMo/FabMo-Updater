@@ -25,25 +25,27 @@ module.exports = function(server) {
 	}
 	});
 
-	server.get('/login', restify.serveStatic({
 
-        directory: './static',
-        default: 'index.html'
-    }));
-	
-
-
-	// Define a route for serving static files
-	// This has to be defined after all the other routes, or it plays havoc with things
-	server.get(/.*/, function(req, res, next) {
+	server.use(function(req, res, next){
 		var currentUser = authentication.getCurrentUser();
 		if(currentUser) {
 			next();
 		} else {
-			res.redirect('/login' , next);
+			if(req.url === '/login' ) {
+				next();
+			} else if (req.url === "/") {
+				res.redirect('/login', next);
+			} else {
+				next();
+			}
 		}
-	},
-	restify.serveStatic({
+	})
+
+
+
+	// Define a route for serving static files
+	// This has to be defined after all the other routes, or it plays havoc with things
+	server.get(/.*/, restify.serveStatic({
 		//directory: './static'
 		directory: './static',
 		default: 'index.html'

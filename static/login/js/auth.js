@@ -1,4 +1,4 @@
-module.exports = function auth(){
+(function () {
     runAuth();
     function getUrlParameter(sParam) {
       var sPageURL = decodeURIComponent(window.location.search.substring(1)),
@@ -104,4 +104,4 @@ module.exports = function auth(){
   
   
      
-     };
+     }());
