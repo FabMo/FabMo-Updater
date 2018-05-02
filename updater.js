@@ -1,6 +1,10 @@
 var log = require('./log').logger('updater');
 var detection_service = require('./detection_daemon');
 var Beacon = require('./beacon');
+var authentication = require('./authentication');
+var crypto = require('crypto');
+var sessions = require("client-sessions");
+
 var fmp = require('./fmp');
 var config = require('./config');
 var util = require('./util');
@@ -395,6 +399,9 @@ function UpdaterConfigFirstTime(callback) {
 };
 
 
+
+
+
 Updater.prototype.start = function(callback) {
     var selfUpdateFile = argv.selfupdate || null;
 
@@ -437,6 +444,12 @@ Updater.prototype.start = function(callback) {
         function configure(callback) {
             log.info('Loading configuration...');
             config.configureUpdater(callback);
+        },
+        function load_users(callback) {
+            log.info('Loading users....')
+            config.configureUser(function(){
+                callback();
+            });
         },
         function launchDetectionService(callback) {
             log.info("Launching Detection Service...");
@@ -485,7 +498,27 @@ Updater.prototype.start = function(callback) {
                 callback();
             });
         }.bind(this),
-
+        function generate_auth_key(callback) {
+            log.info("Configuring secret key...")
+            var secret_file = config.getDataDir() + '/config/auth_secret'
+            fs.readFile(secret_file, 'utf8', function(err, data) {
+        
+              // If there's already a secret key from disk, use it
+              if(!err && data && (data.length == 512)) {
+                log.info("Secret key already exists, using that.")
+                this.auth_secret = data;
+                return callback();
+              }
+        
+              // If not, generate, save and use a new one
+              log.info("Generating a new secret key.")
+              this.auth_secret = crypto.randomBytes(256).toString('hex');
+              fs.writeFile(secret_file, this.auth_secret, function(err, data) {
+                callback();
+              }.bind(this));
+        
+            }.bind(this))
+          }.bind(this),
         function get_os_version(callback) {
           hooks.getOSVersion(function(err, version) {
             if(err) {
@@ -632,6 +665,30 @@ Updater.prototype.start = function(callback) {
             server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
             server.pre(restify.pre.sanitizePath());
 
+            log.info("Cofiguring authentication...");
+            log.info("Secret Key: " + this.auth_secret.slice(0,5) + '...' + this.auth_secret.slice(-5));
+            server.cookieSecret = this.auth_secret;
+            server.use(sessions({
+                // cookie name dictates the key name added to the request object
+                cookieName: 'session',
+                // should be a large unguessable string
+                secret: server.cookieSecret, // REQUIRE HTTPS SUPPORT !!!
+                // how long the session will stay valid in ms
+                duration: 1 * 24 * 60 * 60 * 1000, // 1 day
+                cookie: {
+                  //: '/api', // cookie will only be sent to requests under '/api'
+                  //maxAge: 60000, // duration of the cookie in milliseconds, defaults to duration above
+                  ephemeral: false, // when true, cookie expires when the browser closes
+                  httpOnly: false, // when true, cookie is not accessible from javascript
+                  secure: false // when true, cookie will only be sent over SSL. use key 'secureProxy' instead if you handle SSL not in your node process
+                }
+            }));
+
+            server.use(authentication.passport.initialize());
+            server.use(authentication.passport.session());
+
+
+
             log.info('Enabling gzip for transport...');
             server.use(restify.gzipResponse());
 
@@ -645,6 +702,8 @@ Updater.prototype.start = function(callback) {
                 log.info(server.name+ ' listening at '+ server.url);
                 callback(null, server);
             });
+
+            authentication.configure();
 
         }.bind(this),
 
