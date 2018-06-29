@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var log = require('../log').logger('routes');
 var restify = require('restify');
+var authentication = require('../authentication');
 
 // Load all the files in the 'routes' directory and process them as route-producing modules
 module.exports = function(server) {
@@ -23,6 +24,23 @@ module.exports = function(server) {
 		}
 	}
 	});
+
+
+	server.use(function(req, res, next){
+		var currentUser = authentication.getCurrentUser();
+		if(currentUser) {
+			next();
+		} else {
+			if(req.url === '/login' ) {
+				next();
+			} else if (req.url === "/") {
+				res.redirect('/login', next);
+			} else {
+				next();
+			}
+		}
+	})
+
 
 
 	// Define a route for serving static files
