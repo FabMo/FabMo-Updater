@@ -16,7 +16,7 @@ util.inherits(UserConfig, Config);
 
 
 UserConfig.prototype.setUpFile = function(callback){
-    var user_file = config.getDataDir() + '/config/user.json';
+    var user_file = Config.getDataDir() + '/config/user.json';
 	var pass_shasum = crypto.createHash('sha256').update("go2fabmo").digest('hex');
 	var newUser = this.User("admin",pass_shasum,true);
 	var data = JSON.stringify(newUser);
@@ -24,7 +24,8 @@ UserConfig.prototype.setUpFile = function(callback){
         if(err){
             callback(err);
         } else {
-            log.info('User File Created...');
+			log.info('User File Created...');
+			callback(null);
         }
     });
     
