@@ -355,32 +355,36 @@ Updater.prototype.setTime = function(time, callback) {
 }
 
 function UpdaterConfigFirstTime(callback) {
-    log.info('Configuring for the first time...');
+    log.info('Configuring the updater for the first time...');
     switch(config.platform) {
         case 'linux':
-            var confFile = '/etc/wpa_supplicant/wpa_supplicant.conf';
             try {
-                var text = fs.readFileSync(confFile, 'utf8');
-                if(text.match(/device_name=Edison/)) {
-                    log.info('Intel Edison Platform Detected');
-                    config.updater.set('platform', 'edison');
-                    hooks.getUniqueID(function(err, id) {
-                        if(err) {
-                            var id = '';
-                            log.error('There was a problem generating the factory ID:');
-                            log.error(err);
-                            for(var i=0; i<8; i++) {
-                                id += (Math.floor(Math.random()*15)).toString(16);
-                            }
-                        }
-                        var hostname = 'FabMo-' + id;
-                        config.updater.set('name', hostname);
-                        callback();
-                    })
-                }
+		fs.stat('/opt/edison', function(err, stats) {
+			if(err) {
+				return callback();
+			}
+			if(stats.isDirectory()) {
+				log.info("The INTEL EDISON Platform has been detected.");
+				config.updater.set('platform', 'edison');
+		                hooks.getUniqueID(function(err, id) {
+                			if(err) {
+                            			var id = '';
+                            			log.error('There was a problem generating the factory ID:');
+                            			log.error(err);
+                            			for(var i=0; i<8; i++) {
+                                			id += (Math.floor(Math.random()*15)).toString(16);
+                            			}
+                        		}
+                        		var hostname = 'FabMo-' + id;
+                        		config.updater.set('name', hostname);
+                        		callback();
+                    		});
+			}	
+		});
             } catch(e) {
-            log.error(e);
-        }
+		log.error(e);
+		callback();
+            }
         break;
 
         case 'darwin':
