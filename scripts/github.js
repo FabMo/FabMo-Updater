@@ -296,16 +296,18 @@ function createRelease(owner, repos, tagName, targetCommitish, options) {
     		}
     		log.info('Release for ' + tagName + ' does not already exist');
     		// Release doesn't already exist
-			request.post(
+		var json = {
+			    		tag_name : tagName,
+			    		target_commitish : tagName === targetCommitish ? undefined : targetCommitish
+			};
+		if(options['message']) { json.message = options['message']; }
+
+		request.post(
 				{
 			    	url : 'https://api.github.com/repos/' + owner + '/' + repos + '/releases',
 			    	auth : auth,
 			    	headers : HEADERS,
-
-				json : {
-			    		tag_name : tagName,
-			    		target_commitish : tagName === targetCommitish ? undefined : targetCommitish,
-				}
+				json : json 
 				},
 				function(err, resp, body) {
 					if(err) {
