@@ -36,7 +36,7 @@ build/consolidated.fmp: cleartmp token.tar.gz updater.tar.gz engine.tar.gz g2.bi
 	cp ../token.tar.gz .; \
 	cp ../g2.bin .; \
 	cp ../files/consolidated.json ./manifest.json; \
-	tar -cvzf ../build/consolidated.fmp engine.tar.gz updater.tar.gz g2.bin manifest.json 
+	tar -cvzf ../build/consolidated.fmp engine.tar.gz updater.tar.gz g2.bin manifest.json token.tar.gz 
 
 cleartmp:
 	mkdir -p tmp

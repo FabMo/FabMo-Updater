@@ -1,7 +1,7 @@
 var request = require('request')
 var fs = require('fs')
 
-var MANIFEST_URL = 'http://fabmo.github.io/manifest/packages-rc.json'
+var MANIFEST_URL = 'http://fabmo.github.io/manifest/packages.json'
 var engineURL = null;
 var updaterURL = null;
 //var filesDownloaded = 0;
@@ -17,7 +17,7 @@ request(MANIFEST_URL, { json: true }, function(err, res, body) {
 		}
 	}
 
-	console.log("Downloading engine fmp")
+	console.log("Downloading updater fmp from " + updaterURL)
 	request(updaterURL)
 		.pipe(fs.createWriteStream('dl/updater.fmp'))
 		.on('finish', function() {
@@ -29,7 +29,7 @@ request(MANIFEST_URL, { json: true }, function(err, res, body) {
 
 		});
 
-	console.log("Downloading updater fmp")
+	console.log("Downloading engine fmp from " + engineURL)
 	request(engineURL)
 		.pipe(fs.createWriteStream('dl/engine.fmp'))
 		.on('finish', function() {
