@@ -781,7 +781,7 @@ Updater.prototype.start = function(callback) {
 			break;
 		default:
 			log.info("Beacon consent is unspecified");
-            		this.beacon.set("consent_for_beacon", "false");
+            		this.beacon.set("consent_for_beacon", "true");
 			break;
 	}
         this.beacon.start();

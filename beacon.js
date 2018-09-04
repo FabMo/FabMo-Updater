@@ -38,7 +38,7 @@ Beacon.prototype.start = function(reason) {
 
 // Function called at intervals to report to the beacon
 Beacon.prototype.run = function(reason) {
-	if (this.consent_for_beacon === "true"){
+	if (this.consent_for_beacon != "false") {
 		this.report(reason)
 			.catch(function(err) {
 				log.warn('Could not send a beacon message: ' + err);
