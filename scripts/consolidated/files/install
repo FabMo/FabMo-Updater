@@ -1,0 +1,22 @@
+#!/bin/sh
+
+mount -w -o remount /
+
+FMUDIR=$(pwd)
+
+rm -rf /opt/fabmo/updater/install_token
+
+systemctl stop fabmo
+
+# expandArchive src: updater-stub.tar.gz dest: /fabmo/engine
+cd /fabmo/engine; tar -xvzf $FMUDIR/updater-stub.tar.gz
+
+# expandArchive src: tmp dest: /tmp
+cd /tmp; tar -xvzf $FMUDIR/consolidated.tar.gz
+
+# expandArchive src: service.tar.gz dest: /etc/systemd/system
+# cd /etc/systemd/system; tar -xvzf $FMUDIR/service.tar.gz
+cp $FMUDIR/fabmo-temp-updater.service /etc/systemd/system
+cp $FMUDIR/do-consolidated-update.sh /tmp
+
+systemctl restart fabmo
