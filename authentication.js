@@ -51,7 +51,7 @@ exports.configure = function(){
         if(!data.isAdmin){
           return done(null, false, { message: 'Must be admin' });
         }
-
+        console.log('configure');
         var user = {
           'username': username,
           'password': data.password,
@@ -109,6 +109,7 @@ exports.configure = function(){
 };
 
 var addUser = function(username,password,callback){
+  console.log('adduser');
   config.user.add(username,password,function(err,user){
     if(err){
       callback(err);
@@ -209,6 +210,7 @@ var modifyUser = function(username, user_fields,callback){
         }
       }
       config.user.update(newData, function(err,user){
+        console.log('hey');
         if(user)user.password=undefined; // don't transmit the password back
         callback(err,user);
         return;
@@ -233,13 +235,17 @@ passport.serializeUser(function(user, done) {
 
 passport.deserializeUser(function(username, done) {
   config.user.findOne(username, function(err, data) {
-    var user = {
-      'username': username,
-      'password': data.password,
-      'isAdmin' : data.isAdmin,
-      'created_at': data.created_at
+    if(err) {
+      done(null, false, { message: 'User does not exist' });
+    }else {
+      var user = {
+        'username': username,
+        'password': data.password,
+        'isAdmin' : data.isAdmin,
+        'created_at': data.created_at
+      }
+      done(err, user);
     }
-    done(err, user);
   });
 });
 
@@ -254,6 +260,7 @@ exports.deleteUser = deleteUser;
 exports.passport = passport;
 
 exports.getUserById = function(username,cb){
+  console.log('getUserById');
   config.user.findOne(username, function(err, data) {
     var user = {
       'username': username,
