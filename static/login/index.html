@@ -1,0 +1,36 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
+    <link rel="stylesheet" href="login/css/style.css"/>
+    <link rel="stylesheet" href="css/fonts.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+   </head>
+<body>
+<div class="main">
+    <div class="err" id="add_err"></div>
+    <div class = "login_panel">
+      <h2>Login</h2>
+      <hr>
+      <form id= "login_form" action="/authentication/login" method="post">
+        <div>
+            <label>Username
+              <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"   type="text" name="username"/>
+            </label>
+        </div>
+        <div>
+            <label>Password
+              <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"  type="password" name="password"/>
+            </label>
+        </div>
+        <div>
+            <button class="button" type="submit" value="Log In"/>Login</buttonv>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="js/libs/jquery.min.js"></script>
+  <script src="login/js/auth.js"></script>
+</body>
+</html>

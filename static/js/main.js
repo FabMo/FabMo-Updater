@@ -16,6 +16,11 @@ $('.menu-item').click(function() {
       case 'goto-dashboard':
         launchDashboard();
         break;
+      
+      case 'log-out':
+        $.ajax({ url : '/authentication/logout', success: function(result){
+          window.location.href = "/";
+        }})
 
       default:
         $('.content-pane').removeClass('active');

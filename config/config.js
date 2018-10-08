@@ -142,6 +142,10 @@ Config.prototype.init = function(callback) {
 	);
 };
 
+Config.prototype.getConfigFile = function() {
+	return Config.getDataDir('config') + '/' + this.config_name + '.json';
+}
+
 // "Static Methods"
 
 Config.getDataDir = function(name) {
