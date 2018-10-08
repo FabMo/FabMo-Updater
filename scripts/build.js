@@ -151,10 +151,10 @@ function clean() {
 
 function getLatestReleasedVersion() {
 	if(buildType === 'release' && !versionNumber) {
-		return doshell('git tag --sort=v:refname | tail -1', {cwd : reposDirectory})
+		return doshell('git tag --sort=v:refname | tail -2', {cwd : reposDirectory})
 			.then(function(v) {
-				versionNumber = v.trim();
-                commitish = versionNumber;
+				versionNumber = v.split('\n')[0].trim();
+                		commitish = versionNumber;
 				releaseName = versionNumber;
 			});
 	} else {
