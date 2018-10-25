@@ -1,3 +1,5 @@
+// TODO - this is cruft and should be removed
+
 var fs = require('fs');
 var obj = JSON.parse(fs.readFileSync('/opt/fabmo/config/engine.json', 'utf8'));
 
