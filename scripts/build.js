@@ -10,10 +10,6 @@
  *    engine.json - Package manifest template for engine builds
  *   updater.json - Package manifest template for updater builds
  *      github.js - Some functions for communicating with the github release API 
- *
- * The process goes like this:
- * 1. Checkout the appropriate release for the specified product
- * 2. Check
  */
 var exec = require('child_process').exec;
 var Q = require('q');
