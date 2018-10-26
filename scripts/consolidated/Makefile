@@ -1,3 +1,29 @@
+#
+# Consolidated build Makefile
+#
+# This script builds a consolidated engine/updater package by pulling the latest
+# package of the specfied type from github and bundling it in the consolidated 
+# build container.
+#
+# To use:
+#
+# make      - Builds from the latest release
+# make rc   - Builds from the latest rc
+# make dev  - Builds from the latest dev
+#
+
+release : MANIFEST_URL=http://fabmo.github.io/manifest/packages.json
+release	: rename
+
+rc : MANIFEST_URL=http://fabmo.github.io/manifest/packages-rc.json
+rc : rename
+
+dev : MANIFEST_URL=http://fabmo.github.io/manifest/packages-dev.json
+dev : rename
+
+rename : build/container.fmp
+	mv build/container.fmp build/`cat dl/version`
+
 build/container.fmp: cleartmp build/consolidated.fmp
 	cd tmp; \
 	cp ../files/container.json ./manifest.json; \
@@ -6,10 +32,11 @@ build/container.fmp: cleartmp build/consolidated.fmp
 	tar -cvzf consolidated.tar.gz consolidated.fmp; \
 	tar -cvzf service.tar.gz fabmo-temp-updater.service; \
 	tar -cvzf ../build/container.fmp updater-stub.tar.gz manifest.json consolidated.tar.gz service.tar.gz
+	rm build/consolidated.fmp
 
 dl/engine.fmp dl/updater.fmp: 
 	mkdir -p dl
-	node fetch.js
+	node fetch.js $(MANIFEST_URL)
 
 engine.tar.gz: cleartmp dl/engine.fmp
 	cd tmp; \
@@ -44,4 +71,5 @@ cleartmp:
 
 clean:
 	rm -rf tmp dl engine.tar.gz updater.tar.gz token.tar.gz g2.bin build
-.PHONY: cleartemp clean
+	
+.PHONY: cleartemp clean rc dev release rename

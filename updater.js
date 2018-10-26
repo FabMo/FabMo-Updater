@@ -733,24 +733,39 @@ Updater.prototype.start = function(callback) {
                 }.bind(this));
             }.bind(this);
             onlineCheck();
-            setInterval(onlineCheck,3000);
+            setInterval(onlineCheck,3000); // TODO - magic number, should factor out
             return callback(null);
         }.bind(this),
 
+        // Run any FMUS that are in the configuration fmus directory, in alphabetical order.
+        // The FMU used to be the way that packages were updated, but because they weren't very
+        // flexible, and allowed for arbitrary code execution, we started to phase them out.
+        // It's still useful, though, to be able to drop one in a special location and have it run
+        // when the updater boots.  We need to phase it out, but replace it with something more secure.
+        // In the mean time, this function runs them on startup, and if they run successfully, deletes them.
+        // This allows (for instance) the initial install of the updater to provoke a firmware load on startup,
+        // or for factory apps to be installed.
         function run_startup_fmus(callback) {
             if(selfUpdateFile) { return callback(); }
             log.info('Checking for startup FMUs...')
+            
+            // The configuration FMUs directory is (usually) /opt/fabmo/fmus
             fs.readdir(path.join(config.getDataDir(), 'fmus'), function(err, files) {
+                // List the files
                 files = files.map(function(filename) {
                     return path.join(config.getDataDir(),'fmus', filename);
                 });
+                // Only process FMUs
                 fmu_files = files.filter(function(filename) { return filename.match(/.*\.fmu$/);})
+                // Bail if there aren't any
                 if(fmu_files.length == 0) {
                     log.info('No startup FMUs.');
                     return callback();
                 } else {
                     log.info(fmu_files.length + ' startup FMU' + (fmu_files.length > 1 ? 's' : '') + ' to run...');
                 }
+
+                // doFMU returns a promise - so create a chain that executes and deletes them in sequence
                 result = fmu_files.reduce(function (prev, filename) {
                     return prev.then(function() {
                         return hooks.doFMU(filename);
@@ -759,6 +774,7 @@ Updater.prototype.start = function(callback) {
                     });
                 }, Q());
 
+                // Callback when all done (no errback so as not to interrupt the startup sequence - just log it)
                 result.then(function() {
                     callback();
                 }).fail(function(err) {
@@ -768,13 +784,19 @@ Updater.prototype.start = function(callback) {
             });
         }.bind(this),
 
+        // This is the main event - now that everything is initialized, start the server so clients
+        // can connect and update, etc.
+        //
+        // It used to be that this was the very last step of the startup sequence, but with an increasing
+        // number of processes that happen on timers, the server is actually started before some background
+        // tasks are kicked off (see below)
         function start_server(callback) {
+
             log.info('Setting up the webserver...');
             var server = restify.createServer({name:'FabMo Updater'});
             this.server = server;
 
-
-            ///Handle options request in firefox
+            // Handle options request in firefox
             function unknownMethodHandler(req, res) {
             if (req.method.toLowerCase() === 'options') {
                 var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
@@ -791,8 +813,8 @@ Updater.prototype.start = function(callback) {
             else
                 return res.send(new restify.MethodNotAllowedError());
             }
-
             server.on('MethodNotAllowed', unknownMethodHandler);
+            
             // Allow JSON over Cross-origin resource sharing
             log.info('Configuring cross-origin requests...');
             server.use(
@@ -803,6 +825,8 @@ Updater.prototype.start = function(callback) {
                 }
             );
 
+            // Register a generic, well-formed response in the case of any uncaught exception
+            // TODO - is this really a good idea?
             server.on('uncaughtException', function(req, res, route, err) {
                 log.uncaught(err);
                 answer = {
@@ -817,6 +841,7 @@ Updater.prototype.start = function(callback) {
             server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
             server.pre(restify.pre.sanitizePath());
 
+            // Configure authentication via passport
             log.info("Cofiguring authentication...");
             log.info("Secret Key: " + this.auth_secret.slice(0,5) + '...' + this.auth_secret.slice(-5));
             server.cookieSecret = this.auth_secret;
@@ -839,14 +864,13 @@ Updater.prototype.start = function(callback) {
             server.use(authentication.passport.initialize());
             server.use(authentication.passport.session());
 
-
-
             log.info('Enabling gzip for transport...');
             server.use(restify.gzipResponse());
 
-            // Import the routes module and apply the routes to the server
-            log.info('Loading routes...');
+            log.info('Configuring websocket...');
             server.io = socketio.listen(server.server);
+            
+            log.info('Loading routes...');
             var routes = require('./routes')(server);
 
             // Kick off the server listening for connections
@@ -855,22 +879,31 @@ Updater.prototype.start = function(callback) {
                 callback(null, server);
             });
 
+            // TODO - why is this down here?
             authentication.configure();
 
         }.bind(this),
 
+    // The updater configuration emits an event when one of its settings changes
+    // For a few settings, that provokes action by the updater.  These actions are defined below:
     function setup_config_events(callback) {
         config.updater.on('change', function(evt) {
 
+            // If any of the URLs for cloud services change, re-engage with 
+            // those services at the new URL
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
             if(evt.beacon_url) {
                 this.beacon.set('url', config.updater.get('beacon_url'));
             }
+
+            // If the tool name changes, report the change to beacon
             if(evt.name) {
                 this.beacon.once('config');
             }
+
+            // If beacon consent changes, let the beacon daemon know (possibly do a report)
             if (evt.consent_for_beacon) {
                 this.beacon.set("consent_for_beacon", evt.consent_for_beacon);
                 log.info("Consent for beacon is " + evt.consent_for_beacon);
@@ -879,6 +912,8 @@ Updater.prototype.start = function(callback) {
         callback();
     }.bind(this),
 
+    // This is the stage where, if we were passed a self update task on the command line,
+    // we actually create and execute the task.  Once the self update is complete, we exit.
     function self_update(callback) {
         if(selfUpdateFile) {
             log.info('Servicing a self update request!');
@@ -905,7 +940,8 @@ Updater.prototype.start = function(callback) {
         }
     }.bind(this),
 
-  function start_beacon(callback) {
+    // Start the beacon service
+    function start_beacon(callback) {
         var url = config.updater.get('beacon_url');
         var consent = config.updater.get('consent_for_beacon');
 
@@ -928,11 +964,14 @@ Updater.prototype.start = function(callback) {
                 this.beacon.set("consent_for_beacon", "false");
             break;
             
+            // TODO - shouldn't this be true? (Unspecified defaults to the "works better" state?)
             default:
                 log.info("Beacon consent is unspecified");
                 this.beacon.set("consent_for_beacon", "false");
             break;
         }
+
+        // Beacon will run in the background from now on
         this.beacon.start();
 
     }.bind(this)

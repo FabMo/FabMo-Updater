@@ -1,3 +1,9 @@
+/*
+ * auth.js
+ * 
+ * This module drives the login screen for the updater.
+ * TODO - Document this module
+ */
 (function () {
     runAuth();
     function getUrlParameter(sParam) {

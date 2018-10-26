@@ -6,6 +6,11 @@
  *
  * Releases are done through github using the github Release API.
  *
+ * Related files in this directory:
+ *    engine.json - Package manifest template for engine builds
+ *   updater.json - Package manifest template for updater builds
+ *      github.js - Some functions for communicating with the github release API 
+ *
  * The process goes like this:
  * 1. Checkout the appropriate release for the specified product
  * 2. Check
@@ -19,7 +24,7 @@ var github = require('./github');
 var fmp = require('../fmp');
 var util = require('../util');
 var log = require('../log').logger('build');
-//require('longjohn');
+//require('longjohn'); // Used for logging, not for production
 
 var buildDate = new Date().toISOString();
 log.info('Build date: ' + buildDate);
