@@ -66,7 +66,7 @@ Beacon.prototype.start = function(reason) {
 // Function called at intervals to report to the beacon
 // TODO - This function is internal to the beacon, maybe use the underscore convention for private method?
 Beacon.prototype.run = function(reason) {
-	if (this.consent_for_beacon === "true"){
+	if (this.consent_for_beacon != "false") {
 		this.report(reason)
 			.catch(function(err) {
 				log.warn('Could not send a beacon message: ' + err);

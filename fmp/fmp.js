@@ -666,7 +666,6 @@ function checkForAvailablePackage(product) {
 				// If so, return it, or return nothing if not
 				if(newerPackageAvailable) {
 					log.info("A newer package update is available!");
-					console.log(updates[0])
 					return deferred.resolve(updates[0]);
 				}
 				return deferred.resolve();

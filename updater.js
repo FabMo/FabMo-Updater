@@ -471,34 +471,36 @@ Updater.prototype.setTime = function(time, callback) {
 // which can all be determined from system information, files on disk, etc.
 //   callback - Called with error if the file couldn't be created
 function UpdaterConfigFirstTime(callback) {
-    log.info('Configuring for the first time...');
+    log.info('Configuring the updater for the first time...');
     switch(config.platform) {
         case 'linux':
-            // On linux, we sniff the wpa_supplicant file for a device name that indicates we're on an edison
-            var confFile = '/etc/wpa_supplicant/wpa_supplicant.conf';
             try {
-                var text = fs.readFileSync(confFile, 'utf8');
-                if(text.match(/device_name=Edison/)) {
-                    log.info('Intel Edison Platform Detected');
-                    config.updater.set('platform', 'edison');
-                    hooks.getUniqueID(function(err, id) {
-                        if(err) {
-                            var id = '';
-                            log.error('There was a problem generating the factory ID:');
-                            log.error(err);
-                            for(var i=0; i<8; i++) {
-                                id += (Math.floor(Math.random()*15)).toString(16);
-                            }
-                        }
-                        // Populate the host name based on the edison serial number, if indeed this is an edison
-                        var hostname = 'FabMo-' + id;
-                        config.updater.set('name', hostname);
-                        callback();
-                    })
-                }
+		          fs.stat('/opt/edison', function(err, stats) {
+			if(err) {
+				return callback();
+			}
+			if(stats.isDirectory()) {
+				log.info("The INTEL EDISON Platform has been detected.");
+				config.updater.set('platform', 'edison');
+		                hooks.getUniqueID(function(err, id) {
+                			if(err) {
+                            			var id = '';
+                            			log.error('There was a problem generating the factory ID:');
+                            			log.error(err);
+                            			for(var i=0; i<8; i++) {
+                                			id += (Math.floor(Math.random()*15)).toString(16);
+                            			}
+                        		}
+                        		var hostname = 'FabMo-' + id;
+                        		config.updater.set('name', hostname);
+                        		callback();
+                    		});
+			}	
+		      });
             } catch(e) {
-            log.error(e);
-        }
+		log.error(e);
+		callback();
+            }
         break;
 
         case 'darwin':
@@ -950,28 +952,24 @@ Updater.prototype.start = function(callback) {
             url : url,
             interval : BEACON_INTERVAL
         });
+    	switch(consent) {
+    		case "true":
+    		case true:
+                		log.info("Beacon is enabled");
+                		this.beacon.set("consent_for_beacon", "true");
+    			break;
 
-        switch(consent) {
-            case "true":
-            case true:
-                log.info("Beacon is enabled");
-                this.beacon.set("consent_for_beacon", "true");
-            break;
+    		case "false":
+    		case false:
+    			log.info("Beacon is disabled");
+                		this.beacon.set("consent_for_beacon", "false");
+    			break;
+    		default:
+    			log.info("Beacon consent is unspecified");
+                		this.beacon.set("consent_for_beacon", "true");
+    			break;
+    	}
 
-            case "false":
-            case false:
-                log.info("Beacon is disabled");
-                this.beacon.set("consent_for_beacon", "false");
-            break;
-            
-            // TODO - shouldn't this be true? (Unspecified defaults to the "works better" state?)
-            default:
-                log.info("Beacon consent is unspecified");
-                this.beacon.set("consent_for_beacon", "false");
-            break;
-        }
-
-        // Beacon will run in the background from now on
         this.beacon.start();
 
     }.bind(this)

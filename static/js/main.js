@@ -29,7 +29,7 @@ $('.menu-item').click(function() {
       
       case 'log-out':
         $.ajax({ url : '/authentication/logout', success: function(result){
-          window.location.href = "/";
+          window.location.href = "/login";
         }})
 
       default:

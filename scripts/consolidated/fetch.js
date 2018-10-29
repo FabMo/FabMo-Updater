@@ -27,15 +27,15 @@ request(process.argv[2], { json: true }, function(err, res, body) {
 	// Write to dl/version which is a file that contains the filename for 
 	// the consolidated fmp (The makefile will use this to name the build product)
 	fs.writeFileSync('dl/version', 'fabmo-consolidated-engine-' + engineVersion + '-updater-' + updaterVersion + '.fmp')
-	
-	console.log("Starting updater download...")
+	console.log("Downloading updater fmp from " + updaterURL)
+
 	request(updaterURL)
 		.pipe(fs.createWriteStream('dl/updater.fmp'))
 		.on('finish', function() {
 			console.log("Finished downloading updater.")
 		});
 
-	console.log("Starting engine download...")
+	console.log("Downloading engine fmp from " + engineURL)
 	request(engineURL)
 		.pipe(fs.createWriteStream('dl/engine.fmp'))
 		.on('finish', function() {

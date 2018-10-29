@@ -111,6 +111,7 @@ if(versionNumber) {
 } else {
     commitish = branch
 }
+var message = argv['m'] || null;
 
 var manifest = {};
 var md5;
@@ -394,6 +395,7 @@ function publishGithubRelease() {
 		return github.getCredentials()
 			.then(function(creds) {
 				githubCredentials = creds;
+				githubCredentials.message = message;
 			})
 			.then(function() {
 				if(releaseName === 'dev' || releaseName === 'release_candidate') {

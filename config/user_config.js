@@ -37,11 +37,13 @@ UserConfig.prototype.setUpFile = function(callback){
 	var pass_shasum = crypto.createHash('sha256').update(DEFAULT_ADMIN_PASSWORD).digest('hex');
 	var newUser = this.User(DEFAULT_ADMIN_USER,pass_shasum,true);
 	var data = JSON.stringify(newUser);
+
     fs.writeFile(user_file, data, function(err){
         if(err){
             callback(err);
         } else {
-            log.info('User File Created...');
+			log.info('User File Created...');
+			callback(null);
         }
     });
     
@@ -205,7 +207,7 @@ UserConfig.prototype.add = function(username,password,callback){
 
 //Maybe move this to the routes or whatever 
 UserConfig.prototype.findOne = function(username,callback){
-	username in this._cache ? callback(null, this._cache[username]) : callback(null, null);
+	username in this._cache ? callback(null, this._cache[username]) : callback('no user', null);
 }
 
 // Get a map of all user ids to values
