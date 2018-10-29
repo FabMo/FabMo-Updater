@@ -237,6 +237,11 @@ exports.updateEngine = function(version, callback) {
 
 }
 
+// TODO Obsolete?
+exports.installFirmware = function(filename, callback) {
+	return execute('update_firmware', filename, callback);
+}
+
 // Execute the FMU specified
 //   filename - Full path to FMU file
 exports.doFMU = function(filename, callback) {
@@ -262,13 +267,8 @@ exports.doFMU = function(filename, callback) {
 	return deferred.promise;
 }
 
-// TODO Obsolete?
-exports.installFirmware = function(filename, callback) {
-	return execute('update_firmware', filename, callback);
-}
-
 // Update the G2 firmware specified by filename
-//   filename - Full path to firmware file to update to
+//   filename - Full path to firmware file to apply
 exports.updateFirmware = function(filename, callback) {
 	var updater = require('./updater');
 	callback = callback || function() {};

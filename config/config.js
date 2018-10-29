@@ -1,3 +1,10 @@
+/*
+ * config.js
+ * 
+ * This module defines functions and objects that make up the 
+ * configuration system in the FabMo updater.
+ */
+
 var async = require('async');
 var fs = require('fs');
 var path = require('path');
@@ -7,6 +14,8 @@ var util = require('util');
 var events = require('events');
 
 // Config is the superclass from which all configuration objects descend
+//   config_name - All configuration objects have a name, which among other things,
+//                 determines the filename for the stored configuration.
 Config = function(config_name) {
 	this._cache = {};
 	this.config_name = config_name;
@@ -17,11 +26,13 @@ Config = function(config_name) {
 };
 util.inherits(Config, events.EventEmitter);
 
-
+// Get the value for the provided key
 Config.prototype.get = function(k) {
 	return this._cache[k];
 };
 
+// Get the values for the provided array of keys.
+// Returns an object mapping keys to values.
 Config.prototype.getMany = function(arr) {
 	retval = {};
 	for(var i in arr) {
@@ -31,17 +42,26 @@ Config.prototype.getMany = function(arr) {
 	return retval;
 };
 
+// Set the configuration value for the provided key.
+// This causes the configuration to be saved to disk
+// This function calls `update()` internally, which is provided by subclasses
+//          k - The key value
+//          v - The new values
+//   callback - Called once the config is updated (which might take some time)
 Config.prototype.set = function(k,v, callback) {
 	var u = {}
 	u[k] = v;
 	return this.update(u, callback);
 };
 
+// Return the internal data structure that contains all configuration values
+// CAREFUL - this returns the actual cache, not a copy.
 Config.prototype.getData = function() {
 	return this._cache;
 };
 
-// The load function retreives a configuration from disk and loads it into the configuration object
+// Read a configuration from disk into this configuration object
+//   filename - Full path to file to load
 Config.prototype.load = function(filename, callback) {
 	this._filename = filename;
 	fs.readFile(filename, 'utf8', function (err, data) {
@@ -58,6 +78,8 @@ Config.prototype.load = function(filename, callback) {
 	}.bind(this));
 };
 
+// Save this configuration object to disk
+//   callback - Called with null once the configuration is saved (or with error if error)
 Config.prototype.save = function(callback) {
 	if(this._loaded && this.config_file) {
 		log.debug("Saving config to " + this.config_file);
@@ -77,6 +99,7 @@ Config.prototype.save = function(callback) {
 								log.error(err);
 							}
 							fs.closeSync(fd);
+							// err might be null - this is the success case
 							callback(err);
 						}.bind(this));
 					}
@@ -94,7 +117,7 @@ Config.prototype.save = function(callback) {
 	}
 };
 
-// The init function performs an initial load() from the configuration's settings files.
+// Perform an initial load() from the configuration's settings files.
 // For this to work, the Config object has to have a default_config_file and config_file member
 Config.prototype.init = function(callback) {
 		var default_count;
@@ -142,12 +165,15 @@ Config.prototype.init = function(callback) {
 	);
 };
 
+// Return a path to the config file for this configuration object
 Config.prototype.getConfigFile = function() {
 	return Config.getDataDir('config') + '/' + this.config_name + '.json';
 }
 
-// "Static Methods"
+// "Static Methods" below here
 
+// Get the data directory (the root of all volatile FabMo data)
+//   name - Optional additional pathname to join to root data dir
 Config.getDataDir = function(name) {
 	switch(PLATFORM) {
 		case 'win32':
@@ -165,7 +191,8 @@ Config.getDataDir = function(name) {
 	return dir;
 };
 
-// Creates the data directory if it does not already exist
+// Creates the data directory structure if it does not already exist
+//   callback - Called with null if success or with error if error
 Config.createDataDirectories = function(callback) {
 	var create_directory = function(dir, callback) {
 		dir = Config.getDataDir(dir);
@@ -187,6 +214,8 @@ Config.createDataDirectories = function(callback) {
 	async.eachSeries(dirs, create_directory, callback);
 };
 
+// callback true/false if the provided path is a directory (or undefined if it doesn't exist)
+// TODO - is this silly?
 function isDirectory(path, callback){
 	fs.stat(path,function(err,stats){
 		if(err) callback(undefined);

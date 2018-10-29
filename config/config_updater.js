@@ -1,6 +1,12 @@
+/*
+ * config_updater.js
+ *
+ * This module provides the updater-specific configuration object.
+ */
 var util = require('util');
 
-// The EngineConfig object keeps track of engine-specific settings
+// The UpdaterConfig object keeps track of updater-specific settings
+// At the time of this writing, it doesn't really do anything special, other than being an event emitter that notifies changes to the config.
 UpdaterConfig = function() {
 	Config.call(this, 'updater');
 	this.name_changed = false;
@@ -8,13 +14,17 @@ UpdaterConfig = function() {
 };
 util.inherits(UpdaterConfig, Config);
 
+// Typical update function
 UpdaterConfig.prototype.update = function(data, callback) {
     try {
 		for(var key in data) {
 			switch(key) {
+
+				// The os "config" actually comes from the 
 				case 'os':
 				break;
 
+				// Notify listeners that a config value changed
 				default:
 					this._cache[key] = data[key];
 					var o = {}
@@ -37,6 +47,10 @@ UpdaterConfig.prototype.update = function(data, callback) {
 	});
 };
 
+// getData for the updater configuration returns a copy, because
+// the `os` key in the configuration (and perhaps others in the future)
+// is a "phantom" key (it's not really in the config file - it is only
+// in the configuration so it appears in the config for the client)
 UpdaterConfig.prototype.getData = function() {
 	var cfg_copy = {}
 	for(var key in this._cache) {

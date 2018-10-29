@@ -1,7 +1,13 @@
+/*
+ * authentication.json
+ *
+ * Routes related to user/authentication management.
+ */
 var log = require('../log').logger('authentication');
 var authentication = require('../authentication');
 var passport = authentication.passport;
 
+// Authenticate as the provided user
 var login = function(req, res, next) {
   passport.authenticate('local', function(err, user, info) {
     if (err) {
@@ -21,6 +27,8 @@ var login = function(req, res, next) {
   })(req, res, next);
 };
 
+// Add a user
+// TODO - is this route really needed in the updater?  (Maybe?)
 var addUser = function(req, res, next) {
 
   currentUser = authentication.getCurrentUser();
@@ -47,6 +55,7 @@ var addUser = function(req, res, next) {
 
 };
 
+// Deauthenticate the current user
 var logout = function(req, res, next) {
   req.logout();
   authentication.setCurrentUser(null);
@@ -54,6 +63,8 @@ var logout = function(req, res, next) {
   return;
 };
 
+// Get the list of users
+// TODO - is this route really needed in the updater?  (Maybe?)
 var getUsers = function(req,res,next){
   currentUser = authentication.getCurrentUser();
   if(currentUser && currentUser.isAdmin){ // if admin
@@ -71,6 +82,8 @@ var getUsers = function(req,res,next){
   }
 };
 
+// Get the user with the provided ID
+// TODO - is this route really needed in the updater?  (Maybe?)
 var getUser = function(req,res,next){
   currentUser = authentication.getCurrentUser();
   if(currentUser &&( (currentUser.username == req.params.id ) || currentUser.isAdmin)){ // if current user or admin
@@ -88,6 +101,7 @@ var getUser = function(req,res,next){
   }
 };
 
+// Get the current user
 var getCurrentUser = function(req,res,next){
   currentUser = authentication.getCurrentUser();
   if(currentUser){ // if current user
@@ -105,7 +119,8 @@ var getCurrentUser = function(req,res,next){
   }
 };
 
-
+// Update a user
+// TODO - is this route really needed in the updater?  (Maybe?)
 var modifyUser = function(req,res,next){
   currentUser = authentication.getCurrentUser();
   if(!req.params.id){
@@ -131,6 +146,8 @@ var modifyUser = function(req,res,next){
   }
 };
 
+// Remove a user
+// TODO - is this route really needed in the updater?  (Maybe?)
 var deleteUser = function(req,res,next){ // if admin
   currentUser = authentication.getCurrentUser();
   if(currentUser && currentUser.isAdmin){ // if admin

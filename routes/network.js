@@ -1,7 +1,15 @@
+/*
+ * routes/network.js
+ *
+ * Routes related to network management.  Provides functions for
+ * setting up wifi, ethernet, getting network status, etc.
+ */
 var log = require('../log').logger('network');
 var config =  require('../config');
 var util =  require('../util');
 
+// Return a list of wifi networks that are currently visible.
+// TODO - This is a bad route name, because retrieving it doesn't actually trigger a scan
 var scan = function(req, res, next) {
   var network = require('../updater').networkManager;
   network.getAvailableWifiNetworks(function(err, data) {
@@ -14,6 +22,7 @@ var scan = function(req, res, next) {
   });
 };
 
+// Connect to the wifi network specified in the request body
 connectWifi = function(req, res, next) {
   ssid = req.params.ssid
   key = req.params.key
@@ -32,6 +41,7 @@ connectWifi = function(req, res, next) {
   }
 }
 
+// Disconnect from the current wifi network
 disconnectWifi = function(req, res, next) {
   state=req.params.disconnect;
   var network = require('../updater').networkManager;
@@ -45,11 +55,13 @@ disconnectWifi = function(req, res, next) {
       res.json({'status':'success'});
     });
   }else{
+    // TODO this could be more informative
     res.json({'status':'error', 'message' : 'wrong POST command sent !'});
   }
 
 }
 
+// Forget the wifi network with the SSID provided in the post body
 forgetWifi  = function(req,res,next){
   ssid = req.params.ssid
   var network = require('../updater').networkManager;
@@ -67,6 +79,7 @@ forgetWifi  = function(req,res,next){
   }
 }
 
+// Enable or disable the wifi, depending on the value of the `enabled` attribute in the POST body
 wifiState = function(req,res,next){
   state = req.params.enabled;
 
@@ -88,11 +101,12 @@ wifiState = function(req,res,next){
       }
     });
   }else{
+    // TODO this could be more informative
     res.json({'status':'error', 'message' : 'wrong POST command sent !'});
   }
 }
 
-
+// Enable or disable AP mode, depending on the value of the `enabled` attribute in the POST body
 hotspotState = function(req,res,next){
   state = req.params.enabled;
   var network = require('../updater').networkManager;
@@ -118,6 +132,8 @@ hotspotState = function(req,res,next){
   }
 }
 
+// Set the network ID name and password
+// This is the AP SSID/Hostname
 setNetworkIdentity = function(req,res,next){
   var name = req.params.name;
   var password = req.params.password;
@@ -131,6 +147,8 @@ setNetworkIdentity = function(req,res,next){
   });
 }
 
+// Retrieve the network ID (but only return the name, not password)
+// This is the AP SSID/Hostname
 getNetworkIdentity = function(req, res, next) {
   res.json({
     status : 'success',
@@ -138,6 +156,7 @@ getNetworkIdentity = function(req, res, next) {
   });
 }
 
+// Retrieve the history of joined networks
 getWifiHistory = function(req, res, next) {
   var network = require('../updater').networkManager;
   network.getWifiHistory(function(err, data) {
@@ -151,6 +170,7 @@ getWifiHistory = function(req, res, next) {
   });
 }
 
+// Return true if this machine can see the internet, false otherwise
 isOnline = function(req, res, next) {
   var network = require('../updater').networkManager;
   network.isOnline(function(err, online) {
@@ -161,6 +181,8 @@ isOnline = function(req, res, next) {
   });
 }
 
+// Get network status (???)
+// TODO : What actually is the network status
 getStatus = function(req, res, next) {
   var network = require('../updater').networkManager;
 
@@ -172,7 +194,7 @@ getStatus = function(req, res, next) {
   });
 }
 
-
+// Set the ethernet configuration to params provided in the POST body
 setEthernetConfig = function(req,res,next){
   var network = require('../updater').networkManager;
   var netConfig = config.updater.get('network');
@@ -188,6 +210,7 @@ setEthernetConfig = function(req,res,next){
   });
 }
 
+// Retrieve the ethernet config
 getEthernetConfig = function(req,res,next){
   var netConfig = config.updater.get('network');
   var ethernetConfig = netConfig.ethernet;
@@ -197,6 +220,7 @@ getEthernetConfig = function(req,res,next){
   });
 }
 
+// Set the wifi configuration to params provided in the POST body
 setWifiConfig = function(req,res,next){
   var network = require('../updater').networkManager;
   var netConfig = config.updater.get('network');
@@ -212,6 +236,7 @@ setWifiConfig = function(req,res,next){
   });
 }
 
+// Retrieve the ethernet config
 getWifiConfig = function(req,res,next){
   var netConfig = config.updater.get('network');
   var wifiConfig = netConfig.wifi;
@@ -236,5 +261,4 @@ module.exports = function(server) {
   server.post('/network/wifi/config',setWifiConfig);
   server.get('/network/ethernet/config',getEthernetConfig);
   server.get('/network/wifi/config',getWifiConfig);
-
 }

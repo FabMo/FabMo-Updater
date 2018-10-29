@@ -1,3 +1,14 @@
+/*
+ * routes/index.js
+ *
+ * This is the loader for all the routes in the system.
+ * The route loader iterates over files in the routes directory, imports them,
+ * and calls them as functions with the restify server as an argument.
+ * The route modules, in turn, take that opportunity to register individual routes on the server.
+ * 
+ * This module exports itself a a single function which should be called once
+ * at startup with the restify server
+ */
 var fs = require('fs');
 var path = require('path');
 var log = require('../log').logger('routes');
@@ -5,6 +16,7 @@ var restify = require('restify');
 var authentication = require('../authentication');
 
 // Load all the files in the 'routes' directory and process them as route-producing modules
+// TODO - Make this a not-anonymous function.
 module.exports = function(server) {
 	var routeDir = __dirname;
 	var files = fs.readdirSync(routeDir);
@@ -25,7 +37,7 @@ module.exports = function(server) {
 	}
 	});
 
-
+	// Setup redirect for non-authenticated clients.
 	server.use(function(req, res, next){
 		var currentUser = authentication.getCurrentUser();
 		if(currentUser) {
@@ -42,11 +54,9 @@ module.exports = function(server) {
 	})
 
 
-
 	// Define a route for serving static files
 	// This has to be defined after all the other routes, or it plays havoc with things
 	server.get(/.*/, restify.serveStatic({
-		//directory: './static'
 		directory: './static',
 		default: 'index.html'
 	}));
