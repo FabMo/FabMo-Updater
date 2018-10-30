@@ -850,7 +850,7 @@ Updater.prototype.start = function(callback) {
                 // should be a large unguessable string
                 secret: server.cookieSecret, // REQUIRE HTTPS SUPPORT !!!
                 // how long the session will stay valid in ms
-                duration: 1 * 24 * 60 * 60 * 1000, // 1 day
+                duration: 30 * 24 * 60 * 60 * 1000, // 30 days
                 cookie: {
                   //: '/api', // cookie will only be sent to requests under '/api'
                   //maxAge: 60000, // duration of the cookie in milliseconds, defaults to duration above
