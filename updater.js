@@ -475,31 +475,31 @@ function UpdaterConfigFirstTime(callback) {
     switch(config.platform) {
         case 'linux':
             try {
-		          fs.stat('/opt/edison', function(err, stats) {
-			if(err) {
-				return callback();
-			}
-			if(stats.isDirectory()) {
-				log.info("The INTEL EDISON Platform has been detected.");
-				config.updater.set('platform', 'edison');
-		                hooks.getUniqueID(function(err, id) {
-                			if(err) {
-                            			var id = '';
-                            			log.error('There was a problem generating the factory ID:');
-                            			log.error(err);
-                            			for(var i=0; i<8; i++) {
-                                			id += (Math.floor(Math.random()*15)).toString(16);
-                            			}
-                        		}
-                        		var hostname = 'FabMo-' + id;
-                        		config.updater.set('name', hostname);
-                        		callback();
-                    		});
-			}	
-		      });
+                fs.stat('/opt/edison', function(err, stats) {
+                    if(err) {
+                        return callback();
+                    }
+                    if(stats.isDirectory()) {
+                        log.info("The INTEL EDISON Platform has been detected.");
+                        config.updater.set('platform', 'edison');
+                        hooks.getUniqueID(function(err, id) {
+                            if(err) {
+                                var id = '';
+                                log.error('There was a problem generating the factory ID:');
+                                log.error(err);
+                                for(var i=0; i<8; i++) {
+                                    id += (Math.floor(Math.random()*15)).toString(16);
+                                }
+                            }
+                            var hostname = 'FabMo-' + id;
+                            config.updater.set('name', hostname);
+                            callback();
+                        });
+                    }   
+                }); // fs.stat
             } catch(e) {
-		log.error(e);
-		callback();
+                log.error(e);
+                callback();
             }
         break;
 
@@ -518,9 +518,6 @@ function UpdaterConfigFirstTime(callback) {
         break;
     }
 };
-
-
-
 
 // This is the function that starts the application
 // It should be called only once after the `Updater` object is instantiated.
@@ -952,23 +949,23 @@ Updater.prototype.start = function(callback) {
             url : url,
             interval : BEACON_INTERVAL
         });
-    	switch(consent) {
-    		case "true":
-    		case true:
-                		log.info("Beacon is enabled");
-                		this.beacon.set("consent_for_beacon", "true");
-    			break;
+        switch(consent) {
+            case "true":
+            case true:
+                        log.info("Beacon is enabled");
+                        this.beacon.set("consent_for_beacon", "true");
+                break;
 
-    		case "false":
-    		case false:
-    			log.info("Beacon is disabled");
-                		this.beacon.set("consent_for_beacon", "false");
-    			break;
-    		default:
-    			log.info("Beacon consent is unspecified");
-                		this.beacon.set("consent_for_beacon", "true");
-    			break;
-    	}
+            case "false":
+            case false:
+                log.info("Beacon is disabled");
+                        this.beacon.set("consent_for_beacon", "false");
+                break;
+            default:
+                log.info("Beacon consent is unspecified");
+                        this.beacon.set("consent_for_beacon", "true");
+                break;
+        }
 
         this.beacon.start();
 

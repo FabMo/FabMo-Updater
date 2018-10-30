@@ -3,6 +3,8 @@
  *
  * This module fetches the latest engine/updater packages specifed in the package manifest
  * so that the consolidated build Makefile can turn them into a consolidated .fmp
+ *
+ * Usage
  */
 
 var request = require('request')
@@ -11,6 +13,7 @@ var fs = require('fs')
 var engineURL = null;
 var updaterURL = null;
 
+// The URL of the package manifest is the first argument
 request(process.argv[2], { json: true }, function(err, res, body) {
 	packages = body['packages']
 	for(var i=0; i<packages.length; i++) {
@@ -27,8 +30,9 @@ request(process.argv[2], { json: true }, function(err, res, body) {
 	// Write to dl/version which is a file that contains the filename for 
 	// the consolidated fmp (The makefile will use this to name the build product)
 	fs.writeFileSync('dl/version', 'fabmo-consolidated-engine-' + engineVersion + '-updater-' + updaterVersion + '.fmp')
+	
+	// Kick off the downloads
 	console.log("Downloading updater fmp from " + updaterURL)
-
 	request(updaterURL)
 		.pipe(fs.createWriteStream('dl/updater.fmp'))
 		.on('finish', function() {

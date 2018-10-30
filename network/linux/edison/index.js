@@ -599,16 +599,20 @@ EdisonNetworkManager.prototype.isOnline = function(callback) {
   setImmediate(callback, null, this.mode === 'station');
 }
 
-//Ethernet section
+// Turn the ethernet interface on
+//   callback - Called when the ethernet interface is up or with error if error
 EdisonNetworkManager.prototype.turnEthernetOn=function(callback) {
   ifconfig.up(ethernetInterface,callback);
 }
 
+// Turn the ethernet interface off
+//   callback - Called when the ethernet interface is up or with error if error
 EdisonNetworkManager.prototype.turnEthernetOff=function(callback) {
   ifconfig.down(ethernetInterface,callback);
 }
 
-// interface specific - static addressing
+// Enable DHCP for the provided interface
+// 
 EdisonNetworkManager.prototype.enableDHCP=function(interface, callback) {
 log.debug('Enabling DHCP on ' + interface);
 udhcpc.enable({interface: interface},callback)
