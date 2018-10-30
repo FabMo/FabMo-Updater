@@ -1,3 +1,16 @@
+/*
+ * network/linux/beaglebone-black/index.js
+ *
+ * Network manager for beaglebone.  Doesn't do much. 
+ * You might say the module is pretty bare...
+ * .
+ * ..
+ * ...
+ * ....BONES? 
+ * 
+ *  (> ' O')> HEYOOOOO
+ */
+ 
 var log = require('../../../log').logger('network');
 var doshell = require('../../../util').doshell
 var config = require('../../../config');

@@ -1,3 +1,8 @@
+/*
+ * authentication.js
+ * 
+ * Manages user authentication to access the FabMo updater
+ */
 var passport = require('passport-restify');
 var LocalStrategy   = require('passport-local').Strategy;
 var config = require('./config');
@@ -5,20 +10,27 @@ var util = require('util');
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
 
-var currentUser = null; // keep track of the current registered user
+// FabMo is a single-user system, and this variable keeps track of the current one.
+var currentUser = null; 
 var userTimer = 5*60*1000; // 5 minutes
 var currentUserTimer = null;
 var isCurrentUserKickeable = false;
 var userToKickout = undefined;
 
+// Start the "idle timer" for the logged in user.
+// After the timeout defined by `userTimeout` the user is kickable if they haven't taken any kind of action.
 function startUserTimer(){
   var currentUserTimer = setTimeout(userTimeout,userTimer);
 }
 
+// Reset the "idle timer" for the logged in user.
+// This usually happens in response to the user taking some kind of action that counts as them not being "idle"
 function resetUserTimer(){
   clearTimeout(currentUserTimer);
   currentUserTimer = startUserTimer();
 }
+
+// Expire the userTimeout - making the user kickable.
 function userTimeout(){
   isCurrentUserKickeable = true;
 }

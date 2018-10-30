@@ -1,3 +1,10 @@
+/*
+ * network/linux/manager.js
+ * 
+ * This module defines the generic superclass for network managers in the `linux` platform.
+ *
+ * It defines the interface for all the methods, and logs a warning if any of these methods are unimplemented.
+ */
 var log = require('../log').logger('manager');
 var util = require('util');
 var events = require('events');

@@ -1,5 +1,5 @@
 /*
- * config/engine.js
+ * routes/engine.js
  *
  * Functions for managing the state of the FabMo engine.
  *

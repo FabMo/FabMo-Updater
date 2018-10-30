@@ -1,5 +1,5 @@
 /*
- * network/edison/index.js
+ * network/linux/edison/index.js
  *
  * Network manager for the intel edison
  */
@@ -32,6 +32,7 @@ var tmpPath = os.tmpdir() + '/';
 
 var DEFAULT_NETMASK = "255.255.255.0";
 var DEFAULT_BROADCAST = "192.168.1.255"
+// This is how long the system will wait for DHCP before going into "magic mode" (ms)
 var DHCP_MAGIC_TTL = 5000;
 var ETHERNET_SCAN_INTERVAL = 2000;
 var NETWORK_HEALTH_RETRIES = 8;
@@ -68,8 +69,8 @@ var EdisonNetworkManager = function() {
   this.network_health_retries = NETWORK_HEALTH_RETRIES;
   this.network_history = {};
   this.networkInfo = {
-  	wireless: null,
-	  wired : null
+    wireless: null,
+    wired : null
   };
 }
 util.inherits(EdisonNetworkManager, NetworkManager);
@@ -90,19 +91,19 @@ EdisonNetworkManager.prototype.getInfo = function(interface,callback) {
 
 // Return a list of IP addresses (the local IP for all interfaces)
 EdisonNetworkManager.prototype.getLocalAddresses = function() {
-	var retval = [];
-	try {
-		if(this.networkInfo.wireless) {
-			retval.push(this.networkInfo.wireless);
-		}
-		if(this.networkInfo.wired) {
-			retval.push(this.networkInfo.wired);
-		}
-		log.debug('Returning a list of local addresses: ' + retval);
-		return retval;
-	} catch(e) {
-		return retval;
-	}
+  var retval = [];
+  try {
+    if(this.networkInfo.wireless) {
+      retval.push(this.networkInfo.wireless);
+    }
+    if(this.networkInfo.wired) {
+      retval.push(this.networkInfo.wired);
+    }
+    log.debug('Returning a list of local addresses: ' + retval);
+    return retval;
+  } catch(e) {
+    return retval;
+  }
 }
 
 // Get the current "scan results"
@@ -203,7 +204,7 @@ EdisonNetworkManager.prototype.runWifi = function() {
           }
 
           if(this.mode != old_mode) {
-  		      setImmediate(this.runWifi.bind(this));
+            setImmediate(this.runWifi.bind(this));
           } else{
             setTimeout(this.runWifi.bind(this), 5000);
           }
@@ -612,17 +613,24 @@ EdisonNetworkManager.prototype.turnEthernetOff=function(callback) {
 }
 
 // Enable DHCP for the provided interface
-// 
+//   interface - The interface to update
+//   callback - Called when complete, or with error if error
 EdisonNetworkManager.prototype.enableDHCP=function(interface, callback) {
 log.debug('Enabling DHCP on ' + interface);
 udhcpc.enable({interface: interface},callback)
 }
 
+// Disable DHCP for the provided interface
+//   interface - The interface to update
+//    callback - Called when complete, or with error if error
 EdisonNetworkManager.prototype.disableDHCP=function(interface, callback) {
 log.debug('Disabling DHCP on ' + interface);
   udhcpc.disable(interface,callback);
 }
 
+// Start the internal DHCP server on the provided interface
+//   interface - The interface on which to start the DHCP server
+//    callback - Called when the DHCP server has been started, or with error if error
 EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
   var ethernet_config = config.updater.get('network').ethernet;
   var options = {
@@ -639,10 +647,17 @@ EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
   udhcpd.enable(options,callback);
 }
 
+// Stop the internal DHCP server on the provided interface
+//   interface - The interface on which to stop the DHCP server
+//    callback - Called when the DHCP server has been stopped, or with error if error
 EdisonNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
   udhcpd.disable({interface:interface,tmpPath:tmpPath},callback);
 }
 
+// Set the ip address for the provided interface to the provided value
+//   interface - The interface to update
+//          ip - The IP address, eg: '192.168.44.50'
+//    callback - Called when the address has been set or with error if error
 EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
   if(!ip)return callback("no ip specified !");
   ifconfig.status(interface, function(err, status) {
@@ -657,6 +672,10 @@ EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
   });
 }
 
+// Set the netmask for the provided interface to the provided value
+//   interface - The interface to update
+//     netmask - The netmask, eg: '255.255.255.0'
+//    callback - Called when the netmask has been set or with error if error
 EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback) {
   if(!netmask)return callback("no netmask specified !");
   ifconfig.status(interface, function(err, status) {
@@ -671,18 +690,27 @@ EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback)
     ifconfig.up(options, callback);
   });
 }
-
+// Set the gateway IP for the provided interface to the provided value
+//   interface - The interface to update
+//     gateway - The gateway, eg: '255.255.255.0'
+//    callback - Called when the gateway has been set or with error if error
 EdisonNetworkManager.prototype.setGateway=function(gateway, callback) {
   doshell('route add default gw '+ gateway, function(s) {
     callback(null);
   });
 }
 
+// Take the configuration stored in the network config and apply it to the currently running instance
+// This function returns immediately
 EdisonNetworkManager.prototype.applyNetworkConfig=function(){
   this.applyWifiConfig();
+  // TODO - Why is this commented out?
 //  this.applyEthernetConfig();
 }
 
+// Take the ethernet configuration stored in the network config and apply it to the currently running instance
+// TODO - Cleanup indentation below
+// This function returns immediately (but takes a while to complete)
 EdisonNetworkManager.prototype.applyEthernetConfig=function(){
   var self = this;
   var ethernet_config = config.updater.get('network').ethernet;
@@ -692,8 +720,10 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
         self.disableDHCP.bind(this,ethernetInterface),
         self.stopDHCPServer.bind(this,ethernetInterface)
       ],function(err,results){
-        if(err)log.warn(err);
-	this.emit('network', {'mode':'ethernet'});
+        if(err) {
+          log.warn(err);
+        }
+        this.emit('network', {'mode':'ethernet'});
         log.info("ethernet is in "+ethernet_config.mode+" mode");
         switch(ethernet_config.mode) {
           case 'static':
@@ -720,11 +750,11 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
                 ifconfig.status(ethernetInterface,function(err,status){
                   if(err)log.warn(err);
                   if(status.ipv4_address!==undefined) {// we got a lease !
-                    	this.networkInfo.wired = status.ipv4_address;
-		  	log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
-                    	return;
-		  }
-		  else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
+                      this.networkInfo.wired = status.ipv4_address;
+        log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
+                      return;
+      }
+      else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
                     async.series([
                       self.disableDHCP.bind(this,ethernetInterface),
                       self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
@@ -750,6 +780,10 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
   }.bind(this));
 }
 
+// This function is the main process for ethernet.
+// TODO - cleanup indentation below
+// Basically, it looks for media to be plugged or unplugged, and applies the correct
+// configuration accordingly.
 EdisonNetworkManager.prototype.runEthernet = function(){
   var self = this;
   function checkEthernetState(){
@@ -763,7 +797,7 @@ EdisonNetworkManager.prototype.runEthernet = function(){
                 ipaddress : status.ipv4_address,
                 last_seen : Date.now()
             }
-	    this.networkInfo.wired = status.ipv4_address;
+      this.networkInfo.wired = status.ipv4_address;
             } catch(e) {
                 log.warn('Could not save ethernet address in network history.')
             }
