@@ -409,7 +409,7 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   network_config.wifi.mode = 'station';
   network_config.wifi.wifi_networks = [{'ssid' : ssid, 'password' : password}];
   config.updater.set('network', network_config);
-  jedison('join wifi --ssid="' + ssid + '" --password="' + password + '"', function(err, result) {
+  jedison('join wifi --ssid="' + ssid + '" --password="' + password.replace('$','\\$') + '"', function(err, result) {
     if(err) {
         log.error(err);
     }
@@ -471,7 +471,7 @@ EdisonNetworkManager.prototype.applyWifiConfig = function() {
 // Initialize the network manager.  This kicks off the state machines that process commands from here on out
 EdisonNetworkManager.prototype.init = function() {
   log.info('Initializing network manager...');
-  jedison("init --name='" + config.updater.get('name') + "' --password='" + config.updater.get('password') + "'", function(err, data) {
+  jedison("init --name='" + config.updater.get('name') + "' --password='" + config.updater.get('password').replace('$','\\$') + "'", function(err, data) {
     log.info('Applying network configuration...');
     this.applyNetworkConfig();
     log.info('Running wifi...');
