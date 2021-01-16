@@ -1,3 +1,11 @@
+/*
+ * util.js
+ * 
+ * This module includes a bunch of miscellaneous utiltiy functions.
+ *
+ * Note that it has the same name as nodes internal util module.
+ * Node's util is included with require('util') and this module with require('./util')
+ */
 var path = require('path');
 var log = require('./log').logger('util');
 var fs = require('fs');
@@ -16,6 +24,11 @@ var MethodNotAllowedError = errors.MethodNotAllowedError;
 var NotAuthorizedError = errors.NotAuthorizedError;
 var ResourceNotFoundError = errors.ResourceNotFoundError;
 
+// Run a function that returns a promise.  If that promise rejects, 
+// retry the function at the specified interval for the specified number of retries.
+//        fn - The function to run
+//   retries - The number of retries (0 means don't retry at all)
+//   timeout - The amount of time in milliseconds to wait before retrying
 function retry(fn, retries, timeout) {
     retries = retries || 0;
     timeout = timeout || 0;
@@ -40,7 +53,7 @@ function retry(fn, retries, timeout) {
     }
 }
 
-
+// Turn a non-list thing into a list
 function listify(x) {
     if(x instanceof Array) {
         return x;
@@ -49,17 +62,22 @@ function listify(x) {
     }
 }
 
+// Execute a command in the shell, and call the provided callback with the data from stdout
+//   command - The command to execute in the shell
+//  callback - The callback
 function doshell(command, callback){
     exec(command, function(error, stdout, stderr) {
         callback(stdout);
     });
 }
 
-/*
- * Conduct the specified shell operation, and return a promise that resolves upon completion of the command.
- * If the command was successful (0 error code) the promise resolves with all the stdout data from the process.
- * If the command fails (nonzero error code) the promise rejects with all the stderr data from the process.
- */
+
+// Conduct the specified shell operation, and return a promise that resolves upon completion of the command.
+// If the command was successful (0 error code) the promise resolves with all the stdout data from the process.
+// If the command fails (nonzero error code) the promise rejects with all the stderr data from the process.
+//   command - The command to execute
+//  options - Command options
+//      slient - If true, don't log this command
 function doshell_promise(command, options) {
     var deferred = Q.defer();
     options = options || {};
@@ -86,6 +104,8 @@ function doshell_promise(command, options) {
     return deferred.promise;
 }
 
+// Merge the two objects a and b, extending a with keys/values from b
+//   force - if true, add keys to be that are not in a.  Otherwise only update keys already in a
 function extend(a,b, force) {
     for(k in b) {
         if(a.hasOwnProperty(k) || force) {
@@ -106,11 +126,14 @@ function extend(a,b, force) {
     }
 }
 
+// Return only the filename for the provided path
+// TODO - Is this silly?
 exports.filename = function(pathname) {
     parts = pathname.split(path.sep);
     return parts[parts.legnth-1];
 };
 
+// Create a unique filename with the same path/extension as the provided filename
 var createUniqueFilename = function (filename) {
     var extension = (/[.]/.exec(filename)) ? /[^.]+$/.exec(filename) : undefined;
     return uuid.v1() + (extension ? ('.' + extension) : '');
@@ -221,6 +244,7 @@ var move = function (src, dest, cb) {
 	});
 };
 
+// restify serveStatic shim
 function serveStatic(opts) {
     opts = opts || {};
     /*
@@ -340,7 +364,9 @@ function serveStatic(opts) {
     return (serve);
 }
 
+// Return a directorey tree that is the result of walking the tree provided by filename
 // TODO better error handling here
+//   filename - The root of the walk
 function walkDir(filename) {
     var stats = fs.lstatSync(filename),
         info = {
@@ -363,6 +389,9 @@ function walkDir(filename) {
 
     return info;
 }
+
+// Clean up the provided JSON data.
+// TODO - This function is insane and nobody should ever need it
 
 function fixJSON(json) {
     var retval = {};
@@ -389,11 +418,17 @@ function fixJSON(json) {
     }
     return retval;
 }
+
+// Given a restify request object, return the client's address
+//   req - The request to examine
 var getClientAddress = function (req) {
         return (req.headers['x-forwarded-for'] || '').split(',')[0]
         || req.connection.remoteAddress;
 };
 
+// Quit this process, replacing it with a new process created by exeucting the provided command
+//   command - The command to run
+//      args - List of arguments for the command
 function eject(command, args) {
     var child = require('child_process').spawn(command, args, {
       detached: true,

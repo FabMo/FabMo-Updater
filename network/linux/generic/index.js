@@ -1,3 +1,11 @@
+/*
+ * 
+ * network/linux/generic/index.js
+ *
+ * This is the generic network manager, meant to work on most linux systems.
+ * As such, it's blank!  Just minimal functions for now.
+ * Future manager could detect the network manager being used by the system
+ * and deal with that layer appropriately.
 var log = require('../../../log').logger('network');
 var doshell = require('../../../util').doshell
 var config = require('../../../config');

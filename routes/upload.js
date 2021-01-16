@@ -1,3 +1,11 @@
+/*
+ * routes/upload.js
+ *
+ * Provides a route handler for uploading.
+ * The route handling for uploads is special because it provides a mechanism
+ * for multi-file uploads with rich file and overall-upload metadata.
+ */
+
 var log = require('../log').logger('routes');
 var fs = require('fs');
 var uuid = require('node-uuid');
@@ -16,6 +24,12 @@ UPLOAD_TIMEOUT = 3600000;
     ]
  * }
  */
+
+// Create an upload based on the provided upload metadata
+// upload metadata comes with the first POST request in the upload sequence.
+// Returns a key that will be used to identify this upload in future calls
+//   metadata - The upload metadata
+//       TODO - We don't actually do anything with `callback` should eliminate it.
 function createUpload(metadata, callback) {
     var key = uuid.v1();
     log.info('Creating upload ' + key);
@@ -29,6 +43,9 @@ function createUpload(metadata, callback) {
     return key;
 }
 
+// Set a timeout for the specified upload
+//       key - The upload to set a timeout for
+//   timeout - The upload timeout in milliseconds
 function setUploadTimeout(key, timeout) {
     if(UPLOAD_INDEX[key].timeout) {
         clearTimeout(UPLOAD_INDEX[key].timeout);
@@ -39,6 +56,8 @@ function setUploadTimeout(key, timeout) {
     }, timeout);
 }
 
+// Expire this upload
+// This is done when it is assumed that the client has abandoned the upload
 function expireUpload(key) {
     var upload = UPLOAD_INDEX[key];
     if(upload && upload.timeout) {
@@ -50,6 +69,10 @@ function expireUpload(key) {
     }
 }
 
+// Update the specified upload with the provided file
+//     key - The upload to update
+//   index - The index of the file (what order in the sequence of uploaded files is this)
+//    file - Path to the uploaded file
 function updateUpload(key, index, file) {
     if(key in UPLOAD_INDEX) {
         setUploadTimeout(key, UPLOAD_TIMEOUT);
@@ -71,6 +94,11 @@ function updateUpload(key, index, file) {
     throw new Error('Invalid upload key: ' + key);
 }
 
+// Route handler for complex uploads
+// If the request has a `files` attribute, it is assumed to be delivering a file as a part of an upload
+// If not, it is assumed to be a file metadata POST.
+// In the case of the latter, a new upload is created, and the upload key is sent in the response
+// In the case of the former, the file is absorbed (if a valid upload key has been provided) and a success response is sent 
 function upload(req, res, next, callback) {
     if(req.files) { // File upload type post
         var file = req.files.file;

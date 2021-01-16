@@ -1,3 +1,17 @@
+/*
+ * fmp.js
+ * 
+ * This package defines the functions for dealing with fmp packages.
+ *
+ * An .fmp (FabMo Package) is a package that is used to deliver updates to a 
+ * FabMo instance.  A FabMo package is just a tarball with a manifest that explains
+ * how files in the archive should be installed, and what commands should be executed
+ * pre- and post-installation.  Rather than a detailed explanation or specification
+ * here, to learn about the package manifest format, look at the `example` directory
+ * that is in the same directory as this file.  It contains a few example packages.  
+ * For more detail about the kinds of operations that are supported by .fmp files, 
+ * check out `fmp_operations.js`
+ */
 var Q = require('q');
 var fs = require('fs-extra');
 var fmpOperations = require('./fmp_operations');
@@ -13,8 +27,22 @@ var https = require('https');
 var fs = require('fs-extra');
 var util = require('../util');
 var request = require('request');
+
+// TODO - this is platform specific
 var TEMP_DIRECTORY = '/tmp';
 
+// Parse a version string, and return an object that describes details of the version number
+// Example:
+//   parseVersion('v2.3.3-g20ec0a1-rc') -> 
+//      {
+//	       dirty:false, 
+//           scm:'git', 
+//          hash:'20ec0a1',
+//          type:'rc',
+//         major:2,
+//         minor:3,
+//         patch:3
+//		}
 function parseVersion(v) {
 	var retval = {
 		'dirty' : false,
@@ -79,12 +107,14 @@ function parseVersion(v) {
 
 // Compare two semantic version strings, which can be of the form 1.2.3, v1.2.3, V 1.2.3, etc.
 // Returns 1 for a > b, 0 for equal, and -1 for a < b
+// A released version is always considered to be "greater" than a dev/rc version
 function compareVersions(a,b) {
 	a = parseVersion(a);
 	b = parseVersion(b);
 	if(a.type === 'release' && b.type !== 'release') {
 		return (b.type === 'dev') || (b.type === 'rc') ? 1 : -1;
 	} else if(b.type === 'release' && a.type !== 'release') {
+		// TODO: This looks like a bug to me
 		return (a.type === 'dev') || (b.type === 'rc') ? -1 : 1;
 	}
 	if(a.major === b.major) {
@@ -102,6 +132,7 @@ function compareVersions(a,b) {
 	}
 }
 
+// Compare two products, indicating which one is of higher update priority
 function compareProducts(a,b) {
 	if(a.product === 'FabMo-Updater') {
 		return b.product === 'FabMo-Updater' ? 0 : -1;
@@ -113,10 +144,13 @@ function compareProducts(a,b) {
 }
 
 // Return a promise that fulfills with a registry object loaded from the provided URL
+// Returns a promise that resolves with the parsed packages list (or rejects with an error)
+//   url - The url from which to retrieve the list of packages
 function fetchPackagesList(url) {
 	log.info('Retrieving a list of packages from ' + url)
 	var deferred = Q.defer();
 	try {
+		// TODO - Magic number - pull this timeout out
 		request(url, {timeout: 5000}, function (error, response, body) {
 		  	if(error) {
 		  		return deferred.reject(error);
@@ -141,6 +175,8 @@ function fetchPackagesList(url) {
 
 // Given the filename for a package manifest, return a promise that fulfills with the manifest object
 // Basic checks are performed on the manifest to determine whether or not it is legitimate
+// Returns a promise that resolves with the parsed/cleaned up manifest or rejects with an error
+//   filename - Full path to the manifest file
 function loadManifest(filename) {
 	log.info('Loading the package manifest ' + filename);
 	var deferred = Q.defer()
@@ -185,7 +221,9 @@ function loadManifest(filename) {
 	return deferred.promise;
 }
 
-// Given a filename, unpack the update into a temporary directory.  Return a promise that fulfills with the path to the package manifest
+// Given a filename, unpack the update into a temporary directory.  
+// Return a promise that fulfills with the path to the package manifest (or rejects with error)
+//   filename - Full path to the package to unpack
 function unpackPackage(filename) {
 	log.info('Unpacking update from '  + filename);
 	var deferred = Q.defer();
@@ -210,7 +248,9 @@ function unpackPackage(filename) {
 	return deferred.promise;
 }
 
-// Execute an operation object found in the package manifest.  Return a promise that resolves with the result of the operation.
+// Execute an operation object found in the package manifest.  
+// Return a promise that resolves with the result of the operation.
+//   operation - The operation object.  See fmp_operations.js for viable operations
 function executeOperation(operation) {
 	var deferred = Q.defer();
 	try {
@@ -228,6 +268,7 @@ function executeOperation(operation) {
 }
 
 // Execute the operations in the provided manifest in sequence. Return a promise that resolves with the package manifest object.
+//   manifest - Parsed manifest containing the operations to execute.
 function executeOperations(manifest) {
 	var deferred = Q.defer();
 	var cwd = manifest.cwd
@@ -251,6 +292,7 @@ function executeOperations(manifest) {
 
 // Delete the token file specified by the provided package manifest.  Do nothing if there is no token file specified.
 // Return a promise that resolves with the manifest object
+//   manifest - Parsed manifest object that may or may not contain a token attribute
 function clearToken(manifest) {
 	var deferred = Q.defer();
 
@@ -269,6 +311,7 @@ function clearToken(manifest) {
 
 // Create the token file specified by the provided package manifest.  Do nothing if there is no token file specified.
 // Return a promise that resolves with the manifest object
+//   manifest - Parsed manifest object that may or may not contain a token attribute
 function setToken(manifest) {
 	var deferred = Q.defer();
 
@@ -285,6 +328,9 @@ function setToken(manifest) {
 	return deferred.promise;
 }
 
+// Stop the named service specified
+//   service - The system service to stop
+//   callback - Callback with null or error if there was an error.
 function stopService(service, callback) {
 	log.info('Stopping service ' + service)
 
@@ -292,15 +338,23 @@ function stopService(service, callback) {
 	return hooks.stopService(service).then(callback).done();
 }
 
+// Start the named service specified
+// TODO: Above, in startService we return the return value of hooks.stopService, which is nothing
+//       These two function should be symmetrical,  minimally, and they should maybe return promises?
+//   service - The system service to start
+//   callback - Callback with null or error if there was an error.
 function startService(service, callback) {
 	log.info('Starting service ' + service)
 	var hooks = require('../hooks');
 	hooks.startService(service).then(callback).done();
 }
 
+// Stop all the services in the provided manifest.
+// Returns a promise that resolves with the manifest object
+//   manifest - Manifest object containing the list of services to stop
 function stopServices(manifest) {
 	var deferred = Q.defer();
-	if (manifest && manifest.services.length > 0) {
+	if (manifest && manifest.services && manifest.services.length > 0) {
 		log.info('Stopping services');
 		async.mapSeries(
 			manifest.services,
@@ -316,10 +370,13 @@ function stopServices(manifest) {
 	return deferred.promise
 }
 
+// Start all the services in the provided manifest.
+// Returns a promise that resolves with the manifest object
+//   manifest - Manifest object containing the list of services to start
 function startServices(manifest) {
 	var deferred = Q.defer();
 	try {
-		if (manifest && manifest.services.length > 0) {
+		if (manifest && manifest.services && manifest.services.length > 0) {
 			log.info('Starting services');
 			async.mapSeries(
 				manifest.services,
@@ -339,6 +396,9 @@ function startServices(manifest) {
 	return deferred.promise
 }
 
+// Unlock the installation
+// Return a promise that resolves with the manifest object
+//   manifest - The parsed manifest object.  Not used, but pass through for promise chaining
 function unlock(manifest) {
 	try {
 		if(manifest) {
@@ -351,6 +411,9 @@ function unlock(manifest) {
 	}
 }
 
+// Lock the installation
+// Return a promise that resolves with the manifest object
+//   manifest - The parsed manifest object.  Not used, but pass through for promise chaining
 function lock(manifest) {
 	try {
 		log.info('Locking the installation');
@@ -360,6 +423,8 @@ function lock(manifest) {
 	}
 }
 
+// Install a package from the provided file
+//   package - Path to the package file
 function installPackage(package) {
 	if(!package || !package.local_filename) {
 		return Q();
@@ -367,6 +432,10 @@ function installPackage(package) {
 	return installPackageFromFile(package.local_filename);
 }
 
+// Install a package from the provided file
+// Return a promise that resolves with the manifest object
+// TODO - why the redundancy with installPackage above (do we really need both?)
+//   package - Path to the package file
 function installPackageFromFile(filename) {
 	if(!filename) {
 		return Q();
@@ -377,6 +446,10 @@ function installPackageFromFile(filename) {
 
 }
 
+// Install a package that has already been unpacked.
+// Return a promise that resolves with the manifest object (or rejects with an error) 
+// after installation is complete (or fails).
+//   manifest_filename - Full path to the manifest file in the root directory of the package. 
 function installUnpackedPackage(manifest_filename) {
 	var manifest;
 
@@ -396,9 +469,31 @@ function installUnpackedPackage(manifest_filename) {
 		});
 }
 
+// Filter the list of packages in a registry down to only packages that meet certain criteria
+// This is used mainly to take a package registry that might contain entries for multiple products
+// and platforms, and cut it down to only packages that are relevant to this maching.
+// Packages are returned in update priority order, which means for packages that are the same product
+// the highest-version-numbered version is first in the list.  For packages that are different products,
+// The product that should be updated first is first.  See `compareVersions` and `compareProducts` for
+// a primer on how this works.
+//   options - Options maps keys to values that represent packages that are allowable.
+//             Example 1:  filterPackages(registry, {os : 'linux', platform : 'edison'})
+//                         would return a list of packages appropriate to a linux/edison installation
+//             Example 2:  filterPackages(registry, {product : 'FabMo-Engine'}))
+//                         would return a list of packages only for the engine. (Regardless of platform)
+//             Special Values: Option values can be '*' which would allow for any value of that attribut
+//                             Option values can also be multiple values, separated by '|' characters
+//             Example 3:  filterPackages(registry, {product : 'FabMo-Engine|FabMo-Updater', })
+//                         would return a list of packages only for the engine OR the updater.
 function filterPackages(registry, options) {
+	// If we didn't get a sane input, return a list of no packages
+	// TODO - I'm sure there's a reason not to throw an exception here, but it might
+	//        make more sense to raise an error if we were called with something that isn't registry-like
 	if(!registry || !registry.packages) { return []; }
+
+	// 
 	var packages = registry.packages.filter(function(package) {
+		// This function returns true if a package is to be kept, based on its attributes
 		for(var key in options) {
 			if(options.hasOwnProperty(key)) {
 				try {
@@ -406,6 +501,7 @@ function filterPackages(registry, options) {
 					var accept = false;
 					for(var i=0; i<allowed.length; i++) {
 						var field = allowed[i];
+						// Accept this package if keys match
 						if(field === package[key] || package[key] === '*') {
 							accept = true;
 							break;
@@ -419,8 +515,12 @@ function filterPackages(registry, options) {
 				}
 			}
 		}
+		// TODO This should probably be false?  This reads as an 'accept' type filter above, so 
+		// if we pass *no* options above, it should reject everything?
 		return true;
 	});
+
+    // Packages are returned in update-priority order
 	return packages
 		.sort(function(a,b) {
 			if(a.product === b.product) {
@@ -431,6 +531,10 @@ function filterPackages(registry, options) {
 		.reverse();
 }
 
+// Given a package metadata object (from the package registry)
+// Download the actual package file (specified by package.url)
+// Return a promise that resolves with the package object
+//   package - Package metadata object from the package registry.  (Anything with a 'url' attribute will do)
 function downloadPackage(package) {
 	// Deal with insane package
 	if(!package) {return Q();}
@@ -440,7 +544,11 @@ function downloadPackage(package) {
 	}
 
 	var deferred = Q.defer();
+	// TODO this is a magic path - this should be specified in the settings somewhere
+	//      (or defined up at the top of this file, or passed in as an argument)
 	var filename = "/opt/fabmo/update.fmp";
+
+	// Kick off the package download with request
 	log.info('Starting download of ' + package.url);
 	var file = fs.createWriteStream(filename);
 	var statusCode;
@@ -461,6 +569,7 @@ function downloadPackage(package) {
       			if(statusCode !== 200) {
       				return deferred.reject(new Error(statusCode + ' ' + statusMessage));
       			}
+      			// Resolve with the package object
 	  			log.info('Download of ' + package.url + ' is complete.')
   				package.local_filename = filename;
   				deferred.resolve(package);
@@ -471,6 +580,9 @@ function downloadPackage(package) {
 }
 
 // Check the package source for an available update that is appropriate for the provided constraints
+// This check is constrained to the current platform and OS.
+// Returns a promise that resolves with the next available package to install (or rejects with an error)
+//   product - The product for which updates are being checked.
 function checkForAvailablePackage(product) {
 	var updateSource = config.updater.get('packages_url');
 	var OS = config.platform;
@@ -554,7 +666,6 @@ function checkForAvailablePackage(product) {
 				// If so, return it, or return nothing if not
 				if(newerPackageAvailable) {
 					log.info("A newer package update is available!");
-					console.log(updates[0])
 					return deferred.resolve(updates[0]);
 				}
 				return deferred.resolve();

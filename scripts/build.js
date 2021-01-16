@@ -6,9 +6,10 @@
  *
  * Releases are done through github using the github Release API.
  *
- * The process goes like this:
- * 1. Checkout the appropriate release for the specified product
- * 2. Check
+ * Related files in this directory:
+ *    engine.json - Package manifest template for engine builds
+ *   updater.json - Package manifest template for updater builds
+ *      github.js - Some functions for communicating with the github release API 
  */
 var exec = require('child_process').exec;
 var Q = require('q');
@@ -19,7 +20,7 @@ var github = require('./github');
 var fmp = require('../fmp');
 var util = require('../util');
 var log = require('../log').logger('build');
-//require('longjohn');
+//require('longjohn'); // Used for logging, not for production
 
 var buildDate = new Date().toISOString();
 log.info('Build date: ' + buildDate);
@@ -110,6 +111,7 @@ if(versionNumber) {
 } else {
     commitish = branch
 }
+var message = argv['m'] || null;
 
 var manifest = {};
 var md5;
@@ -151,10 +153,10 @@ function clean() {
 
 function getLatestReleasedVersion() {
 	if(buildType === 'release' && !versionNumber) {
-		return doshell('git tag --sort=v:refname | tail -1', {cwd : reposDirectory})
+		return doshell('git tag --sort=v:refname | tail -2', {cwd : reposDirectory})
 			.then(function(v) {
-				versionNumber = v.trim();
-                commitish = versionNumber;
+				versionNumber = v.split('\n')[0].trim();
+                		commitish = versionNumber;
 				releaseName = versionNumber;
 			});
 	} else {
@@ -393,6 +395,7 @@ function publishGithubRelease() {
 		return github.getCredentials()
 			.then(function(creds) {
 				githubCredentials = creds;
+				githubCredentials.message = message;
 			})
 			.then(function() {
 				if(releaseName === 'dev' || releaseName === 'release_candidate') {

@@ -1,3 +1,9 @@
+/*
+ * fmp/index.js
+ *
+ * Package-level functions exposed for the FMP package manager.
+ * See fmp.js for how this package works
+ */
 var fmp = require('./fmp');
 
 exports.installPackage = fmp.installPackage;

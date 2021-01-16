@@ -1,3 +1,10 @@
+/*
+ * routes/engine.js
+ *
+ * Functions for managing the state of the FabMo engine.
+ *
+ * TODO - These routes are no longer used by the updater.  Maybe remove them?
+ */
 var log = require('../log').logger('routes');
 var hooks = require('../hooks');
 

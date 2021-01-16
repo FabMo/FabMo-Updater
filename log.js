@@ -1,13 +1,27 @@
-/**
- * log.js is a "Poor man's" logging module.  It provides basic colorized logging using named
- * loggers with selectable log levels.
+/*
+ * log.js 
+ *
+ * A "Poor man's" logging module.  It provides basic colorized logging using named
+ * loggers with selectable log levels.  It provides log events so the log can be streamed
+ * to updater client instances via a websocket.  (It drives the updater console in the updater UI)
  */
 var process = require('process');
 try { var colors = require('colors'); } catch(e) {var colors = false;}
+
+// Internal variable that can be set to suppress logging
 var _suppress = false;
+
+// Internal buffer for log lines (each entry in the array is a line)
 var log_buffer = [];
-var LOG_BUFFER_SIZE = 5000;
+
+// Listeners for log events
 var listeners = {'any':[]};
+
+// Index of all the Logger objects that have been created.
+var logs = {};
+
+// Number of lines to keep in the log buffer
+var LOG_BUFFER_SIZE = 5000;
 
 // String versions of the allowable log levels
 LEVELS = {
@@ -22,6 +36,8 @@ LEVELS = {
 LOG_LEVELS = {
 };
 
+// Sets the global logging level to the provided numeric or named value
+//   lvl - A numeric log level.  See LEVELS above for levels and names. 
 function setGlobalLevel(lvl){
 	if (lvl)
 	{
@@ -55,10 +71,10 @@ var Logger = function(name) {
 	this.name = name;
 };
 
-// Index of all the Logger objects that have been created.
-var logs = {};
 
 // Output the provided message with colorized output (if available) and the logger name
+//   level - The log level (name)
+//     msg - The actual string to log.
 Logger.prototype.write = function(level, msg) {
 	if(_suppress) {
 		return;
@@ -128,6 +144,7 @@ Logger.prototype.debug = function(msg) { this.write('debug', msg);};
 Logger.prototype.info = function(msg) { this.write('info', msg);};
 Logger.prototype.warn = function(msg) { this.write('warn', msg);};
 
+// When used to log an `Error` object, this function logs a stack trace too, to make debugging easier
 Logger.prototype.error = function(msg) {
 	if(msg && msg.stack) {
 		this.write('error', msg.stack);
@@ -136,6 +153,7 @@ Logger.prototype.error = function(msg) {
 	}
 };
 
+// This logs a stack trace, for debugging
 Logger.prototype.stack = function(msg) {
 	var stackTrace = new Error().stack;
 	stackTrace = stackTrace.split('\n');
@@ -143,6 +161,7 @@ Logger.prototype.stack = function(msg) {
 	this.write('debug', 'Stack Trace:\n' + stackTrace);
 }
 
+// Handle uncaught exceptions (print information to the shell before failing completely)
 Logger.prototype.uncaught = function(err) {
 	if(colors) {
 		console.log("UNCAUGHT EXCEPTION".red.underline);
@@ -164,11 +183,14 @@ var logger = function(name) {
 	}
 };
 
+// TODO - re-evaluate this.  catching uncaughtException without exiting the process is a dangerous game
 process.on('uncaughtException', function(err) { Logger.prototype.uncaught(err); });
 
+// Functions to turn on/off logging
 var suppress = function(v) {_suppress = true;};
 var unsuppress = function(v) {_suppress = false;};
 
+// Return the contents of the log buffer as one big string
 var getLogBuffer = function() {
 	return log_buffer.join('\n');
 };
@@ -177,6 +199,9 @@ var clearLogBuffer = function() {
 	log_buffer = [];
 }
 
+// Bind to the provided event.
+//       evt - Named event.  The only supported event is `any` which fires when anything is logged
+//   handler - Called with the event target (log message) whenever an event fires
 var on = function(evt, handler) {
 	if(evt in listeners) {
 		listeners[evt].push(handler);

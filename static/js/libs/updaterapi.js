@@ -1,6 +1,13 @@
+/*
+ * updaterapi.js
+ *
+ * Defines an object (UpdaterAPI) that wraps up the REST/ws API with the updater server
+ */
 var PING_TIMEOUT = 1000;
 
+// The UpdaterAPI object is what we use to talk to the updater server
 var UpdaterAPI = function() {
+	// Collection of listeners for all event types
 	this.events = {
 		'status' : [],
 		'disconnect' : [],
@@ -8,6 +15,8 @@ var UpdaterAPI = function() {
 		'log' : []
 	};
 	var url = window.location.origin;
+	// TODO - https support?!  We should finish it or remove it.
+	//        default port should also be 81 (not 80) ?
 	var port = location.port || (location.protocol === 'https:' ? '443' : '80');
 
 	this.base_url = url.replace(/\/$/,'');
@@ -17,10 +26,17 @@ var UpdaterAPI = function() {
 	this._initializeWebsocket();
 }
 
+// Return the URL of the engine instance for this host
 UpdaterAPI.prototype.getEngineURL = function() {
 	return this.engine_url;
 }
 
+// Start the websocket connection
+// The websocket drives several events:
+//          log - Emitted whenever there's a log message from the server
+//      connect - Emitted when websocket connects to the server
+//   disconnect - Emitted when websocket connection is lost
+//       status - Emitted when the updater server sends a status update
 UpdaterAPI.prototype._initializeWebsocket = function() {
 	localStorage.debug = false
 	try {
@@ -51,12 +67,16 @@ UpdaterAPI.prototype._initializeWebsocket = function() {
 		});
 
 		this.socket.on('status', function(status) {
-			this._setStatus(status);
+			this.status = status;
 			this.emit('status', status)
 		}.bind(this));
 	}
 }
 
+// Emit an event
+// TODO this is an internal function and _emit might be a better function name
+//    evt - The event name to emit
+//   data - The data to send with the event (argument to handler) 
 UpdaterAPI.prototype.emit = function(evt, data) {
 	var handlers = this.events[evt];
 	if(handlers) {
@@ -66,16 +86,17 @@ UpdaterAPI.prototype.emit = function(evt, data) {
 	}
 }
 
+// Bind a listener to the specified event
+//   message - The event name
+//      func - The event handler
 UpdaterAPI.prototype.on = function(message, func) {
 	if(message in this.events) {
 		this.events[message].push(func);
 	}
 }
 
-UpdaterAPI.prototype._setStatus = function(status) {
-	this.status = status;
-}
-
+// Ping on the websocket, to check connection.  Will fail after PING_TIMEOUT if no response
+//   callback - Called with the round-trip time for the ping, in milliseconds or error
 UpdaterAPI.prototype.ping = function(callback) {
 	if(this.socket) {
 		var start = Date.now();
@@ -92,22 +113,27 @@ UpdaterAPI.prototype.ping = function(callback) {
 	}
 }
 
-
-UpdaterAPI.prototype._setStatus = function(status) {
-	this.status = status;
-}
+//
+// The functions below are just wrappers for setting/retrieving data from the specified endpoints.
+// Unless otherwise specified:
+//   Getters are called back with the JSON data retrieved (or error)
+//   Setters are called back with the JSON data that was set (or error)
 
 // Status
 UpdaterAPI.prototype.getStatus = function(callback) {
 	this._get('/status', callback, callback, 'status');
 }
+// Request status over the websocket.  (It will come back as a status event)
 UpdaterAPI.prototype.requestStatus = function() {
 	this.socket.emit('status');
 }
+
+// Tasks
 UpdaterAPI.prototype.getTasks = function(callback) {
 	this._get('/tasks', callback, callback, 'tasks');
 }
 
+// Configuration
 UpdaterAPI.prototype.getConfig = function(callback) {
 	this._get('/config', callback, callback, 'config');
 }
@@ -118,19 +144,25 @@ UpdaterAPI.prototype.setConfig = function(cfg_data, callback) {
 	});
 }
 
+// Engine Info/Status
 UpdaterAPI.prototype.getEngineInfo = function(callback) {
 	this._get('/info', callback, callback, 'info', true); // Engine
 }
-
 UpdaterAPI.prototype.getEngineStatus = function(callback) {
 	this._get('/status', callback, callback, 'status', true); // Engine
 }
 
+// Submit a Manual Update File
+//       fmu - The file object to send
+//   options - TODO this isn't used we should factor it out
+//  callback - Called with an error if there's an error
+//  progress - Called with progress updates while upload commences.  Argument for this function is 0.0-1.0
 UpdaterAPI.prototype.submitManualUpdate = function(fmu, options, callback, progress) {
 	this._postUpload('/update/manual', fmu, {}, callback, callback, null, progress);
 }
 
 // Updates
+// TODO - Obsolete?
 UpdaterAPI.prototype.getVersions = function(callback) {
 	this._get('/update/versions', callback, callback, 'versions');
 }
@@ -149,6 +181,7 @@ UpdaterAPI.prototype.installEngine = function(version, callback) {
 
 
 // Engine management
+// TODO - Obsolete?
 UpdaterAPI.prototype.startEngine = function(callback) {
 	this._post('/engine/start', {}, callback, callback);
 }
@@ -160,6 +193,7 @@ UpdaterAPI.prototype.restartEngine = function(callback) {
 }
 
 // System management
+// TODO - Obsolete?
 UpdaterAPI.prototype.shutdown = function(callback) {
 	this._post('/system/shutdown', {}, callback, callback);
 }
@@ -230,6 +264,9 @@ UpdaterAPI.prototype.checkForUpdates = function(callback) {
 	this._post('/update/check', {}, callback, callback);
 }
 
+// INTERNAL METHODS BELOW HERE
+
+// Function for normalizing form data for file submit
 function makeFormData(obj, default_name, default_type) {
 	if (obj instanceof jQuery){ //if it's a form
 		var file = (obj.find('input:file'))[0].files[0];

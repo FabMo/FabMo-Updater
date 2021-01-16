@@ -1,10 +1,11 @@
+/*
+ * config/log.js
+ *
+ * Routes for dealing with the updater system log.
+ */
 var log = require('../log');
 
-/**
- * @apiGroup Log
- * @api {get} /log Get log
- * @apiDescription Get the contents of the debug log
- */
+// Retrieve the log (plain text)
 var getLog = function(req, res, next) {
   body = log.getLogBuffer();
   res.setHeader('content-type', 'text/plain');
@@ -12,13 +13,7 @@ var getLog = function(req, res, next) {
   res.send(body);
 };
 
-/**
- * @apiGroup Log
- * @api {delete} /log Clear log
- * @apiDescription Clear the debug log.
- * @apiSuccess {String} status `success`
- * @apiSuccess {Object} data null
- */
+// Clear the log buffer
 var clearLog = function(req, res, next) {
     var answer = {
         status:"success",

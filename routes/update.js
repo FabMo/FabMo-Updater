@@ -1,7 +1,13 @@
+/*
+ * routes/update.js
+ *
+ * Routes related to actually performing software updates
+ */
 var log = require('../log').logger('routes');
 var updater = require('../updater');
 var upload = require('./upload').upload;
 
+// TODO: OBSOLETE?!
 var getVersions = function(req, res, next) {
     updater.getVersions(function(err, versions) {
 	  if(err) {
@@ -73,6 +79,9 @@ var updateFirmware = function(req, res, next) {
     });
 };
 */
+
+// Initiate the factory reset
+// TODO - should this be a two step thing?  Big operation, here.
 var factoryReset = function(req, res, next) {
     updater.factoryReset(function(err, data) {
 	  if(err) {
@@ -87,6 +96,8 @@ var factoryReset = function(req, res, next) {
     });	
 }
 
+// Retrieve the current list of updater tasks
+// (This includes tasks that have recently completed)
 var getTasks = function(req, res, next) {
 	res.json({
 		status : "success",
@@ -94,6 +105,7 @@ var getTasks = function(req, res, next) {
  	});
 }
 
+// Post a FMP manually and apply it immediately
 var doManualUpdate = function(req, res, next) {
 	upload(req, res, next, function(err, upload) {
         log.info("Upload complete");
@@ -125,6 +137,8 @@ var doManualUpdate = function(req, res, next) {
     });
 }
 
+// Trigger the application of the next prepared update (if there is one)
+// Respond with the task ID of the update process
 var applyPreparedUpdates = function(req, res, next) {
 	updater.applyPreparedUpdates(function(err, data) {
 		if(err) {
@@ -139,6 +153,7 @@ var applyPreparedUpdates = function(req, res, next) {
 	});
 }
 
+// Trigger a check for new updates
 var check = function(req, res, next) {
 	updater.runAllPackageChecks();
 	res.json( {
@@ -150,6 +165,7 @@ var check = function(req, res, next) {
 }
 
 module.exports = function(server) {
+  // TODO - See above
   server.get('/update/versions', getVersions);
   server.get('/tasks', getTasks);
   //server.post('/update/engine', updateEngine);
@@ -157,9 +173,7 @@ module.exports = function(server) {
   //server.post('/update/firmware', updateFirmware);
   //server.post('/install/engine', installEngine);
   server.post('/update/factory', factoryReset);
-
   server.post('/update/manual', doManualUpdate);
   server.post('/update/apply', applyPreparedUpdates);
   server.post('/update/check', check);
-
 };

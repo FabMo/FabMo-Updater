@@ -1,3 +1,10 @@
+/*
+ * routes/system.js
+ *
+ * Routes for system level things like rebooting/shutting down this host.
+ *
+ * TODO: These functions are no longer used (but useful) - remove them?
+ */
 var log = require('../log').logger('routes');
 var hooks = require('../hooks');
 

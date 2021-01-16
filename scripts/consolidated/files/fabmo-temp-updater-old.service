@@ -1,0 +1,10 @@
+[Unit]
+Description=One time updater consolidated update
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /tmp/do-consolidated-update.sh
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

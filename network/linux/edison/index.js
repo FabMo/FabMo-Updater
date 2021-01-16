@@ -1,3 +1,8 @@
+/*
+ * network/linux/edison/index.js
+ *
+ * Network manager for the intel edison
+ */
 var log = require('../../../log').logger('network');
 var os = require('os');
 var config = require('../../../config')
@@ -27,11 +32,16 @@ var tmpPath = os.tmpdir() + '/';
 
 var DEFAULT_NETMASK = "255.255.255.0";
 var DEFAULT_BROADCAST = "192.168.1.255"
+// This is how long the system will wait for DHCP before going into "magic mode" (ms)
 var DHCP_MAGIC_TTL = 5000;
 var ETHERNET_SCAN_INTERVAL = 2000;
 var NETWORK_HEALTH_RETRIES = 8;
 var NETWORK_HEALTH_RETRY_INTERVAL = 1500;
 
+// This function calls an external network management script called `jedison` which is a 
+// fork of the management script provided by intel for the edison that accepts all of its commands
+// and prints all of its outputs in JSON format.  It is located in the /scripts directory.
+// TODO : Thanks to `wpa_cli` - this function (and the script it calls) might be obsolete?  Good riddance if so.
 function jedison(cmdline, callback) {
     var callback = callback || function() {}
     doshell('./network/linux/edison/jedison ' + cmdline, function(s) {
@@ -59,13 +69,15 @@ var EdisonNetworkManager = function() {
   this.network_health_retries = NETWORK_HEALTH_RETRIES;
   this.network_history = {};
   this.networkInfo = {
-  	wireless: null,
-	  wired : null
+    wireless: null,
+    wired : null
   };
 }
 util.inherits(EdisonNetworkManager, NetworkManager);
 
 // return an object containing {ipaddress:'',mode:''}
+//   interface - Interface name to get the info for
+//    callback - Called back with the info or error if there was an error
 EdisonNetworkManager.prototype.getInfo = function(interface,callback) {
   //jedison('get wifi-info', callback);
   ifconfig.status(interface,function(err,ifstatus){
@@ -77,88 +89,93 @@ EdisonNetworkManager.prototype.getInfo = function(interface,callback) {
   })
 }
 
+// Return a list of IP addresses (the local IP for all interfaces)
 EdisonNetworkManager.prototype.getLocalAddresses = function() {
-	var retval = [];
-	try {
-		if(this.networkInfo.wireless) {
-			retval.push(this.networkInfo.wireless);
-		}
-		if(this.networkInfo.wired) {
-			retval.push(this.networkInfo.wired);
-		}
-		log.debug('Returning a list of local addresses: ' + retval);
-		return retval;
-	} catch(e) {
-		return retval;
-	}
+  var retval = [];
+  try {
+    if(this.networkInfo.wireless) {
+      retval.push(this.networkInfo.wireless);
+    }
+    if(this.networkInfo.wired) {
+      retval.push(this.networkInfo.wired);
+    }
+    log.debug('Returning a list of local addresses: ' + retval);
+    return retval;
+  } catch(e) {
+    return retval;
+  }
 }
 
-// return an object formatted like this :
+// Get the current "scan results"
+// (A list of wifi networks that are visible to this client)
+//   callback - Called with the network list or with an error if error
 EdisonNetworkManager.prototype.getNetworks = function(callback) {
   //jedison('get networks', callback);
   wpa_cli.scan_results(wifiInterface, callback);
 }
 
+// Intiate a wifi network scan (site survey)
+//   callback - Called when scan is complete (may take a while) or with error if error
 EdisonNetworkManager.prototype.scan = function(callback) {
   wpa_cli.scan(wifiInterface, callback);
 }
 
+// This function defines a state machine that runs as long as wifi is in managed mode
 EdisonNetworkManager.prototype.runWifi = function() {
-    if(this.command) {
-  switch(this.command.cmd) {
-    case 'join':
-      var ssid = this.command.ssid;
-      var pw = this.command.password;
-      this.command = null;
-      this.wifiState = 'idle';
-      this.mode = 'unknown';
-      this._joinWifi(ssid,pw,function(err, data) {
-        this.runWifi();
-      }.bind(this));
-      break;
-
-    case 'ap':
-      this.command=null;
-      this.wifiState = 'idle'
-      this.mode = 'unknown'
-      this._joinAP(function(err, data) {
-        this.runWifi();
-      }.bind(this));
-      break;
-    case 'noap':
-      this.command = null;
-      this.wifiState = 'idle'
-      this.mode = 'unknown'
-      this._unjoinAP(function(err, data) {
-        this.runWifi();
-      }.bind(this));
-      break;
-    case 'off':
-      this.command = null;
-      this.wifiState = 'off'
-      this.mode = 'off'
-      if(this.wifiStatus != 'disabled') {
-        this._disableWifi(function(err, data) {
-            if(err) { log.error(err); }
-            this.wifiStatus = 'disabled';
-            this.runWifi();
+  if(this.command) {
+    switch(this.command.cmd) {
+      case 'join':
+        var ssid = this.command.ssid;
+        var pw = this.command.password;
+        this.command = null;
+        this.wifiState = 'idle';
+        this.mode = 'unknown';
+        this._joinWifi(ssid,pw,function(err, data) {
+          this.runWifi();
         }.bind(this));
-      } else {
-        setTimeout(this.runWifi.bind(this), 1000);
-      }
-      break;
-   case 'on':
-      this.command = null;
-      this.wifiState = 'idle'
-      this.mode = 'idle'
-      this.turnWifiOn(function() {
-         this.runWifi();
-      }.bind(this));
-      break;
+        break;
 
-  }
-  return;
-}
+      case 'ap':
+        this.command=null;
+        this.wifiState = 'idle'
+        this.mode = 'unknown'
+        this._joinAP(function(err, data) {
+          this.runWifi();
+        }.bind(this));
+        break;
+      case 'noap':
+        this.command = null;
+        this.wifiState = 'idle'
+        this.mode = 'unknown'
+        this._unjoinAP(function(err, data) {
+          this.runWifi();
+        }.bind(this));
+        break;
+      case 'off':
+        this.command = null;
+        this.wifiState = 'off'
+        this.mode = 'off'
+        if(this.wifiStatus != 'disabled') {
+          this._disableWifi(function(err, data) {
+              if(err) { log.error(err); }
+              this.wifiStatus = 'disabled';
+              this.runWifi();
+          }.bind(this));
+        } else {
+          setTimeout(this.runWifi.bind(this), 1000);
+        }
+        break;
+     case 'on':
+        this.command = null;
+        this.wifiState = 'idle'
+        this.mode = 'idle'
+        this.turnWifiOn(function() {
+           this.runWifi();
+        }.bind(this));
+        break;
+    } //switch(this.command)
+    return;
+  } // if(this.command)
   switch(this.mode) {
     case 'ap':
       this.runWifiAP();
@@ -176,25 +193,30 @@ EdisonNetworkManager.prototype.runWifi = function() {
       this.wifiState = 'idle';
       this.getInfo(wifiInterface,function(err, data) {
         if(!err) {
-         var old_mode = this.mode;
-         log.info("Wireless mode is '" + data.mode + "'");
-         if(data.mode == 'managed') {this.mode = 'station';}
-         else if(data.mode == 'master') { this.mode = 'ap';}
-         else { log.warn('Unknown network mode: ' + data.mode)}
-         if(this.mode != old_mode) {
-		setImmediate(this.runWifi.bind(this));
-         }else{
-           setTimeout(this.runWifi.bind(this), 5000);
-    }
-  } else {
-        setTimeout(this.runWifi.bind(this), 5000);
-}
+          var old_mode = this.mode;
+          log.info("Wireless mode is '" + data.mode + "'");
+          if(data.mode == 'managed') {
+            this.mode = 'station';
+          } else if(data.mode == 'master') { 
+            this.mode = 'ap';
+          } else { 
+            log.warn('Unknown network mode: ' + data.mode)
+          }
 
+          if(this.mode != old_mode) {
+            setImmediate(this.runWifi.bind(this));
+          } else{
+            setTimeout(this.runWifi.bind(this), 5000);
+          }
+        } else { 
+          setTimeout(this.runWifi.bind(this), 5000);
+        } // if(!err)
       }.bind(this));
       break;
   }
 }
 
+// This function defines a state machine that runs as long as wifi is in station (AP) mode
 EdisonNetworkManager.prototype.runWifiStation = function() {
   switch(this.wifiState) {
     case 'idle':
@@ -245,49 +267,51 @@ EdisonNetworkManager.prototype.runWifiStation = function() {
 
     case 'check_network':
       this.getInfo(wifiInterface,function(err, data) {
-        var networkOK = true;
-        if(!err) {
-          if(data.ipaddress === '?' || data.ipaddress === undefined) {
+          var networkOK = true;
+          if(!err) {
+            if(data.ipaddress === '?' || data.ipaddress === undefined) {
+              networkOK = false;
+            }
+            if(data.mode === 'master') {
+              log.info("In master mode...");
+              this.mode = 'ap';
+              this.wifiState = 'idle';
+              this.emit('network', {'mode' : 'ap'})
+              setImmediate(this.runWifi.bind(this));
+            }
+          } else {
             networkOK = false;
           }
-          if(data.mode === 'master') {
-            log.info("In master mode...");
-            this.mode = 'ap';
+          if(networkOK) {
             this.wifiState = 'idle';
-            this.emit('network', {'mode' : 'ap'})
+            this.wifiStatus = 'enabled';
+            this.networkInfo.wireless = data.ipaddress;
+            this.network_history[data.ssid] = {
+              ssid : data.ssid,
+              ipaddress : data.ipaddress,
+              last_seen : Date.now()
+            }
             setImmediate(this.runWifi.bind(this));
-          }
-        } else {
-          networkOK = false;
+          } else {
+            log.warn("Network health in question...");
+            log.warn(JSON.stringify(data));
+            if(this.network_health_retries == 0) {
+                log.error("Network is down.  Going to AP mode.");
+                this.network_health_retries = NETWORK_HEALTH_RETRIES;
+                this.joinAP();
+                setImmediate(this.runWifi.bind(this));
+            } else {
+               this.network_health_retries--;
+               setTimeout(this.runWifi.bind(this),NETWORK_HEALTH_RETRY_INTERVAL);
+            }
         }
-        if(networkOK) {
-          this.wifiState = 'idle';
-          this.wifiStatus = 'enabled';
-          this.networkInfo.wireless = data.ipaddress;
-	  this.network_history[data.ssid] = {
-            ssid : data.ssid,
-            ipaddress : data.ipaddress,
-            last_seen : Date.now()
-          }
-          setImmediate(this.runWifi.bind(this));
-        } else {
-          log.warn("Network health in question...");
-	  log.warn(JSON.stringify(data));
-          if(this.network_health_retries == 0) {
-              log.error("Network is down.  Going to AP mode.");
-              this.network_health_retries = NETWORK_HEALTH_RETRIES;
-              this.joinAP();
-              setImmediate(this.runWifi.bind(this));
-    } else {
-             this.network_health_retries--;
-             setTimeout(this.runWifi.bind(this),NETWORK_HEALTH_RETRY_INTERVAL);
-    }
-  }
-      }.bind(this));
+      }.bind(this)); // this.getInfo()
       break;
   }
 }
 
+// Periodic network check for wifi mode
+// TODO - probably should be _runWifiAP
 EdisonNetworkManager.prototype.runWifiAP = function() {
   switch(this.wifiState) {
     default:
@@ -304,12 +328,17 @@ EdisonNetworkManager.prototype.runWifiAP = function() {
 }
 
 
+// Issue the command to join AP mode
+// Function returns immediately
 EdisonNetworkManager.prototype.joinAP = function() {
   this.command = {
     'cmd' : 'ap',
   }
 }
 
+// Actually do the work of joining AP mode
+// Uses jedison to switch modes
+//   callback - Called once in AP mode, or with error if error
 EdisonNetworkManager.prototype._joinAP = function(callback) {
   log.info("Entering AP mode...");
   var network_config = config.updater.get('network');
@@ -323,18 +352,24 @@ EdisonNetworkManager.prototype._joinAP = function(callback) {
   });
 }
 
+// Issue the command to turn on wifi
+// Function returns immediately
 EdisonNetworkManager.prototype.enableWifi = function(){
   this.command = {
     'cmd' : 'on'
   }
 }
 
+// Issue the command to turn off wifi
+// Function returns immediately
 EdisonNetworkManager.prototype.disableWifi = function(){
   this.command = {
     'cmd' : 'off'
   }
 }
 
+// Actually do the work to turn off wifi
+//   callback - called once wifi is disabled, or with error if error
 EdisonNetworkManager.prototype._disableWifi = function(callback){
   log.info("Disabling wifi...");
   //var network_config = config.updater.get('network');
@@ -348,9 +383,13 @@ EdisonNetworkManager.prototype._disableWifi = function(callback){
       }
       callback(err, result);
     });
-});
+    });
 }
 
+// Issue the command to join wifi with the provided key and password
+// Function returns immediately
+//       ssid - The network to join
+//   password - The network key
 EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
   this.command = {
     'cmd' : 'join',
@@ -359,6 +398,10 @@ EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
   }
 }
 
+// Do the actual work of joining a wifi network
+//       ssid - The network to join
+//   password - The network key
+//   callback - Called when wifi is joined, or with error if error
 EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   var self = this;
   log.info("Attempting to join wifi network: " + ssid + " with password: " + password);
@@ -366,7 +409,7 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   network_config.wifi.mode = 'station';
   network_config.wifi.wifi_networks = [{'ssid' : ssid, 'password' : password}];
   config.updater.set('network', network_config);
-  jedison('join wifi --ssid="' + ssid + '" --password="' + password + '"', function(err, result) {
+  jedison('join wifi --ssid="' + ssid + '" --password="' + password.replace('$','\\$') + '"', function(err, result) {
     if(err) {
         log.error(err);
     }
@@ -377,12 +420,16 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   }.bind(this));
 }
 
+// Issue the command to drop out of AP (and implicitly join the last remembered network)
+// Function returns immediately
 EdisonNetworkManager.prototype.unjoinAP = function() {
   this.command = {
     'cmd' : 'noap'
   }
 }
 
+// Do the actual work of dropping out of AP mode
+//   callback - Callback called when AP mode has been exited or with error if error
 EdisonNetworkManager.prototype._unjoinAP = function(callback) {
   jedison('unjoin', function(err, result) {
     if(err) {
@@ -392,6 +439,9 @@ EdisonNetworkManager.prototype._unjoinAP = function(callback) {
   });
 }
 
+// Apply the wifi configuration.  If in AP, drop out of AP (and wifi config will be applied automatically)
+// If in station mode, join the wifi network specified in the network configuration.
+// Function returns immediately
 EdisonNetworkManager.prototype.applyWifiConfig = function() {
   var network_config = config.updater.get('network');
   switch(network_config.wifi.mode) {
@@ -407,7 +457,9 @@ EdisonNetworkManager.prototype.applyWifiConfig = function() {
       }
       break;
     case 'off':
-      //this.disableWifi(); //TODO : discuss about this issue. it may be not recommended to do this as a reboot would remove wifi and the tool would be lost if you don't have a ethernet access.
+      // TODO - discuss about this issue. it may be not recommended to do this as a 
+      //        reboot would remove wifi and the tool would be lost if you don't have a ethernet access.
+      // ;this.disableWifi(); 
       break;
   }
 }
@@ -416,25 +468,35 @@ EdisonNetworkManager.prototype.applyWifiConfig = function() {
  * PUBLIC API BELOW HERE
  */
 
+// Initialize the network manager.  This kicks off the state machines that process commands from here on out
 EdisonNetworkManager.prototype.init = function() {
   log.info('Initializing network manager...');
-  jedison("init --name='" + config.updater.get('name') + "' --password='" + config.updater.get('password') + "'", function(err, data) {
+  jedison("init --name='" + config.updater.get('name') + "' --password='" + config.updater.get('password').replace('$','\\$') + "'", function(err, data) {
     log.info('Applying network configuration...');
-      this.applyNetworkConfig();
+    this.applyNetworkConfig();
     log.info('Running wifi...');
     this.runWifi();
     this.runEthernet();
   }.bind(this));
 }
 
+// Get a list of the available wifi networks.  (The "scan results")
+//   callback - Called with list of wifi networks or error if error
 EdisonNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
+  // TODO should use setImmediate here
   callback(null, this.networks);
 }
 
+// Connect to the specified wifi network.
+//   ssid - The network ssid to connect to
+//    key - The network key
 EdisonNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback) {
+  // TODO a callback is passed here, but is not used.  If this function must have a callback, we should setImmediate after issuing the wifi command
   this.joinWifi(ssid, key, callback);
 }
 
+// Enable the wifi
+//   callback - Called when wifi is enabled or with error if error
 EdisonNetworkManager.prototype.turnWifiOn=function(callback){
   //callback(new Error('Not available on the edison wifi manager.'));
     ifconfig.status(wifiInterface,function(err,status){
@@ -450,26 +512,39 @@ EdisonNetworkManager.prototype.turnWifiOn=function(callback){
   }.bind(this));
 }
 
+// Disable the wifi
+//   callback - Called when wifi is disabled or with error if error
 EdisonNetworkManager.prototype.turnWifiOff=function(callback){
   //callback(new Error('Not available on the edison wifi manager.'));
   this.disableWifi();
 }
 
+// Get the history of connected wifi networks
+//   callback - Called with a list of networks
 EdisonNetworkManager.prototype.getWifiHistory=function(callback){
   callback(null, this.network_history);
 }
 
+// Enter AP mode
+//   callback - Called once the command has been issued (but does not wait for the system to enter AP)
 EdisonNetworkManager.prototype.turnWifiHotspotOn=function(callback){
   log.info("Entering AP mode...")
   this.joinAP();
   callback(null);
 }
 
+// Get network status
+//   callback - Called with network status or with error if error
 EdisonNetworkManager.prototype.getStatus = function(callback) {
   ifconfig.status(callback);
   //var status = {'wifi' : {}}
 }
 
+// Set the network identity
+// This sets the hostname, SSID to `name` and the root password/network key to `password`
+//    identity - Object of this format {name : 'thisismyname', password : 'thisismypassword'}
+//               Identity need not contain both values - only the values specified will be changed
+//    callback - Called when identity has been changed or with error if error
 EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
   async.series([
     function set_name(callback) {
@@ -519,31 +594,43 @@ EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
   );
 }
 
+// Check to see if this host is online
+//   callback - Called back with the online state, or with error if error
 EdisonNetworkManager.prototype.isOnline = function(callback) {
   setImmediate(callback, null, this.mode === 'station');
 }
 
-
-//Ethernet section
+// Turn the ethernet interface on
+//   callback - Called when the ethernet interface is up or with error if error
 EdisonNetworkManager.prototype.turnEthernetOn=function(callback) {
   ifconfig.up(ethernetInterface,callback);
 }
 
+// Turn the ethernet interface off
+//   callback - Called when the ethernet interface is up or with error if error
 EdisonNetworkManager.prototype.turnEthernetOff=function(callback) {
   ifconfig.down(ethernetInterface,callback);
 }
 
-// interface specific - static addressing
+// Enable DHCP for the provided interface
+//   interface - The interface to update
+//   callback - Called when complete, or with error if error
 EdisonNetworkManager.prototype.enableDHCP=function(interface, callback) {
 log.debug('Enabling DHCP on ' + interface);
 udhcpc.enable({interface: interface},callback)
 }
 
+// Disable DHCP for the provided interface
+//   interface - The interface to update
+//    callback - Called when complete, or with error if error
 EdisonNetworkManager.prototype.disableDHCP=function(interface, callback) {
 log.debug('Disabling DHCP on ' + interface);
   udhcpc.disable(interface,callback);
 }
 
+// Start the internal DHCP server on the provided interface
+//   interface - The interface on which to start the DHCP server
+//    callback - Called when the DHCP server has been started, or with error if error
 EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
   var ethernet_config = config.updater.get('network').ethernet;
   var options = {
@@ -560,10 +647,17 @@ EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
   udhcpd.enable(options,callback);
 }
 
+// Stop the internal DHCP server on the provided interface
+//   interface - The interface on which to stop the DHCP server
+//    callback - Called when the DHCP server has been stopped, or with error if error
 EdisonNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
   udhcpd.disable({interface:interface,tmpPath:tmpPath},callback);
 }
 
+// Set the ip address for the provided interface to the provided value
+//   interface - The interface to update
+//          ip - The IP address, eg: '192.168.44.50'
+//    callback - Called when the address has been set or with error if error
 EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
   if(!ip)return callback("no ip specified !");
   ifconfig.status(interface, function(err, status) {
@@ -578,6 +672,10 @@ EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
   });
 }
 
+// Set the netmask for the provided interface to the provided value
+//   interface - The interface to update
+//     netmask - The netmask, eg: '255.255.255.0'
+//    callback - Called when the netmask has been set or with error if error
 EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback) {
   if(!netmask)return callback("no netmask specified !");
   ifconfig.status(interface, function(err, status) {
@@ -592,18 +690,27 @@ EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback)
     ifconfig.up(options, callback);
   });
 }
-
+// Set the gateway IP for the provided interface to the provided value
+//   interface - The interface to update
+//     gateway - The gateway, eg: '255.255.255.0'
+//    callback - Called when the gateway has been set or with error if error
 EdisonNetworkManager.prototype.setGateway=function(gateway, callback) {
   doshell('route add default gw '+ gateway, function(s) {
     callback(null);
   });
 }
 
+// Take the configuration stored in the network config and apply it to the currently running instance
+// This function returns immediately
 EdisonNetworkManager.prototype.applyNetworkConfig=function(){
   this.applyWifiConfig();
+  // TODO - Why is this commented out?
 //  this.applyEthernetConfig();
 }
 
+// Take the ethernet configuration stored in the network config and apply it to the currently running instance
+// TODO - Cleanup indentation below
+// This function returns immediately (but takes a while to complete)
 EdisonNetworkManager.prototype.applyEthernetConfig=function(){
   var self = this;
   var ethernet_config = config.updater.get('network').ethernet;
@@ -613,8 +720,10 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
         self.disableDHCP.bind(this,ethernetInterface),
         self.stopDHCPServer.bind(this,ethernetInterface)
       ],function(err,results){
-        if(err)log.warn(err);
-	this.emit('network', {'mode':'ethernet'});
+        if(err) {
+          log.warn(err);
+        }
+        this.emit('network', {'mode':'ethernet'});
         log.info("ethernet is in "+ethernet_config.mode+" mode");
         switch(ethernet_config.mode) {
           case 'static':
@@ -641,11 +750,11 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
                 ifconfig.status(ethernetInterface,function(err,status){
                   if(err)log.warn(err);
                   if(status.ipv4_address!==undefined) {// we got a lease !
-                    	this.networkInfo.wired = status.ipv4_address;
-		  	log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
-                    	return;
-		  }
-		  else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
+                      this.networkInfo.wired = status.ipv4_address;
+        log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
+                      return;
+      }
+      else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
                     async.series([
                       self.disableDHCP.bind(this,ethernetInterface),
                       self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
@@ -671,6 +780,10 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
   }.bind(this));
 }
 
+// This function is the main process for ethernet.
+// TODO - cleanup indentation below
+// Basically, it looks for media to be plugged or unplugged, and applies the correct
+// configuration accordingly.
 EdisonNetworkManager.prototype.runEthernet = function(){
   var self = this;
   function checkEthernetState(){
@@ -684,7 +797,7 @@ EdisonNetworkManager.prototype.runEthernet = function(){
                 ipaddress : status.ipv4_address,
                 last_seen : Date.now()
             }
-	    this.networkInfo.wired = status.ipv4_address;
+      this.networkInfo.wired = status.ipv4_address;
             } catch(e) {
                 log.warn('Could not save ethernet address in network history.')
             }

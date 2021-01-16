@@ -1,6 +1,20 @@
+/*
+ * do_update.js
+ *
+ * This module is the main module for the "simple updater"
+ */
+
 var updater = new UpdaterAPI();
 var updateTask = null;
 var seenStatus = false;
+
+// Set the UI spinner based on the state of the updater
+// This is the big full-screen display that shows the spinnder and text message
+//     state - One of busy,success,failed,idle
+//   options - Options for state:
+//             title - The page title
+//           message - Text message to display
+//          message2 - Secondary message 
 function setState(state, options) {
 	options = options || {};
 	var icon = $('#icon');
@@ -38,6 +52,8 @@ function setState(state, options) {
 
 }
 
+// Set the state of the UI to "failed"
+//   err - Error message to display
 function fail(err) {
 	return setState('failed', {
 		title : 'Update Failed.',
@@ -46,6 +62,7 @@ function fail(err) {
 	});
 }
 
+// Set the state of the UI to "success"
 function succeed() {
 	return setState('success', {
 		title : 'Update was Successful!',
@@ -54,8 +71,10 @@ function succeed() {
 }
 
 $(document).ready(function() {
+	// Set the initial state
 	setState('idle');
 
+	// When a status report comes in:
 	updater.on('status', function(status) {
 		if(!updateTask) {
 			// First status report, no update task has been started
@@ -66,11 +85,15 @@ $(document).ready(function() {
 						message : 'No new updates are available.<br /><a href="' + document.referrer + '">Click here to exit the updater.</a>'
 					})
 				}
+				// Kick off the update process
 				updater.applyPreparedUpdates(function(err, data) {
 					if(err) {
 						return fail(err);
 					}
+					// Remember the ID of the task we started, so we can watch for it to finish
 					updateTask = (data || {}).task;
+
+					// Set the busy spinner while we're updating
 					setState('busy', {
 						title : 'System is Updating',
 						message : 'Please wait while your system is updated.'
@@ -81,12 +104,13 @@ $(document).ready(function() {
 		} else {
 			// Update task has been started
 			if(status.state === 'idle') {
-				// And possibly completed, if we're idle again.
+				// And possibly completed, if we're idle again.  Get the task list and check
 				updater.getTasks(function(err, data) {
 					if(err) {
 						return fail(err);
 					}
 					// Check the state of the one and only one task that we run per page-load.
+					// (the one we recorded above)
 					if(updateTask in data) {
 						if(data[updateTask] === 'success') {
 							return succeed();

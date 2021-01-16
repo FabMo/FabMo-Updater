@@ -1,3 +1,10 @@
+/*
+ * nework/darwin/generic/index.html
+ *
+ * Network module for Mac OS X.  Actually does rudimentary network management!
+ *
+ * It can at least scan for networks.
+ */
 var log = require('../../../log').logger('network');
 var doshell = require('../../../util').doshell
 var parseString = require('xml2js').parseString;
