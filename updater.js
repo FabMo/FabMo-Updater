@@ -814,10 +814,11 @@ Updater.prototype.start = function(callback) {
             log.info('Setting up the webserver...');
             var server = restify.createServer({name:'FabMo Updater'});
             this.server = server;
-
+log.info('...server=1')
             // Handle options request in firefox
             function unknownMethodHandler(req, res) {
             if (req.method.toLowerCase() === 'options') {
+log.info('...server=2')
                 var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
 
                 if (res.methods.indexOf('OPTIONS') === -1) res.methods.push('OPTIONS');
@@ -830,9 +831,11 @@ Updater.prototype.start = function(callback) {
                 return res.send(204);
             }
             else
+log.info('...server=3')
                 return res.send(new restify.MethodNotAllowedError());
             }
             server.on('MethodNotAllowed', unknownMethodHandler);
+log.info('...server=3')
             
             // Allow JSON over Cross-origin resource sharing
             log.info('Configuring cross-origin requests...');
@@ -857,6 +860,7 @@ Updater.prototype.start = function(callback) {
 
             // Configure local directory for uploading files
             log.info("Configuring upload directory...");
+
             server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
             server.pre(restify.pre.sanitizePath());
 
