@@ -493,7 +493,7 @@ function UpdaterConfigFirstTime(callback) {
                         config.updater.set('name', hostname);
                         callback();
                     })
-                }else{
+                } else {
                 require('./util').getCpuInfo(function(err,cpus){
                 if(err) return log.warn(err);
                 for( c in cpus ){
@@ -516,7 +516,7 @@ function UpdaterConfigFirstTime(callback) {
 
                             }
                         }                  
-                    });
+                });
             }
             } catch(e) {
             log.error(e);
@@ -814,11 +814,9 @@ Updater.prototype.start = function(callback) {
             log.info('Setting up the webserver...');
             var server = restify.createServer({name:'FabMo Updater'});
             this.server = server;
-log.info('...server=1')
             // Handle options request in firefox
             function unknownMethodHandler(req, res) {
             if (req.method.toLowerCase() === 'options') {
-log.info('...server=2')
                 var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
 
                 if (res.methods.indexOf('OPTIONS') === -1) res.methods.push('OPTIONS');
@@ -831,12 +829,10 @@ log.info('...server=2')
                 return res.send(204);
             }
             else
-log.info('...server=3')
                 return res.send(new restify.MethodNotAllowedError());
             }
             server.on('MethodNotAllowed', unknownMethodHandler);
-log.info('...server=3')
-            
+           
             // Allow JSON over Cross-origin resource sharing
             log.info('Configuring cross-origin requests...');
             server.use(
