@@ -291,7 +291,7 @@ def join_ap_mode():
         raise Exception("System already in AP mode")
     os.popen("systemctl stop wpa_supplicant && sleep 2 && systemctl restart hostapd && sleep 2")
     clear_network()
-    set_ap_boot_flag();
+    set_ap_boot_flag()
 
 def unjoin_ap_mode():
     info = get_wifi_info()

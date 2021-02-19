@@ -18,8 +18,8 @@ var fmp = require('./fmp');
 var config = require('./config');
 var util = require('./util');
 var hooks = require('./hooks');
-var network = require('./network');
-var GenericNetworkManager = require('./network/manager').NetworkManager;
+////## var network = require('./network');
+////## var GenericNetworkManager = require('./network/manager').NetworkManager;
 var doshell = require('./util').doshell;
 
 var crypto = require('crypto');
@@ -73,8 +73,8 @@ var Updater = function()
     // task status know what their status is.
     this.tasks = {};
 
-    // The default network manager is the generic one (until the network module has been asked to load one specific to this platform)
-    this.networkManager = network.Generic;
+////##    // The default network manager is the generic one (until the network module has been asked to load one specific to this platform)
+////##    this.networkManager = network.Generic;
     
     // If a task was passed in on the command line, we add it to the collection of tasks as one that is pending
     if(task) {
@@ -201,25 +201,27 @@ Updater.prototype.stop = function(callback) {
     callback(null);
 };
 
-// Update the engine
-// TODO - I think this is a legacy function that does the GIT update - should be removed - everything is done with .fmp files now
-Updater.prototype.updateEngine = function(version, callback) {
-    if(this.status.state != 'idle') {
-        callback(new Error('Cannot update the engine when in the ' + updater.status.state + ' state.'));
-    } else {
-        hooks.updateEngine(version, callback);
-    }
-}
+////##
+// // Update the engine
+// // TODO - I think this is a legacy function that does the GIT update - should be removed - everything is done with .fmp files now
+// Updater.prototype.updateEngine = function(version, callback) {
+//     if(this.status.state != 'idle') {
+//         callback(new Error('Cannot update the engine when in the ' + updater.status.state + ' state.'));
+//     } else {
+//         hooks.updateEngine(version, callback);
+//     }
+// }
 
-// Install a specific version of the engine
-// TODO - This is legacy code that should no longer be used.  The update process is done with .fmp files now.
-Updater.prototype.installEngine = function(version, callback) {
-    if(this.status.state != 'idle') {
-        callback(new Error('Cannot install the engine when in the ' + updater.status.state + ' state.'));
-    } else {
-        hooks.installEngine(version, callback);
-    }
-}
+////##
+// // Install a specific version of the engine
+// // TODO - This is legacy code that should no longer be used.  The update process is done with .fmp files now.
+// Updater.prototype.installEngine = function(version, callback) {
+//     if(this.status.state != 'idle') {
+//         callback(new Error('Cannot install the engine when in the ' + updater.status.state + ' state.'));
+//     } else {
+//         hooks.installEngine(version, callback);
+//     }
+// }
 
 // Initiate a factory reset
 // Since this program will be shut down when the reset is initiated, the callback is called before doing the actual reset.
@@ -260,6 +262,7 @@ Updater.prototype.updateFirmware = function(callback) {
     }
 }
 
+////## ?? FMU vs FMP
 // Execute the FMU package specified
 //   filename - The full path of the FMU file to run
 // TODO - This is legacy code that should no longer be used.  The update process is done with .fmp files now.
@@ -605,11 +608,14 @@ Updater.prototype.start = function(callback) {
                 callback();
             });
         },
-        function launchDetectionService(callback) {
-            log.info("Launching Detection Service...");
-            detection_service();
-            callback();
-        },
+
+////##
+        // function launchDetectionService(callback) {
+        //     log.info("Launching Detection Service...");
+        //     detection_service();
+        //     callback();
+        // },
+
         // Populate the updater config with some calculated values if this is the first time we've ever run
         function first_time_configure(callback) {
             if(!config.updater.userConfigLoaded) {
@@ -696,65 +702,68 @@ Updater.prototype.start = function(callback) {
           });
         }.bind(this),
 
-        // Initialize the network module
-        function setup_network(callback) {
+////##
+//         // // Initialize the network module
+//         function setup_network(callback) {
 
-            var OS = config.platform;
-            var PLATFORM = config.updater.get('platform');
-            try {
-                if(selfUpdateFile) {
-                    // If we were called with a self-update task - don't initialie a "real" network manager.  Network management
-                    // isn't needed during a self update because it's not a good idea to change networks during an update.  
-                    // Just use the `GenericNetworkManager` in that case - it will result in errors - but these are ignorable.
-                    this.networkManager = new GenericNetworkManager(OS, PLATFORM);
-                    return callback();
-                } else {
-                    this.networkManager = network.createNetworkManager();
-                }
-            } catch(e) {
-                log.warn(e);
-                this.networkManager = new GenericNetworkManager(OS, PLATFORM);
-            }
+//             var OS = config.platform;
+//             var PLATFORM = config.updater.get('platform');
+//             try {
+//                 if(selfUpdateFile) {
+//                     // If we were called with a self-update task - don't initialie a "real" network manager.  Network management
+//                     // isn't needed during a self update because it's not a good idea to change networks during an update.  
+//                     // Just use the `GenericNetworkManager` in that case - it will result in errors - but these are ignorable.
+//                     this.networkManager = new GenericNetworkManager(OS, PLATFORM);
+//                     return callback();
+//                 } else {
+// log.debug("... normal network startup from updater ###")
+//                     this.networkManager = network.createNetworkManager();
+//                 }
+//             } catch(e) {
+//                 log.warn(e);
+//                 this.networkManager = new GenericNetworkManager(OS, PLATFORM);
+//             }
 
-            // Listen to the network manager's "network" event (which is emitted each time a new network is joined)
-            // and when the event is encountered, initiate beacon reporting and update package checks
-            this.networkManager.on('network', function(evt) {
-                if(evt.mode === 'station' || evt.mode === 'ethernet') {
-                    // 30 Second delay is used here to make sure timesyncd has enough time to update network time
-                    // before trying to pull an update (https requests will fail with an inaccurate system time)
-                    log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')
-                    setTimeout(function() {
-                    log.info('Doing beacon report due to network change');
-                    this.beacon.setLocalAddresses(this.networkManager.getLocalAddresses());
-                    this.beacon.once('network');
-                        log.info('Running package check due to network change');
-                        this.runAllPackageChecks();
-                    }.bind(this), PACKAGE_CHECK_DELAY*1000);
-                }
-            }.bind(this));
+//             // Listen to the network manager's "network" event (which is emitted each time a new network is joined)
+//             // and when the event is encountered, initiate beacon reporting and update package checks
+//             this.networkManager.on('network', function(evt) {
+//                 if(evt.mode === 'station' || evt.mode === 'ethernet') {
+//                     // 30 Second delay is used here to make sure timesyncd has enough time to update network time
+//                     // before trying to pull an update (https requests will fail with an inaccurate system time)
+//                     log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')
+//                     setTimeout(function() {
+//                     log.info('Doing beacon report due to network change');
+//                     this.beacon.setLocalAddresses(this.networkManager.getLocalAddresses());
+//                     this.beacon.once('network');
+//                         log.info('Running package check due to network change');
+//                         this.runAllPackageChecks();
+//                     }.bind(this), PACKAGE_CHECK_DELAY*1000);
+//                 }
+//             }.bind(this));
 
-            // Call the network manager init function, which actually starts looking for networks, etc.
-            log.info('Setting up the network...');
-            try {
-                this.networkManager.init();
-                log.info('Network manager started.')
-            } catch(e) {
-                log.error(e);
-                log.error('Problem starting network manager:' + e);
-            }
+//             // Call the network manager init function, which actually starts looking for networks, etc.
+//             log.info('Looking for and setting up the network...');
+//             try {
+//                 this.networkManager.init();
+//                 log.info('Network manager started.')
+//             } catch(e) {
+//                 log.error(e);
+//                 log.error('Problem starting network manager:' + e);
+//             }
 
-            // Setup a recurring function that checks to see that the updater is online
-            var onlineCheck = function() {
-                this.networkManager.isOnline(function(err, online) {
-                    if(online != this.status.online) {
-                        this.setOnline(online);
-                    }
-                }.bind(this));
-            }.bind(this);
-            onlineCheck();
-            setInterval(onlineCheck,3000); // TODO - magic number, should factor out
-            return callback(null);
-        }.bind(this),
+//             // Setup a recurring function that checks to see that the updater is online
+// ////##
+//             // var onlineCheck = function() {
+//             //     this.networkManager.isOnline(function(err, online) {
+//             //         if(online != this.status.online) {
+//             //             this.setOnline(online);
+//             //         }
+//             //     }.bind(this));
+//             // }.bind(this);
+//             // onlineCheck();
+//             // setInterval(onlineCheck,3000); // TODO - magic number, should factor out
+//             return callback(null);
+//         }.bind(this),
 
         // Run any FMUS that are in the configuration fmus directory, in alphabetical order.
         // The FMU used to be the way that packages were updated, but because they weren't very
@@ -959,37 +968,38 @@ Updater.prototype.start = function(callback) {
         }
     }.bind(this),
 
+////##
     // Start the beacon service
-    function start_beacon(callback) {
-        var url = config.updater.get('beacon_url');
-        var consent = config.updater.get('consent_for_beacon');
+    // function start_beacon(callback) {
+    //     var url = config.updater.get('beacon_url');
+    //     var consent = config.updater.get('consent_for_beacon');
 
-        log.info("Starting beacon service");
-        this.beacon = new Beacon({
-            url : url,
-            interval : BEACON_INTERVAL
-        });
-        switch(consent) {
-            case "true":
-            case true:
-                        log.info("Beacon is enabled");
-                        this.beacon.set("consent_for_beacon", "true");
-                break;
+    //     log.info("Starting beacon service");
+    //     this.beacon = new Beacon({
+    //         url : url,
+    //         interval : BEACON_INTERVAL
+    //     });
+    //     switch(consent) {
+    //         case "true":
+    //         case true:
+    //                     log.info("Beacon is enabled");
+    //                     this.beacon.set("consent_for_beacon", "true");
+    //             break;
 
-            case "false":
-            case false:
-                log.info("Beacon is disabled");
-                        this.beacon.set("consent_for_beacon", "false");
-                break;
-            default:
-                log.info("Beacon consent is unspecified");
-                        this.beacon.set("consent_for_beacon", "true");
-                break;
-        }
+    //         case "false":
+    //         case false:
+    //             log.info("Beacon is disabled");
+    //                     this.beacon.set("consent_for_beacon", "false");
+    //             break;
+    //         default:
+    //             log.info("Beacon consent is unspecified");
+    //                     this.beacon.set("consent_for_beacon", "true");
+    //             break;
+    //     }
 
-        this.beacon.start();
+    //     this.beacon.start();
 
-    }.bind(this)
+    // }.bind(this)
     ],
         function(err, results) {
             if(err) {
