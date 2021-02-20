@@ -624,6 +624,8 @@ $(document).ready(function() {
   // Get the network ID for the current wifi network
   updater.getNetworkIdentity(function(err, id) {
     if(err) { console.error(err); return; }
+////## temp for start of v3
+    id.name = " --now handled in engine"
     $(".label-wifi-network-id").text(id.name);
   });
 
