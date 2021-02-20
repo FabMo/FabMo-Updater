@@ -24,11 +24,11 @@
     "prompt": "^1.0.0",
     "q": "1.4.1",
     "request": "2.75.0",
-    "restify": "4.0.x",
+    "restify": "^5.2.0",
     "socket.io": "1.3.7",
     "tough-cookie": "2.0.0",
-    "xml2js": "0.4.17",
-    "wireless-tools": "jlucidar/nodejs-network-tools"
+    "wireless-tools": "jlucidar/nodejs-network-tools",
+    "xml2js": "0.4.17"
   },
   "optionalDependencies": {
     "mraa": "1.0.0"
@@ -36,10 +36,10 @@
   "devDependencies": {
     "grunt": "0.4.5",
     "grunt-apidoc": "0.10.0",
-    "grunt-available-tasks": "0.6.0",
+    "grunt-available-tasks": "^0.6.3",
     "grunt-gh-pages": "0.10.0",
     "grunt-groc": "0.6.0",
-    "grunt-open": "0.2.3"
+    "grunt-open": "^0.2.4"
   },
   "engine": "node 0.10.x",
   "apidoc": {
