@@ -20,9 +20,9 @@ var mime = require('mime');
 var restify = require('restify');
 var errors = restify.errors;
 
-var MethodNotAllowedError = errors.MethodNotAllowedError;
-var NotAuthorizedError = errors.NotAuthorizedError;
-var ResourceNotFoundError = errors.ResourceNotFoundError;
+////var MethodNotAllowedError = errors.MethodNotAllowedError;
+////var NotAuthorizedError = errors.NotAuthorizedError;
+////var ResourceNotFoundError = errors.ResourceNotFoundError;
 
 // Run a function that returns a promise.  If that promise rejects, 
 // retry the function at the specified interval for the specified number of retries.

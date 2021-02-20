@@ -497,7 +497,7 @@ function UpdaterConfigFirstTime(callback) {
                         callback();
                     })
                 } else {
-                require('./util').getCpuInfo(function(err,cpus){
+    ////##            require('./util').getCpuInfo(function(err,cpus){
                 if(err) return log.warn(err);
                 for( c in cpus ){
                 if (cpus[c].Hardware === "BCM2708" || cpus[c].Hardware === "BCM2709"){
