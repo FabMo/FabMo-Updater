@@ -34,7 +34,8 @@ if(!('product' in argv)) {
 switch(argv.product) {
 	case 'engine':
 		var product = 'engine';
-		var reposDirectory = '/fabmo/engine';
+		var reposDirectory = '/fabmo';
+//		var reposDirectory = '/fabmo/engine';
 		var githubRepos = 'FabMo-Engine';
 		break;
 	case 'updater':
@@ -176,6 +177,9 @@ function getProductVersion() {
 		versionString = buildType === 'rc' ? candidateVersion : parts[0]
 		if(parts[2]) {
 			versionString += '-' + parts[2];
+
+log.info("verStep1- " + versionString)
+
 		    switch(buildType) {
                 case 'dev':
                     versionString += '-dev';
@@ -201,6 +205,7 @@ function getProductVersion() {
 }
 
 function checkout() {
+log.info("ver- " + versionString)
 	log.info("Checking out version " + commitish)
 	return doshell('git fetch origin --tags; git checkout ' + commitish, {cwd : reposDirectory});
 	return Q();
