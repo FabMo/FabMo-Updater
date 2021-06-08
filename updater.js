@@ -166,12 +166,12 @@ Updater.prototype.failTask = function(key) { this.finishTask(key, 'failed'); }
 //   state - The new state
 Updater.prototype.setState = function(state) {
     this.status.state = state || this.status.state;
-    // TODO - do we really need to check for online here?
-    this.status.online = this.networkManager.isOnline(function(online) {
-        // TODO call setOnline here?
-        this.status.online = online;
-        this.emit('status',this.status);
-    }.bind(this));
+    // // TODO - do we really need to check for online here?
+    // this.status.online = this.networkManager.isOnline(function(online) {
+    //     // TODO call setOnline here?
+    //     this.status.online = online;
+    //     this.emit('status',this.status);
+    // }.bind(this));
 }
 
 // Set the online flag (indicates whether the updater is online) to the provided value
