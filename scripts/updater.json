@@ -1,9 +1,9 @@
 {
 	"product" : "FabMo-Updater",
 	"os" : "linux",
-	"platform" : "edison",
-	"system" : "handibot",
-	"token" : "/fabmo/updater/install_token",
+	"platform" : "raspberrypi",
+	"system" : "dt",
+	"token" : "/fabmo-updater/install_token",
 	"repository" : "https://github.com/FabMo/FabMo-Updater",
 	"updaterNeeded" : "v2.0.0",
 	"services" : ["fabmo"],
@@ -11,13 +11,13 @@
 		{
 			"op" : "deleteFiles",
 			"paths" : [
-				"/fabmo/updater"
+				"/fabmo-updater"
 			]
 		},
 		{
 			"op" : "expandArchive",
 			"src" : "files.tar.gz",
-			"dest" : "/fabmo/updater"
+			"dest" : "/fabmo-updater"
 		}
 	]
 }

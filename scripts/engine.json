@@ -3,7 +3,7 @@
 	"os" : "linux",
 	"platform" : "edison",
 	"system" : "handibot",
-	"token" : "/fabmo/engine/install_token",
+	"token" : "/fabmo/install_token",
 	"repository" : "https://github.com/FabMo/FabMo-Engine",
 	"updaterNeeded" : "v2.0.0",
 	"services" : ["fabmo"],
@@ -11,17 +11,17 @@
 		{
 			"op" : "deleteFiles",
 			"paths" : [
-				"/fabmo/engine"
+				"/fabmo"
 			]
 		},
 		{
 			"op" : "expandArchive",
 			"src" : "files.tar.gz",
-			"dest" : "/fabmo/engine"
+			"dest" : "/fabmo"
 		},
 		{
 		    "op" : "installFirmware",
-		    "src" : "g2.bin"
+		    "src" : "g2core_101.57.24build_FabMo-G2"
 		},
         {
             "op" : "deleteFiles",

@@ -40,7 +40,7 @@ switch(argv.product) {
 		break;
 	case 'updater':
 		var product = 'updater';
-		var reposDirectory = '/fabmo/updater';
+		var reposDirectory = '/fabmo-updater';
 		var githubRepos = 'FabMo-Updater';
 		break;
 	default:

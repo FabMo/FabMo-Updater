@@ -397,7 +397,7 @@ function getCredentials() {
 	var deferred = Q.defer();
 	creds = null;
 	try {
-		creds = require('/fabmo/updater/scripts/credentials.json')
+		creds = require('/fabmo-updater/scripts/credentials.json')
 		creds.username;
 		creds.password;
 	} catch(e) {	
