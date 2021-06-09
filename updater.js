@@ -502,8 +502,8 @@ function UpdaterConfigFirstTime(callback) {
                 // if(err) return log.warn(err);
                 // for( c in cpus ){
                 // if (cpus[c].Hardware === "BCM2708" || cpus[c].Hardware === "BCM2709"){
-                //     log.info("RaspberryPi platform detected");
-                // config.updater.set('platform', 'raspberrypi');
+                //     log.info("Raspberry Pi platform detected");
+                // config.updater.set('platform', 'raspberry-pi');
                 //     hooks.getUniqueID(function(err, id) {
                 //         if(err) {
                 //             var id = '';
@@ -566,6 +566,9 @@ Updater.prototype.start = function(callback) {
         // can trip up the current version of the code, so we migrate that config file if we detect that
         function apply_config_shim(callback) {
             var updaterPath = config.getDataDir('config') + '/updater.json';
+
+log.debug("path- " + updaterPath);
+
             try {
                 fs.readFile(updaterPath, function(err, data) {
                     try {

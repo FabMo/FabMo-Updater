@@ -1,7 +1,7 @@
 {
 	"product" : "FabMo-Updater",
 	"os" : "linux",
-	"platform" : "raspberrypi",
+	"platform" : "raspberry-pi",
 	"system" : "dt",
 	"token" : "/fabmo-updater/install_token",
 	"repository" : "https://github.com/FabMo/FabMo-Updater",

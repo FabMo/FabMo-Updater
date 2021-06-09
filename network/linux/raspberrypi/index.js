@@ -45,7 +45,7 @@ var NETWORK_HEALTH_RETRY_INTERVAL = 1500;
 
 function jedison(cmdline, callback) {
     var callback = callback || function() {}
-    doshell('./network/linux/raspberrypi/jedison ' + cmdline, function(s) {
+    doshell('./network/linux/raspberry-pi/jedison ' + cmdline, function(s) {
 log.debug(cmdline)
         try {
 log.debug("AT JEDISON")

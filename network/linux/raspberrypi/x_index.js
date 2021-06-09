@@ -37,7 +37,7 @@ var WIFI_SCAN_RETRIES = 3;
 // TODO : Thanks to `wpa_cli` - this function (and the script it calls) might be obsolete?  Good riddance if so.
 function jedison(cmdline, callback) {
     var callback = callback || function() {}
-    doshell('./network/linux/raspberrypi/jedison ' + cmdline, function(s) {
+    doshell('./network/linux/raspberry-pi/jedison ' + cmdline, function(s) {
         try {
             j = JSON.parse(s)
             if(j.status == 'success') {
