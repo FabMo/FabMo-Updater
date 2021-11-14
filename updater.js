@@ -899,7 +899,7 @@ log.debug("path- " + updaterPath);
             server.use(authentication.passport.session());
 
             log.info('Enabling gzip for transport...');
-            server.use(restify.gzipResponse());
+            server.use(restify.plugins.gzipResponse());
 
             log.info('Configuring websocket...');
             server.io = socketio.listen(server.server);
