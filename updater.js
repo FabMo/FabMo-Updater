@@ -871,7 +871,8 @@ log.debug("path- " + updaterPath);
             // Configure local directory for uploading files
             log.info("Configuring upload directory...");
 
-            server.use(restify.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
+            // #### fixed name of bodyParser during updating of NPM
+            server.use(restify.plugins.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
             server.pre(restify.pre.sanitizePath());
 
             // Configure authentication via passport
