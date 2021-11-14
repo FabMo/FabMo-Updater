@@ -64,7 +64,7 @@ var scriptDirectory = path.resolve(__dirname);
 
 // Path to specific files
 var versionFilePath = path.resolve(stagingDirectory, 'version.json');
-var firmwarePath = path.resolve(reposDirectory, 'firmware/g2.bin');
+var firmwarePath = path.resolve(reposDirectory, 'firmware/g2core_101.57.24build_FabMo-G2.bin');
 
 // Package Destination
 var fmpArchivePath;

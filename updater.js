@@ -473,6 +473,7 @@ Updater.prototype.setTime = function(time, callback) {
 // from the local environment.  The updater configuration file initially contains the host ports, platform, etc
 // which can all be determined from system information, files on disk, etc.
 //   callback - Called with error if the file couldn't be created
+//// TODO Should not be getting anything from here ...
 function UpdaterConfigFirstTime(callback) {
     log.info('Configuring the updater for the first time...');
     switch(config.platform) {
