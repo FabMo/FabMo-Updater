@@ -28,7 +28,7 @@ var restify = require('restify');
 var async = require('async');
 var process = require('process');
 var path = require('path');
-var socketio = require('socket.io')
+////##var socketio = require('socket.io')
 var events = require('events');
 var util = require('util');
 var fs = require('fs-extra');
@@ -899,12 +899,16 @@ log.debug("path- " + updaterPath);
             server.use(authentication.passport.session());
 
             log.info('Enabling gzip for transport...');
+            //// ## another fix below
             server.use(restify.plugins.gzipResponse());
 
             log.info('Configuring websocket...');
-            server.io = socketio.listen(server.server);
             
+            ////## server.io = socketio.listen(server.server);
+            ////## changes below per RMackie engine.js
             log.info('Loading routes...');
+            
+            server.io = require('socket.io')(server.server);
             var routes = require('./routes')(server);
 
             // Kick off the server listening for connections
