@@ -57,9 +57,12 @@ module.exports = function(server) {
 	// Define a route for serving static files
 	// This has to be defined after all the other routes, or it plays havoc with things
 ////##	server.get(/.*/, restify.serveStatic({
-	server.get(/.*/, restify.plugins.serveStatic({
+////##		directory: './static',
+////##		default: 'index.html'
+	server.get('/.*/', restify.plugins.serveStatic({
 		directory: './static',
-		default: 'index.html'
+		default: 'index.html',
+		appendRequestPath: false
 	}));
 
 };
