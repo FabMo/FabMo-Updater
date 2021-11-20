@@ -916,7 +916,7 @@ log.debug("path- " + updaterPath);
                 log.info(server.name+ ' listening at '+ server.url);
                 callback(null, server);
             });
-
+log.debug("got to authentication");
             // TODO - why is this down here?
             authentication.configure();
 
