@@ -50,14 +50,11 @@ var onConnect = function(socket) {
   // Emit status and send the log buffer to the client on connect
   socket.emit('status', updater.status);
   socket.emit('log', log.getLogBuffer())
+
 };
 
 module.exports = function(server) {
-////##  server.io.on('connection', onConnect);
-////## quick test
-  server.io.of('/').on('connection', onPublicConnect);
-  server.io.of('/private').on('connection', onPrivateConnect);
-
+  server.io.on('connection', onConnect);
   setupBroadcasts(server.io.sockets);
 };
 
