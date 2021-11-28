@@ -53,7 +53,11 @@ var onConnect = function(socket) {
 };
 
 module.exports = function(server) {
-  server.io.on('connection', onConnect);
+////##  server.io.on('connection', onConnect);
+////## quick test
+  server.io.of('/').on('connection', onPublicConnect);
+  server.io.of('/private').on('connection', onPrivateConnect);
+
   setupBroadcasts(server.io.sockets);
 };
 

@@ -828,24 +828,25 @@ log.debug("path- " + updaterPath);
             log.info('Setting up the webserver...');
             var server = restify.createServer({name:'FabMo Updater'});
             this.server = server;
-            // Handle options request in firefox
-            function unknownMethodHandler(req, res) {
-            if (req.method.toLowerCase() === 'options') {
-                var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
+////##
+            // // Handle options request in firefox
+            // function unknownMethodHandler(req, res) {
+            // if (req.method.toLowerCase() === 'options') {
+            //     var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
 
-                if (res.methods.indexOf('OPTIONS') === -1) res.methods.push('OPTIONS');
+            //     if (res.methods.indexOf('OPTIONS') === -1) res.methods.push('OPTIONS');
 
-                res.header('Access-Control-Allow-Credentials', true);
-                res.header('Access-Control-Allow-Headers', allowHeaders.join(', '));
-                res.header('Access-Control-Allow-Methods', res.methods.join(', '));
-                res.header('Access-Control-Allow-Origin', req.headers.origin);
+            //     res.header('Access-Control-Allow-Credentials', true);
+            //     res.header('Access-Control-Allow-Headers', allowHeaders.join(', '));
+            //     res.header('Access-Control-Allow-Methods', res.methods.join(', '));
+            //     res.header('Access-Control-Allow-Origin', req.headers.origin);
 
-                return res.send(204);
-            }
-            else
-                return res.send(new restify.MethodNotAllowedError());
-            }
-            server.on('MethodNotAllowed', unknownMethodHandler);
+            //     return res.send(204);
+            // }
+            // else
+            //     return res.send(new restify.MethodNotAllowedError());
+            // }
+            // server.on('MethodNotAllowed', unknownMethodHandler);
            
             // Allow JSON over Cross-origin resource sharing
             log.info('Configuring cross-origin requests...');
@@ -932,20 +933,21 @@ log.debug("got to authentication");
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
-            if(evt.beacon_url) {
-                this.beacon.set('url', config.updater.get('beacon_url'));
-            }
+////##
+            // if(evt.beacon_url) {
+            //     this.beacon.set('url', config.updater.get('beacon_url'));
+            // }
 
-            // If the tool name changes, report the change to beacon
-            if(evt.name) {
-                this.beacon.once('config');
-            }
+            // // If the tool name changes, report the change to beacon
+            // if(evt.name) {
+            //     this.beacon.once('config');
+            // }
 
-            // If beacon consent changes, let the beacon daemon know (possibly do a report)
-            if (evt.consent_for_beacon) {
-                this.beacon.set("consent_for_beacon", evt.consent_for_beacon);
-                log.info("Consent for beacon is " + evt.consent_for_beacon);
-            }
+            // // If beacon consent changes, let the beacon daemon know (possibly do a report)
+            // if (evt.consent_for_beacon) {
+            //     this.beacon.set("consent_for_beacon", evt.consent_for_beacon);
+            //     log.info("Consent for beacon is " + evt.consent_for_beacon);
+            // }
         }.bind(this));
         callback();
     }.bind(this),
@@ -1021,6 +1023,5 @@ log.debug("got to authentication");
         }.bind(this)
     );
 };
-
 
 module.exports = new Updater();
