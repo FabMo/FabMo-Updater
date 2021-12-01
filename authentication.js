@@ -63,7 +63,6 @@ exports.configure = function(){
         if(!data.isAdmin){
           return done(null, false, { message: 'Must be admin' });
         }
-        console.log('configure');
         var user = {
           'username': username,
           'password': data.password,

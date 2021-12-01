@@ -1,5 +1,5 @@
 {
-  "name": "FabMo-Updater",
+  "name": "fabmo-updater",
   "description": "The update service for the FabMo platform",
   "author": "ShopBotTools",
   "repository": "https://github.com/ShopBotTools/FabMo-Engine.git",
