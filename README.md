@@ -14,7 +14,7 @@ In systems where the network may be the only means of accessing the FabMo softwa
   5. System management (reboot, shutdown, etc.)
 
 ## Installation
-The standard install location for the updater is `/fabmo/updater` - To install:
+The standard install location for the updater is `/fabmo-updater` - To install:
 
  1. Clone the source
  2. `npm install` in the source directory to install dependencies
@@ -29,15 +29,15 @@ The updater has been designed in anticipation of running on additional _os_'s an
 ## Design Specifics
 
 ### Web Interface
-A web interface is provided, which is by convention hosted on a port that is one higher than the port of the engine.  (So if the engine is hosted on port 9876, the updater should be hosted on port 9877) The default port for the FabMo engine is 80, so the default port for the updater is 81, unless changed.  The web interface of the updater is meant to be informative and simple to use, but ideally, update functionality is initiated and monitored through the engine.  (fabmo.js provides functions to this effect)
+A web interface is provided, which is by convention hosted on a port that is one higher than the port of the engine.  (So if the engine is hosted on port 9876, the updater should be hosted on port 9877) The default port for the FabMo engine is 80, so the default port for the updater is 81, unless changed.  The web interface of the updater is meant to be informative and simple to use, but ideally, update functionality for normal users is simply initiated and monitored through the engine.  (fabmo.js provides functions to this effect)
 
-A "simple" update interface is provided that simply applies the latest update version and exits, providing a full-screen spinner and message.  This interface can be accessed simply by redirecting to the appropriate url, `/do_update`
+Here, a "simple" update interface is provided that simply applies the latest update version and exits, providing a full-screen spinner and message.  This interface can be accessed simply by redirecting to the appropriate url, `/do_update`
 
 ### Platform Independence with "Hooks"
 In order to perform system functions using node.js without having to have special purpose cross-platform libraries for everything, a system of "hooks" is implemented, which allows for instances of the updater running on different platforms to run different code to perform specific system functions.  A hook is simply a script, run external to the updater, which provides a named function.  Generically, the updater provides a number of named functions for updating, system management, and networking, which are implemented specifically by hooks for each specific platform.  Take as an example the hook to start and stop the engine service.  On most linux systems, this is simply achieved by the commands `systemctl start fabmo` and `systemctl stop fabmo` respectively.  On OSX however, launchd is used, and on ubuntu linux, upstart is used, instead of systemd.  For all systems, these functions are simply provided by hook scripts, which can be customized for individual platforms.
 
 ### Update (FMP) Packages
-One core function of the updater is to fetch and apply updates, both to itself and other products. This importantly includes FabMo engine. In order to do this, it fetches a manifest describing packages that are available to download, and rifles through these to find the most appropriate updates to apply.  It does this by comparing versions in the manifest with the versions of installed products on disk, and chooses the most recent version of each product (if it is newer than the current version) to download.  Releases are applied in priority order, based on the products being installed.  Self-updates (updates to the updater itself) are downloaded and applied first, to make sure that other product packages that might need a newer updater have one available for installation.  The code that manages the download, prioritization, and application of new packages is located in the `/fmp` package
+One core function of the updater is to fetch and apply updates, both to itself and other products. This importantly includes the FabMo Engine. In order to do this, it fetches a manifest describing packages that are available to download, and rifles through these to find the most appropriate updates to apply.  It does this by comparing versions in the manifest with the versions of installed products on disk, and chooses the most recent version of each product (if it is newer than the current version) to download.  Releases are applied in priority order, based on the products being installed.  Self-updates (updates to the updater itself) are downloaded and applied first to make sure that other product packages that might need a newer updater have one available for installation.  The code that manages the download, prioritization, and application of new packages is located in the `/fmp` package
 
 ### Self Updates
 The updater can update *itself*. To do this with caution, the updater must shut itself down and hand the update off to an external process in order to update, so progress monitoring can't be done.  The update is managed on the Raspberry Pi by a systemd service, but could be executed externally on different systems in different ways.  The command that initiates the self update is a hook for this reason.
