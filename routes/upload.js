@@ -8,7 +8,7 @@
 
 var log = require('../log').logger('routes');
 var fs = require('fs');
-var uuid = require('node-uuid');
+var uuid = require('uuid');
 
 UPLOAD_INDEX = {};
 UPLOAD_TIMEOUT = 3600000;

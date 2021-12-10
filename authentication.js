@@ -3,7 +3,7 @@
  * 
  * Manages user authentication to access the FabMo updater
  */
-var passport = require('passport-restify');
+var passport = require('passport');
 var LocalStrategy   = require('passport-local').Strategy;
 var config = require('./config');
 var util = require('util');

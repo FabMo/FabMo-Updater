@@ -32,7 +32,7 @@ var path = require('path');
 var events = require('events');
 var util = require('util');
 var fs = require('fs-extra');
-var uuid = require('node-uuid');
+var uuid = require('uuid');
 var moment = require('moment');
 var Q = require('q');
 
