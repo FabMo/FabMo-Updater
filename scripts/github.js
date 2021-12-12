@@ -26,7 +26,8 @@ function getFileContents(owner, repos, file, options) {
     	function(err, resp, body) {
     		try {
     			var file = JSON.parse(body);
-    			file.content = new Buffer(file.content, 'base64')
+//    			file.content = new Buffer(file.content, 'base64')
+    			file.content = new Buffer.from(file.content, 'base64')
     			return deferred.resolve(file);
     		} catch(e) {
     			deferred.reject(e);

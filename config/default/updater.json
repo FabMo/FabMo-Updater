@@ -4,7 +4,6 @@
 	"engine_git_repos" : "https://github.com/FabMo/FabMo-Engine.git",
 	"updater_git_repos" : "https://github.com/FabMo/FabMo-Updater.git",
 	"packages_url" : "http://gofabmo.org/manifest/packages.json",
-	"beacon_url" : "http://beacon.shopbottools.com/beacon",
 	"platform" : "raspberry-pi",
     	"system" : "dt",
 	"server_port" : 81,
@@ -12,7 +11,6 @@
 	"name" : "-- now handled in engine",
 	"password" : "go2fabmo",
 	"firmware_file" : "/fabmo/firmware/g2core_101.57.24build_FabMo-G2",
-	"consent_for_beacon" : "false",
 	"os_version" : "unknown",
 	"network" : {
        	    "wifi":{

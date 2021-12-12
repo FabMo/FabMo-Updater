@@ -10,8 +10,8 @@
  * in the manifest with local versions on 
  */
 var log = require('./log').logger('updater');
-var detection_service = require('./detection_daemon');
-var Beacon = require('./beacon');
+//var detection_service = require('./detection_daemon');
+//var Beacon = require('./beacon');
 var authentication = require('./authentication');
 
 var fmp = require('./fmp');
@@ -42,7 +42,7 @@ var PLATFORM = process.platform;
 var TASK_TIMEOUT = 10800000;    // 3 hours (in milliseconds)
 var PACKAGE_CHECK_DELAY = 30;   // Seconds
 var UPDATE_PRODUCTS = 'FabMo-Engine|FabMo-Updater'
-var BEACON_INTERVAL = 1*60*60*1000 // 1 Hour (in milliseconds)
+//var BEACON_INTERVAL = 1*60*60*1000 // 1 Hour (in milliseconds)
 
 // The `Updater` is the application singleton.  It provides functions and data for 
 // top-level application functions, and is the custodian of the application's state.
@@ -572,6 +572,8 @@ log.debug("path- " + updaterPath);
 
             try {
                 fs.readFile(updaterPath, function(err, data) {
+log.debug("data- " + data);
+
                     try {
                         d = JSON.parse(data)
                         if(d['network']) {
@@ -652,13 +654,13 @@ log.debug("path- " + updaterPath);
                     if(version) {
                         try {
                             if(config.updater.get('version')['number'] != version['number']) {
-                                log.info('New updater version.  Clearing beacon consent...')
-                                config.updater.set('consent_for_beacon', 'none')
+                                log.info('New updater version.')
+    //                            config.updater.set('consent_for_beacon', 'none')
                             }
                         } catch(e) {
                             log.warn("Could not read updater version.json: " + (e.message || e))
                             log.warn(e);
-                            config.updater.set('consent_for_beacon', 'none')
+    //                        config.updater.set('consent_for_beacon', 'none')
 
                         } finally {
                             config.updater.set('version', version);

@@ -648,7 +648,7 @@ $(document).ready(function() {
     $('.label-platform').text(config.os + '/' + config.platform);
     $('.label-os-version').text(config.os_version);
     $('.label-machine-id').text(config.id);
-    $('#consent_for_beacon').val(config.consent_for_beacon);
+//    $('#consent_for_beacon').val(config.consent_for_beacon);
 
     // Set the OS from the updater config
     setOS(config.os);
