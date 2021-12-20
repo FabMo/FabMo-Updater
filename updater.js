@@ -20,7 +20,7 @@ var util = require('./util');
 var hooks = require('./hooks');
 ////## var network = require('./network');
 ////## var GenericNetworkManager = require('./network/manager').NetworkManager;
-var doshell = require('./util').doshell;
+//var doshell = require('./util').doshell;
 
 var crypto = require('crypto');
 var sessions = require("client-sessions");
@@ -30,7 +30,8 @@ var process = require('process');
 var path = require('path');
 ////##var socketio = require('socket.io')
 var events = require('events');
-var util = require('util');
+//var util = require('util');
+var Util = require('util');
 var fs = require('fs-extra');
 var uuid = require('uuid');
 var moment = require('moment');
@@ -84,48 +85,88 @@ var Updater = function()
     // Inheritance for EventEmitter
     events.EventEmitter.call(this);
 };
-util.inherits(Updater, events.EventEmitter);
+Util.inherits(Updater, events.EventEmitter);
 
 // Get the version of this updater.
 // It works the same way as the function in `engine.js` that does the same thing for the engine
-// TODO - We can probably consolidate these
-//   callback - Called with the version info object
+////## initially pasted from engine
 Updater.prototype.getVersion = function(callback) {
-    this.version = {number : 'v0.0.0', type : 'unknown'};
-    require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
-        .then(function(data) {
-    parts = data.split('-');
-        if(parts.length === 1) {
-          var versionString = parts[0].trim();
-        } else {
-            var versionString = parts[0].trim() + '-' + parts[2].trim();
-        }
-           this.version = require('./fmp').parseVersion(versionString);
-           callback(null, this.version);
-        }.bind(this))
-        .catch(function(e) {
-            log.debug('Updater is not a source installation.');
+    // grab the version and abbreviated SHA (if one)
+    util.doshell('git describe', function(data) {
+        this.version = {};
+        this.version.number = (data || "").trim();
+        // this.version.hash = (data || "").trim();
+        this.version.debug = ('debug' in argv);
+        // then see if we have an official release version# in json file
+        // see: version-example.json
         fs.readFile('version.json', 'utf8', function(err, data) {
             if(err) {
-            log.error(err)
-                    return callback(null, this.version);
-                }
-                try {
-                    data = JSON.parse(data);
-                    if(data.number) {
-            this.version.number = data.number;
-            this.version.type = data['type'] ? data['type'] : 'release';
-                        this.version.date = data.date;
+                log.debug(" ... no version file ... using git and dev info")
+                this.version.type = 'dev';
+                this.version.number = this.version.number + "-dev";
+                var random = Math.floor(Math.random() * (99999 - 10000)) + 10000;
+                log.info("Adding random prefix to dev updater version");
+                this.version.number = random.toString() + "-" + this.version.number
+                return callback(null, this.version);
             }
-                } catch(e) {
-                    log.warn("Could not read updater version.json: " + (e.message || e))
-                    log.warn(e);
-                } finally {
-                    callback(null, this.version);
+            try {
+                log.debug(" ... found json version file ... this is a RELEASE VERSION")
+                data = JSON.parse(data);
+                if(data.number) {
+                    this.version.number = data.number;
+                    this.version.type = 'release';
                 }
-            }.bind(this))
-        }.bind(this));
+            } catch(e) {
+                log.debug(" ... can't parse version file!")
+                this.version.number = this.version.number +"-dev-fault";
+                this.version.type = 'dev';
+                var random = Math.floor(Math.random() * (99999 - 10000)) + 10000;
+                log.info("Adding random prefix to dev updater version");
+                this.version.number = random.toString() + "-" + this.version.number
+            } finally {
+                callback(null, this.version);
+            }
+        }.bind(this))
+    }.bind(this));
 }
+
+
+// Updater.prototype.getVersion = function(callback) {
+//     this.version = {number : 'v0.0.0', type : 'unknown'};
+//     require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
+//         .then(function(data) {
+//     parts = data.split('-');
+//         if(parts.length === 1) {
+//           var versionString = parts[0].trim();
+//         } else {
+//             var versionString = parts[0].trim() + '-' + parts[2].trim();
+//         }
+//            this.version = require('./fmp').parseVersion(versionString);
+//            callback(null, this.version);
+//         }.bind(this))
+//         .catch(function(e) {
+//             log.debug('Updater is not a source installation.');
+//         fs.readFile('version.json', 'utf8', function(err, data) {
+//             if(err) {
+//             log.error(err)
+//                     return callback(null, this.version);
+//                 }
+//                 try {
+//                     data = JSON.parse(data);
+//                     if(data.number) {
+//             this.version.number = data.number;
+//             this.version.type = data['type'] ? data['type'] : 'release';
+//                         this.version.date = data.date;
+//             }
+//                 } catch(e) {
+//                     log.warn("Could not read updater version.json: " + (e.message || e))
+//                     log.warn(e);
+//                 } finally {
+//                     callback(null, this.version);
+//                 }
+//             }.bind(this))
+//         }.bind(this));
+// }
 
 // Add a task to the task collection that is marked as 'pending'
 // Tasks can only be started when the updater is in the 'idle' state
@@ -563,44 +604,44 @@ Updater.prototype.start = function(callback) {
             log.info('Checking updater data directory tree...');
             config.createDataDirectories(callback);
         },
-        // Older versions of the updater had a different configuration file format, and encountering that format
-        // can trip up the current version of the code, so we migrate that config file if we detect that
-        function apply_config_shim(callback) {
-            var updaterPath = config.getDataDir('config') + '/updater.json';
+//         // Older versions of the updater had a different configuration file format, and encountering that format
+//         // can trip up the current version of the code, so we migrate that config file if we detect that
+//         function apply_config_shim(callback) {
+//             var updaterPath = config.getDataDir('config') + '/updater.json';
 
-log.debug("path- " + updaterPath);
+// log.debug("path- " + updaterPath);
 
-            try {
-                fs.readFile(updaterPath, function(err, data) {
-log.debug("data- " + data);
+//             try {
+//                 fs.readFile(updaterPath, function(err, data) {
+// //log.debug("data- " + data);
 
-                    try {
-                        d = JSON.parse(data)
-                        if(d['network']) {
-                            if(!d['network']['ethernet']) {
-                                delete d['network']
-                                log.info('Applying network configuration shim.');
-                                fs.writeFile(updaterPath, JSON.stringify(d, null, 2), function(err, data) {
-                                    if(err) {
-                                        log.error(err);
-                                    }
-                                    callback();
-                                });
-                            } else {
-                                callback();
-                            }
-                        } else {
-                            callback();
-                        }
-                    } catch(e) {
-                        log.error(e);
-                        callback();
-                    }
-                });
-            } catch(e) {
-                log.error(e);
-            }
-        },
+//                     try {
+//                         d = JSON.parse(data)
+//                         if(d['network']) {
+//                             if(!d['network']['ethernet']) {
+//                                 delete d['network']
+//                                 log.info('Applying network configuration shim.');
+//                                 fs.writeFile(updaterPath, JSON.stringify(d, null, 2), function(err, data) {
+//                                     if(err) {
+//                                         log.error(err);
+//                                     }
+//                                     callback();
+//                                 });
+//                             } else {
+//                                 callback();
+//                             }
+//                         } else {
+//                             callback();
+//                         }
+//                     } catch(e) {
+//                         log.error(e);
+//                         callback();
+//                     }
+//                 });
+//             } catch(e) {
+//                 log.error(e);
+//             }
+//         },
         // Load and apply the updater configuration
         function configure(callback) {
             log.info('Loading configuration...');
@@ -646,8 +687,8 @@ log.debug("data- " + data);
         }.bind(this),
 
         // Get the updater version
-        // If the updater version has changed, we clear beacon consent 
-        // (Give the user another chance to opt-out of beacon)
+//        // If the updater version has changed, we clear beacon consent 
+//        // (Give the user another chance to opt-out of beacon)
         function get_version(callback) {
             this.getVersion(function(err, version) {
                 if(!err) {
