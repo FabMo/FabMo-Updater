@@ -4,7 +4,7 @@ echo "Stopping the engine..."
 systemctl stop fabmo
 
 echo "Clearing settings..."
-#rm -rf /opt/fabmo/engine
+#rm -rf /opt/fabmo
 rm -rf /opt/fabmo
 
 echo "Remounting the root partition as read-write"
@@ -13,13 +13,13 @@ mount -w -o remount /
 # DANGER ZONE
 
 echo "Uninstalling engine..."
-#rm -rf /fabmo/engine
+#rm -rf /fabmo
 rm -rf /fabmo
 
 echo "Cloning new copy of the engine..."
-#git clone $1 /fabmo/engine
+#git clone $1 /fabmo
 git clone $1 /fabmo
-#cd /fabmo/engine
+#cd /fabmo
 cd /fabmo
 git fetch origin --tags
 git fetch origin release:release

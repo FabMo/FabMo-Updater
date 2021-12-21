@@ -2,7 +2,7 @@
 Update agent for the Fabmo Engine
 
 ## Overview
-The FabMo Updater is companion software to the FabMo Engine.  It provides online update and repair capabilities.  A more appropriate name for it might be the _FabMo Agent_ for this reason. 
+The FabMo Updater is companion software to the FabMo Engine.  It provides online update and repair capabilities. 
 
 ## Design Philosophy
 In systems where the network may be the only means of accessing the FabMo software (e.g. headless operation of Raspberry Pi) it is helpful to have a simple, robust, independent agent to handle management. The updater aims to be this. It provides the following functions at a high level:
@@ -21,7 +21,7 @@ The standard install location for the updater is `/fabmo-updater` - To install:
  3. (optional) copy the systemd service file `files/fabmo-updater.service` to `/etc/systemd/system` and enable the service with `systemctl enable fabmo-updater`
 
 ## Configuration
-The default location for the updater configuration file is `/opt/fabmo/config/updater.json` - if this file or the parent directory does not exist, they will be created.  The configuration file can be edited manually, but should not be modified while the updater is running.  The updater uses and relies on a number of other files in the `/opt/fabmo` directory.  Code that manages configuration can be found in the `/fabmo/updater/config` directory.
+The default location for the updater configuration file is `/opt/fabmo/config/updater.json` - if this file or the parent directory does not exist, they will be created.  The configuration file can be edited manually, but should not be modified while the updater is running.  The updater uses and relies on a number of other files in the `/opt/fabmo` directory.  Code that manages configuration can be found in the `/fabmo-updater/config` directory.
 
 ## First Launch
 The updater has been designed in anticipation of running on additional _os_'s and _platform_'s. On first launch, the updater will attempt to detect the system on which it is running.  The _os_ is detected reliably using functions internal to node.js, but the _platform,_ which corresponds to the specific hardware system on which the software is run, is determined by inference from features available at the time of launch. (The code to do this is found in `updater.js`) Examples of platforms might be `raspberry-pi` for the Raspberry Pi, or `beaglboneblack` for the TI BeagleBone Black.  At the time of this writing, only the `raspberry-pi` platform is available.
@@ -29,7 +29,7 @@ The updater has been designed in anticipation of running on additional _os_'s an
 ## Design Specifics
 
 ### Web Interface
-A web interface is provided, which is by convention hosted on a port that is one higher than the port of the engine.  (So if the engine is hosted on port 9876, the updater should be hosted on port 9877) The default port for the FabMo engine is 80, so the default port for the updater is 81, unless changed.  The web interface of the updater is meant to be informative and simple to use, but ideally, update functionality for normal users is simply initiated and monitored through the engine.  (fabmo.js provides functions to this effect)
+A web interface is provided, which is by convention hosted on a port that is one higher than the port of the engine.  The default port for the FabMo engine is 80, so the default port for the updater is 81, unless changed.  The web interface of the updater is meant to be informative and simple to use, but ideally, update functionality for normal users is simply initiated and monitored through the engine.  (fabmo.js provides functions to this effect)
 
 Here, a "simple" update interface is provided that simply applies the latest update version and exits, providing a full-screen spinner and message.  This interface can be accessed simply by redirecting to the appropriate url, `/do_update`
 

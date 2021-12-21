@@ -20,25 +20,25 @@ cd /tmp/consolidated-update
 tar -xvzf /tmp/consolidated.fmp 
 
 # Obliterate and recreate the engine/updater directories
-rm -rf /fabmo/updater /fabmo/engine
-mkdir /fabmo/updater /fabmo/engine
+rm -rf /fabmo-updater
+mkdir /fabmo-updater
 
 # Lay down the engine and updater
-cd /fabmo/updater
+cd /fabmo-updater
 tar -xvzf /tmp/consolidated-update/updater.tar.gz
 
-cd /fabmo/engine
+cd /fabmo
 tar -xvzf /tmp/consolidated-update/engine.tar.gz
 
 # Flush to disk
 sync
 
 # Update the G2 firmware
-/fabmo/updater/hooks/linux/edison/update_firmware.sh /fabmo/engine/firmware/g2.bin
+/fabmo-updater/hooks/linux/edison/update_firmware.sh /fabmo/firmware/g2.bin
 
 # Mark done
-touch /fabmo/engine/install_token
-touch /fabmo/updater/install_token
+touch /fabmo/install_token
+touch /fabmo/install_token
 
 # Clear the app root
 rm -rf /opt/fabmo/approot

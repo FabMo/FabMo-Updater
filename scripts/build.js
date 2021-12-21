@@ -35,7 +35,6 @@ switch(argv.product) {
 	case 'engine':
 		var product = 'engine';
 		var reposDirectory = '/fabmo';
-//		var reposDirectory = '/fabmo/engine';
 		var githubRepos = 'FabMo-Engine';
 		break;
 	case 'updater':
@@ -64,7 +63,7 @@ var scriptDirectory = path.resolve(__dirname);
 
 // Path to specific files
 var versionFilePath = path.resolve(stagingDirectory, 'version.json');
-var firmwarePath = path.resolve(reposDirectory, 'firmware/g2core_101.57.24build_FabMo-G2.bin');
+var firmwarePath = path.resolve(reposDirectory, 'firmware/g2core_101.57.28build_FabMo-G2.bin');
 
 // Package Destination
 var fmpArchivePath;
@@ -103,7 +102,6 @@ if(argv['rc']) {
     buildType = 'release'
 	branch = 'release';
 }
-
 if(argv['version'] && argv['branch']) {
     throw new Error('You can specify a version number or a branch, but not both.');
 }
@@ -131,7 +129,7 @@ function scriptPath(pth) { return path.resolve(scriptDirectory, pth); }
  */
 function doshell(command, options) {
 	var deferred = Q.defer();
-	log.command(command);
+    log.command(command);
     exec(command, options, function(err, stdout, stderr) {
     	log.stdout(stdout);
     	log.stderr(stderr);
@@ -205,8 +203,7 @@ log.info("verStep1- " + versionString)
 }
 
 function checkout() {
-log.info("ver- " + versionString)
-	log.info("Checking out version " + commitish)
+    log.info("Checking out version " + commitish)
 	return doshell('git fetch origin --tags; git checkout ' + commitish, {cwd : reposDirectory});
 	return Q();
 }

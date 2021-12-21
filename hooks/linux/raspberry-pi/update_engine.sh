@@ -2,7 +2,7 @@
 
 function fail
 {
-	#cd /fabmo/engine
+	#cd /fabmo
 	cd /fabmo
 	git reset --hard HEAD
 	sync
@@ -15,7 +15,7 @@ function fail
 function save_version_info
 {
 	echo "Saving version information..."
-	#cd /fabmo/engine
+	#cd /fabmo
 	cd /fabmo
 	set +e
 	git describe
@@ -23,10 +23,10 @@ function save_version_info
 	set -e
 	if [ $INVALID_VERSION -eq 0 ]; then
 		VERSION=`git describe`
-		#echo "{\"number\" : \"$VERSION\" }" > /fabmo/engine/version.json
+		#echo "{\"number\" : \"$VERSION\" }" > /fabmo/version.json
 		echo "{\"number\" : \"$VERSION\" }" > /fabmo/version.json
 	else
-		#rm /fabmo/engine/version.json || true
+		#rm /fabmo/version.json || true
 		rm /fabmo/version.json || true
 	fi
 	sync
@@ -43,7 +43,7 @@ mount -w -o remount /
 # DANGER ZONE
 
 echo "Resetting..."
-#cd /fabmo/engine
+#cd /fabmo
 cd /fabmo
 git reset --hard HEAD || fail "Could not reset the repository"
 

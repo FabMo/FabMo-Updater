@@ -17,7 +17,7 @@ function exec(command, callback) {
 exec('systemctl daemon-reload', function() {
     exec('systemctl stop fabmo-updater', function() {
         fs.removeSync('/tmp/temp-updater')
-        fs.copy('/fabmo/updater', '/tmp/temp-updater', function(err) {
+        fs.copy('/fabmo-updater', '/tmp/temp-updater', function(err) {
             if(err) {
                 console.error(err);
                 return

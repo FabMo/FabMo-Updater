@@ -4,14 +4,14 @@ echo "Stopping the engine..."
 systemctl stop fabmo
 
 echo "Clearing settings..."
-rm -rf /opt/fabmo/engine
+rm -rf /opt/fabmo
 
 echo "Uninstalling engine..."
-rm -rf /fabmo/engine
+rm -rf /fabmo
 
 echo "Cloning new copy of the engine..."
-git clone $1 /fabmo/engine
-cd /fabmo/engine
+git clone $1 /fabmo
+cd /fabm
 git fetch origin --tags
 git pull
 

@@ -147,14 +147,16 @@ function expandArchive(operation) {
 //   operation - Operation object
 //      src - Path to the firmware. This can be an absolute or package-relative path
 function installFirmware(operation) {
-	if (!operation.src) {
-		throw new Error('No source file specified for installFirmware')
-	}
+    //if (!operation.src) {
+	// 	throw new Error('No source file specified for installFirmware')
+	// }
 
 	var srcPath = resolveCwdPath(operation.cwd, operation.src);
 	log.info('Installing firmware from ' + srcPath);
+log.debug('NOT INSTALLING FIRMWARE!')
 
 	return require('../hooks').installFirmware(srcPath);		
+
 }
 
 // Create all of the directories specified by `path` or `paths` attributes.

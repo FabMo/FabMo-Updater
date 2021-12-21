@@ -6,7 +6,7 @@
 	"token" : "/fabmo-updater/install_token",
 	"repository" : "https://github.com/FabMo/FabMo-Updater",
 	"updaterNeeded" : "v2.0.0",
-	"services" : ["fabmo"],
+	"services" : ["fabmo-updater"],
 	"operations" : [
 		{
 			"op" : "deleteFiles",
