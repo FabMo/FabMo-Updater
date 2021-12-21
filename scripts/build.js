@@ -175,9 +175,6 @@ function getProductVersion() {
 		versionString = buildType === 'rc' ? candidateVersion : parts[0]
 		if(parts[2]) {
 			versionString += '-' + parts[2];
-
-log.info("verStep1- " + versionString)
-
 		    switch(buildType) {
                 case 'dev':
                     versionString += '-dev';
