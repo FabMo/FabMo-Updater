@@ -276,9 +276,8 @@ function stageFirmware() {
 	if(product === 'updater') {
 		return Q();
 	}
-	log.info('Copying firmware into staging area')
-	return doshell('cp ' + firmwarePath + ' ' + path.resolve(stagingDirectory, '/*'), {cwd : reposDirectory});
-	//return doshell('cp ' + firmwarePath + ' ' + path.resolve(stagingDirectory, 'g2.bin'), {cwd : reposDirectory});
+	log.info('Copying firmware into staging area ' + firmwarePath)
+	return doshell('cp ' + firmwarePath + ' ' + path.resolve(stagingDirectory, 'g2.bin'), {cwd : reposDirectory});
 }
 
 function stageFilesArchive() {
