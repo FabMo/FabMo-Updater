@@ -140,7 +140,7 @@ function printf(s) {
     var log = $('#console .content');
     lines = s.split('\n');
     lines.forEach(function(line) {
-      log.append(prettify(line));
+        log.append(prettify(line));
     });
     var scrollpane = $('#console');
     scrollpane[0].scrollTop = scrollpane[0].scrollHeight;
@@ -625,7 +625,7 @@ $(document).ready(function() {
   updater.getNetworkIdentity(function(err, id) {
     if(err) { console.error(err); return; }
 ////## temp for start of v3
-    id.name = " --now handled in engine"
+    id.name = " -- now handled in engine"
     $(".label-wifi-network-id").text(id.name);
   });
 
@@ -680,7 +680,8 @@ $(document).ready(function() {
       var engine_version_number = info.version.number || info.version.hash.substring(0,8) + '-' + info.version.type
       $('.label-fw-build').text(info.firmware.build || 'unavailable');
       $('.label-fw-config').text(info.firmware.config || 'unavailable');
-      $('.label-fw-version').text(info.firmware.version || 'unavailable');
+//      $('.label-fw-version').text('BAH!' || 'unavailable');
+      $('.label-fw-version').text((info.firmware.version).replace('-dirty','') || 'unavailable');
       $('.label-engine-version').text(engine_version_number || 'unavailable');
     }
   });
