@@ -33,7 +33,7 @@ util.inherits(UserConfig, Config);
 // Create a user configuration file if one does not already exist.
 //   callback - Called with an error if the file couldn't be created
 UserConfig.prototype.setUpFile = function(callback){
-    var user_file = config.getDataDir() + '/config/user.json';
+    var user_file = Config.getDataDir() + '/config/user.json';
 	var pass_shasum = crypto.createHash('sha256').update(DEFAULT_ADMIN_PASSWORD).digest('hex');
 	var newUser = this.User(DEFAULT_ADMIN_USER,pass_shasum,true);
 	var data = JSON.stringify(newUser);
