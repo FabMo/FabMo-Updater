@@ -3,7 +3,7 @@
    "os":"linux",
    "platform":"edison",
    "system":"handibot",
-   "token":"/fabmo/updater/install_token",
+   "token":"/fabmo-updater/install_token",
    "repository":"https://github.com/FabMo/FabMo-Updater",
    "updaterNeeded":"v2.0.0",
    "services":[
@@ -14,23 +14,23 @@
       {
          "op":"deleteFiles",
          "paths":[
-            "/fabmo/updater",
-            "/fabmo/engine"
+            "/fabmo-updater",
+            "/fabmo"
          ]
       },
       {
          "op":"expandArchive",
          "src":"updater.tar.gz",
-         "dest":"/fabmo/updater"
+         "dest":"/fabmo-updater"
       },
       {
          "op":"expandArchive",
          "src":"engine.tar.gz",
-         "dest":"/fabmo/engine"
+         "dest":"/fabmo"
       },
       {
-         "op":"installFirmware",
-         "src":"g2.bin"
+       "op":"installFirmware",
+       "src":"g2.bin"
       },
       {
          "op":"deleteFiles",
@@ -41,7 +41,7 @@
       {
          "op":"expandArchive",
          "src":"token.tar.gz",
-         "dest":"/fabmo/engine"
+         "dest":"/fabmo"
       }
 
    ],

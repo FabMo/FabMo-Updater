@@ -10,7 +10,7 @@
 	"operations" : [
 		{
 			"op" : "installFirmware",
-			"src" : "/fabmo/engine/firmware/g2.bin"
+			"src" : "/fabmo/firmware/g2.bin"
 		}
 	] 
 }

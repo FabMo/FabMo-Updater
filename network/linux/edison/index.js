@@ -44,7 +44,7 @@ var NETWORK_HEALTH_RETRY_INTERVAL = 1500;
 // TODO : Thanks to `wpa_cli` - this function (and the script it calls) might be obsolete?  Good riddance if so.
 function jedison(cmdline, callback) {
     var callback = callback || function() {}
-    doshell('./scripts/jedison ' + cmdline, function(s) {
+    doshell('./network/linux/edison/jedison ' + cmdline, function(s) {
         try {
             j = JSON.parse(s)
             if(j.status == 'success') {

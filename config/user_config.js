@@ -69,9 +69,10 @@ UserConfig.prototype.initUsers = function(data, callback) {
 	this._loaded = true;
 	this.update(data, function(err, data){
 		if(err){
-			callback(err);
+log.debug('no data on inituser call!')
+            callback(err);
 		} else {
-			callback(data);
+            callback(data);
 		}
 	}.bind(this));
 
@@ -168,7 +169,7 @@ UserConfig.prototype.revokeAdmin = function(username, callback){
 				if (err){
 					callback(err);
 				} else {
-					callback('Admin granted');
+					callback('Admin revoked');
 				}
 			})
 		}

@@ -9,9 +9,9 @@
 var path = require('path');
 var log = require('./log').logger('util');
 var fs = require('fs');
-var fs = require('fs');
-var uuid = require('node-uuid');
-var fs = require('fs');
+//var fs = require('fs');
+var uuid = require('uuid');
+//var fs = require('fs');
 var escapeRE = require('escape-regexp-component');
 var exec = require('child_process').exec;
 var Q = require('q');
@@ -20,9 +20,9 @@ var mime = require('mime');
 var restify = require('restify');
 var errors = restify.errors;
 
-var MethodNotAllowedError = errors.MethodNotAllowedError;
-var NotAuthorizedError = errors.NotAuthorizedError;
-var ResourceNotFoundError = errors.ResourceNotFoundError;
+////var MethodNotAllowedError = errors.MethodNotAllowedError;
+////var NotAuthorizedError = errors.NotAuthorizedError;
+////var ResourceNotFoundError = errors.ResourceNotFoundError;
 
 // Run a function that returns a promise.  If that promise rejects, 
 // retry the function at the specified interval for the specified number of retries.

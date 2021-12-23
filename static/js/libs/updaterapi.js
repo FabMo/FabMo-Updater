@@ -15,6 +15,7 @@ var UpdaterAPI = function() {
 		'log' : []
 	};
 	var url = window.location.origin;
+	////##
 	// TODO - https support?!  We should finish it or remove it.
 	//        default port should also be 81 (not 80) ?
 	var port = location.port || (location.protocol === 'https:' ? '443' : '80');

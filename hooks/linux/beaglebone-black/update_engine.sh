@@ -7,10 +7,10 @@ systemctl stop fabmo
 
 echo "Mounting disks..."
 mount /dev/mmcblk0p1 /mnt
-cd /mnt/fabmo/engine
+cd /mnt/fabmo
 
 echo "Fetching new versions..."
-cd /fabmo/engine
+cd /fabmo
 git reset --hard HEAD
 git fetch origin --tags
 git checkout master
@@ -26,9 +26,9 @@ INVALID_VERSION=$?
 set -e
 if [ $INVALID_VERSION -eq 0 ]; then
 	VERSION=`git describe`
-	echo "{\"number\" : \"$VERSION\" }" > /fabmo/engine/version.json
+	echo "{\"number\" : \"$VERSION\" }" > /fabmo/version.json
 else
-	rm /fabmo/engine/version.json || true
+	rm /fabmo/version.json || true
 fi
 
 echo "Clearing the approot..."

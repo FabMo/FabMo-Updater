@@ -2,7 +2,7 @@
 This directory contains the scripts that define the FabMo build/release process.
 
 ## Building and Releasing
-The engine and updater are built and released separately, using `build.js.` The build system assumes that the source for the engine and updater are checked out in `/fabmo/engine` and `/fabmo/updater` respectively. The arguments for build.js are as follows:
+The engine and updater are built and released separately, using `build.js.` The build system assumes that the source for the engine and updater are checked out in `/fabmo` and `/fabmo-updater` respectively. The arguments for build.js are as follows:
 
 `--product=engine|updater` The product must be specified on the command line.  It determines which product will be built (valid options are `engine` or `updater`)
 

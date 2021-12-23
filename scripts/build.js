@@ -34,12 +34,12 @@ if(!('product' in argv)) {
 switch(argv.product) {
 	case 'engine':
 		var product = 'engine';
-		var reposDirectory = '/fabmo/engine';
+		var reposDirectory = '/fabmo';
 		var githubRepos = 'FabMo-Engine';
 		break;
 	case 'updater':
 		var product = 'updater';
-		var reposDirectory = '/fabmo/updater';
+		var reposDirectory = '/fabmo-updater';
 		var githubRepos = 'FabMo-Updater';
 		break;
 	default:
@@ -102,7 +102,6 @@ if(argv['rc']) {
     buildType = 'release'
 	branch = 'release';
 }
-
 if(argv['version'] && argv['branch']) {
     throw new Error('You can specify a version number or a branch, but not both.');
 }
@@ -130,7 +129,7 @@ function scriptPath(pth) { return path.resolve(scriptDirectory, pth); }
  */
 function doshell(command, options) {
 	var deferred = Q.defer();
-	log.command(command);
+    log.command(command);
     exec(command, options, function(err, stdout, stderr) {
     	log.stdout(stdout);
     	log.stderr(stderr);
@@ -201,7 +200,7 @@ function getProductVersion() {
 }
 
 function checkout() {
-	log.info("Checking out version " + commitish)
+    log.info("Checking out version " + commitish)
 	return doshell('git fetch origin --tags; git checkout ' + commitish, {cwd : reposDirectory});
 	return Q();
 }
@@ -277,7 +276,7 @@ function stageFirmware() {
 	if(product === 'updater') {
 		return Q();
 	}
-	log.info('Copying firmware into staging area')
+	log.info('Copying firmware into staging area ' + firmwarePath)
 	return doshell('cp ' + firmwarePath + ' ' + path.resolve(stagingDirectory, 'g2.bin'), {cwd : reposDirectory});
 }
 

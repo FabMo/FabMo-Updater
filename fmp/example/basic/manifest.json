@@ -11,13 +11,13 @@
 		{
 			"op" : "deleteFiles",
 			"paths" : [
-				"/fabmo/engine"
+				"/fabmo"
 			]
 		},
 		{
 			"op" : "expandArchive",
 			"src" : "dummy.tar.gz",
-			"dest" : "/fabmo/engine"
+			"dest" : "/fabmo"
 		},
 		{
 		    	"op" : "installFirmware",

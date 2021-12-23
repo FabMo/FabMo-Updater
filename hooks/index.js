@@ -93,6 +93,8 @@ var getHook = function(name) {
 		hook_func = require(__dirname + '/' + OS + '/' + PLATFORM)[name];
 	} catch(e) {
 		log.warn(e);
+log.debug(__dirname + '/' + OS + '/' + PLATFORM);
+log.debug(name);
 	}
 
 	var hook_exec_pattern = __dirname + '/' + OS + '/'  + PLATFORM + '/' + name + '.*([a-zA-Z0-9])';

@@ -13,6 +13,8 @@ var logger = log.logger('websocket');
 var clients_limit = 5;
 var nb_clients=0;
 var updater = require('../updater');
+//var updater = require('./updater');
+
 
 // When a client connects, bind any broadcast events to that client
 //   clients_sockets - The collection of client sockets from the server 
@@ -50,6 +52,7 @@ var onConnect = function(socket) {
   // Emit status and send the log buffer to the client on connect
   socket.emit('status', updater.status);
   socket.emit('log', log.getLogBuffer())
+
 };
 
 module.exports = function(server) {

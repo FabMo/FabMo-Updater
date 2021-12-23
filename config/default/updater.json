@@ -1,22 +1,20 @@
 {
 	"log_level" : "shell",
-	"engine_dir" : "/fabmo/engine",
+	"engine_dir" : "/fabmo",
 	"engine_git_repos" : "https://github.com/FabMo/FabMo-Engine.git",
 	"updater_git_repos" : "https://github.com/FabMo/FabMo-Updater.git",
 	"packages_url" : "http://gofabmo.org/manifest/packages.json",
-	"beacon_url" : "http://beacon.shopbottools.com/beacon",
-	"platform" : "generic",
-    	"system" : "handibot",
+	"platform" : "raspberry-pi",
+    	"system" : "dt",
 	"server_port" : 81,
 	"engine_server_port" : 80,
-	"name" : "FabMo",
+	"name" : "-- now handled in engine",
 	"password" : "go2fabmo",
-	"firmware_file" : "/fabmo/engine/firmware/g2.bin",
-	"consent_for_beacon" : "true",
+	"firmware_file" : "/fabmo/firmware/g2core_101.57.28build_FabMo-G2",
 	"os_version" : "unknown",
 	"network" : {
        	    "wifi":{
-            "mode" : "ap",
+            "mode" : "-- now handled in engine",
             "enabled" : true,
 	    "wifi_networks" : [],
             "default_config" : {

@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch via NPM",
+            "request": "launch",
+            "runtimeArgs": [
+                "run",
+                "debug"
+            ],
+            "runtimeExecutable": "npm",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "pwa-node"
+        },
+        {
+            "type": "node-terminal",
+            "name": "RunScript: debug",
+            "request": "launch",
+            "command": "sudo npm run debug",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

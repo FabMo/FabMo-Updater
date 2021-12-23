@@ -9,7 +9,7 @@
  * defined in detection_daemon.js do not work
  */
 var config = require('./config')
-var engine = require('./engine')
+//var engine = require('./engine')
 var hooks = require('./hooks')
 var log = require('./log').logger('beacon')
 var request = require('request')

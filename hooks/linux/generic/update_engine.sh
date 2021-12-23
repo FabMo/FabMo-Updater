@@ -4,7 +4,7 @@ echo "Stopping the engine..."
 systemctl stop fabmo
 
 echo "Fetching new versions..."
-cd /fabmo/engine
+cd /fabmo
 git reset --hard HEAD
 git fetch origin --tags
 git checkout master

@@ -11,15 +11,16 @@ var util =  require('../util');
 // Return a list of wifi networks that are currently visible.
 // TODO - This is a bad route name, because retrieving it doesn't actually trigger a scan
 var scan = function(req, res, next) {
-  var network = require('../updater').networkManager;
-  network.getAvailableWifiNetworks(function(err, data) {
-    if (err) {
-      log.error(err);
-      res.json({'status':'error', 'message':err.message});
-    } else {
-      res.json({'status':'success','data':{'wifi':data}});
-    }
-  });
+////## network stuff not in updater now
+  // var network = require('../updater').networkManager;
+  // network.getAvailableWifiNetworks(function(err, data) {
+  //   if (err) {
+  //     log.error(err);
+  //     res.json({'status':'error', 'message':err.message});
+  //   } else {
+  //     res.json({'status':'success','data':{'wifi':data}});
+  //   }
+  // });
 };
 
 // Connect to the wifi network specified in the request body

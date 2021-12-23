@@ -4,12 +4,12 @@ mount -w -o remount /
 
 FMUDIR=$(pwd)
 
-rm -rf /opt/fabmo/updater/install_token
+rm -rf /opt/fabmo-updater/install_token
 
 systemctl stop fabmo
 
-# expandArchive src: updater-stub.tar.gz dest: /fabmo/engine
-cd /fabmo/engine; tar -xvzf $FMUDIR/updater-stub.tar.gz
+# expandArchive src: updater-stub.tar.gz dest: /fabmo
+cd /fabmo; tar -xvzf $FMUDIR/updater-stub.tar.gz
 
 # expandArchive src: tmp dest: /tmp
 cd /tmp; tar -xvzf $FMUDIR/consolidated.tar.gz

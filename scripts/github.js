@@ -26,7 +26,8 @@ function getFileContents(owner, repos, file, options) {
     	function(err, resp, body) {
     		try {
     			var file = JSON.parse(body);
-    			file.content = new Buffer(file.content, 'base64')
+//    			file.content = new Buffer(file.content, 'base64')
+    			file.content = new Buffer.from(file.content, 'base64')
     			return deferred.resolve(file);
     		} catch(e) {
     			deferred.reject(e);
@@ -397,7 +398,7 @@ function getCredentials() {
 	var deferred = Q.defer();
 	creds = null;
 	try {
-		creds = require('/fabmo/updater/scripts/credentials.json')
+		creds = require('/fabmo-updater/scripts/credentials.json')
 		creds.username;
 		creds.password;
 	} catch(e) {	

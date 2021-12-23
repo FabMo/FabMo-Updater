@@ -19,7 +19,10 @@ var UserConfig = require('./user_config').UserConfig;
 //   callback - Called when initalization is complete or if error
 function configureUpdater(callback) {
 	exports.updater = new UpdaterConfig();
-	exports.updater.init(callback);
+//	exports.updater.init(callback);
+    exports.updater.init(function() {
+        callback();
+    });
 }
 
 // Initialize the user configuration.  Call once at startup.
@@ -45,7 +48,8 @@ function configureUser(callback){
 			}
 		} else {
 			exports.user.initUsers(data, function(msg){
-				log.info(msg);
+console.log(JSON.stringify(data, null, 4));
+                log.info('export init users --> ' + msg);
 				callback();
 			});	
 		}

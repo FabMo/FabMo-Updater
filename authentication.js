@@ -3,7 +3,7 @@
  * 
  * Manages user authentication to access the FabMo updater
  */
-var passport = require('passport-restify');
+var passport = require('passport');
 var LocalStrategy   = require('passport-local').Strategy;
 var config = require('./config');
 var util = require('util');
@@ -48,7 +48,6 @@ function logOutUser(user){
   }
 }
 
-
 exports.configure = function(){
   passport.use(new LocalStrategy({passReqToCallback: true},
     function(req, username, password, done) {
@@ -63,14 +62,13 @@ exports.configure = function(){
         if(!data.isAdmin){
           return done(null, false, { message: 'Must be admin' });
         }
-        console.log('configure');
         var user = {
           'username': username,
           'password': data.password,
           'isAdmin' : data.isAdmin,
           'created_at': data.created_at
         }
-        // success ! the usert that did the request is registered in the database.
+        // success ! the user that did the request is registered in the database.
 
         // check if the user can take the control of the tool.
 
@@ -81,7 +79,6 @@ exports.configure = function(){
           //console.log("current user have been kicked out");
           return done(null, false, { message: 'you have been kicked by user '+currentUser.username+'.'});
         }
-
         if(currentUser && currentUser.username !== username){ // a user is already connected
           if(req.params.kickout!==true){ // there is no request to kick the current user out.
             //console.log("there is already a user using the tool");
@@ -156,7 +153,7 @@ var getUsers = function(callback){
 };
 
 var getUser = function(username,callback){
-  if(!username){
+    if(!username){
     callback(null,currentUser); return;
   }
   config.user.findOne(username, function(err, data) {

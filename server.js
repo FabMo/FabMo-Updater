@@ -11,7 +11,7 @@ updater.start(function(err, data) {
 	if(err) {
 		log.error(err);
 	} else {
-		log.info("FabMo Updater started.")
+		log.info("FabMo-Updater started.")
 	}
 });
 

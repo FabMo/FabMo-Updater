@@ -12,6 +12,7 @@ var PLATFORM = require('process').platform;
 var log = require('../log').logger('config');
 var util = require('util');
 var events = require('events');
+var EventEmitter = require('events').EventEmitter;
 
 // Config is the superclass from which all configuration objects descend
 //   config_name - All configuration objects have a name, which among other things,
@@ -19,10 +20,12 @@ var events = require('events');
 Config = function(config_name) {
 	this._cache = {};
 	this.config_name = config_name;
+log.debug('dirname- ' + __dirname)    
 	this.default_config_file = __dirname + '/default/' + config_name + '.json';
 	this.config_file = Config.getDataDir('config') + '/' + config_name + '.json';
 	this._loaded = false;
 	this.userConfigLoaded = false;
+	EventEmitter.call(this);
 };
 util.inherits(Config, events.EventEmitter);
 
@@ -88,7 +91,9 @@ Config.prototype.save = function(callback) {
 				log.error(err);
 				callback(err);
 			} else {
-				var cfg = new Buffer(JSON.stringify(this._cache, null, 4));
+//				var cfg = new Buffer(JSON.stringify(this._cache, null, 4));
+log.debug('save cache- ' + this._cache);
+                var cfg = new Buffer.from(JSON.stringify(this._cache, null, 4));
 				fs.write(fd, cfg, 0, cfg.length, 0, function(err, written, string) {
 					if(err) {
 						log.error(err);

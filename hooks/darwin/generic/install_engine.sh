@@ -2,14 +2,14 @@
 set -e
 
 echo "Clearing settings..."
-rm -rf /opt/fabmo/engine
+rm -rf /opt/fabmo
 
 echo "Uninstalling engine..."
-rm -rf /fabmo/engine
+rm -rf /fabmo
 
 echo "Cloning new copy of the engine..."
-git clone $1 /fabmo/engine
-cd /fabmo/engine
+git clone $1 /fabmo
+cd /fabmo
 git fetch origin --tags
 git pull
 

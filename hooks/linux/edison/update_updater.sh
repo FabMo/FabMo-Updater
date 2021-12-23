@@ -2,4 +2,4 @@
 
 set -e
 
-systemctl start fabmo-updater-update
+systemctl start fabmo-updater -update
