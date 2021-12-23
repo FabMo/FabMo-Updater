@@ -153,8 +153,6 @@ function installFirmware(operation) {
 
 	var srcPath = resolveCwdPath(operation.cwd, operation.src);
 	log.info('Installing firmware from ' + srcPath);
-log.debug('NOT INSTALLING FIRMWARE!')
-
 	return require('../hooks').installFirmware(srcPath);		
 
 }
