@@ -539,7 +539,7 @@ function UpdaterConfigFirstTime(callback) {
                         callback();
                     })
                 } else {
-////##
+////## Don't know what this was intended for or why functionality missing; defaulted out?
                 // require('./util').getCpuInfo(function(err,cpus){
                 // if(err) return log.warn(err);
                 // for( c in cpus ){

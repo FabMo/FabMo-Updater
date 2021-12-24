@@ -93,6 +93,7 @@ Config.prototype.save = function(callback) {
 			} else {
 //				var cfg = new Buffer(JSON.stringify(this._cache, null, 4));
 log.debug('save cache- ' + this._cache);
+console.dir(this._cache)
                 var cfg = new Buffer.from(JSON.stringify(this._cache, null, 4));
 				fs.write(fd, cfg, 0, cfg.length, 0, function(err, written, string) {
 					if(err) {

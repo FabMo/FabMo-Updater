@@ -2,13 +2,9 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch via NPM",
-            "request": "launch",
-            "runtimeArgs": [
-                "run",
-                "debug"
-            ],
-            "runtimeExecutable": "npm",
+            "name": "Attach",
+            "port": 9229,
+            "request": "attach",
             "skipFiles": [
                 "<node_internals>/**"
             ],
@@ -16,10 +12,17 @@
         },
         {
             "type": "node-terminal",
-            "name": "RunScript: debug",
+            "name": "MyScript: debug",
             "request": "launch",
             "command": "sudo npm run debug",
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "pwa-node",
+            "name": "MyTESTScript",
+            "request": "attach",
+            "address": "local host",
+            "port": 9229,
         }
     ]
 }

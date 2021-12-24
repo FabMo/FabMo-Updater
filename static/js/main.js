@@ -109,6 +109,7 @@ function setConfig(id, value) {
   co[parts[parts.length-1]] = value;
   console.log("Setconfig: ", co)
   updater.setConfig(co, function(err, data) {
+////## next previously comment out? why??
     //update();
   });
 }
