@@ -236,6 +236,7 @@ function launchDashboard() {
 function setState(state) {
     var stateText = state.charAt(0).toUpperCase() + state.slice(1);
     $('#updater-status-text').text(' ' + stateText);
+    $('.label-updater-status').removeClass('info-down').addClass('info-up').text(' ' + stateText);
     $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + state);
     var icon = $('#updater-status-icon');
     var classes = 'fa-circle-o fa-spin fa-spinner fa-chain-broken'
@@ -642,7 +643,7 @@ $(document).ready(function() {
 
     // Populate various other config fields
     // TODO at least some of these are obsolete take them out
-    $('.label-updater-version').text(updater_version_number)
+    $('.label-updater-version').text(updater_version_number);
     $('.label-wifi-network-mode').text(config.network.wifi.mode);
     $('.label-engine-git').text(config.engine_git_repos);
     $('.label-updater-git').text(config.updater_git_repos);
@@ -666,6 +667,7 @@ $(document).ready(function() {
 
   });
 
+  ////## need regular updates
   // TODO These functions are only called once at startup - they should maybe be updated 
   //      routinely since a change in the engine's status/info can happen behind the scenes
   
@@ -692,7 +694,7 @@ $(document).ready(function() {
     if(err) {
       $('.label-engine-status').removeClass('info-up').addClass('info-down').text("down");
     } else {
-      $('.label-engine-status').removeClass('info-down').addClass('info-up').text(status.state);
+        $('.label-engine-status').removeClass('info-down').addClass('info-up').text(status.state);
     }
   });
 
