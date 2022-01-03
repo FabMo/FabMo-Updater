@@ -29,7 +29,8 @@ var UpdaterAPI = function() {
 
 // Return the URL of the engine instance for this host
 UpdaterAPI.prototype.getEngineURL = function() {
-	return this.engine_url;
+console.log('Got Engine URL - ',this.engine_url)
+    return this.engine_url;
 }
 
 // Start the websocket connection
@@ -81,7 +82,8 @@ UpdaterAPI.prototype._initializeWebsocket = function() {
 UpdaterAPI.prototype.emit = function(evt, data) {
 	var handlers = this.events[evt];
 	if(handlers) {
-		for(var i=0; i<handlers.length; i++) {
+console.log('emitting event(s)')
+        for(var i=0; i<handlers.length; i++) {
 			handlers[i](data);
 		}
 	}
@@ -141,7 +143,12 @@ UpdaterAPI.prototype.getConfig = function(callback) {
 UpdaterAPI.prototype.setConfig = function(cfg_data, callback) {
 	this._post('/config', cfg_data, callback, function(err, data) {
 		callback = callback || function() {};
-		callback(null, cfg_data);
+        if(err){
+            callback(err);
+        } else {
+            ////## cfg_data or data ??
+            callback(null, cfg_data);
+        }
 	});
 }
 
@@ -490,8 +497,12 @@ UpdaterAPI.prototype._post = function(url, data, errback, callback, key) {
 				console.error("Got a bad response from server: " + xhr.status);
 				break;
 		}
+////## engine version has added bind
+//    }.bind(this);
     }
-	xhr.send(data);
+console.log("at send point .....")
+console.log(data,xhr.status)
+    xhr.send(data);
 	return xhr;
 }
 

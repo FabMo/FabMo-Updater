@@ -915,8 +915,9 @@ Updater.prototype.start = function(callback) {
             // Configure local directory for uploading files
             log.info("Configuring upload directory...");
 
-            // #### fixed name of bodyParser during updating of NPM
-            server.use(restify.plugins.bodyParser({'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
+            ////## fixed name of bodyParser during updating of NPM
+            ////## but this was not enough because mapping of Params was lost ??? so following line got added option, not sure both work
+            server.use(restify.plugins.bodyParser({ mapParams: true , 'uploadDir':config.updater.get('upload_dir') || '/tmp'}));
             server.pre(restify.pre.sanitizePath());
 
             // Configure authentication via passport

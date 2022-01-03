@@ -48,8 +48,8 @@ function configureUser(callback){
 			}
 		} else {
 			exports.user.initUsers(data, function(msg){
-console.log(JSON.stringify(data, null, 4));
-                log.info('export init users --> ' + msg);
+                // msg??
+                log.info('export init users --> ');
 				callback();
 			});	
 		}

@@ -20,7 +20,6 @@ var EventEmitter = require('events').EventEmitter;
 Config = function(config_name) {
 	this._cache = {};
 	this.config_name = config_name;
-log.debug('dirname- ' + __dirname)    
 	this.default_config_file = __dirname + '/default/' + config_name + '.json';
 	this.config_file = Config.getDataDir('config') + '/' + config_name + '.json';
 	this._loaded = false;
@@ -85,15 +84,12 @@ Config.prototype.load = function(filename, callback) {
 //   callback - Called with null once the configuration is saved (or with error if error)
 Config.prototype.save = function(callback) {
 	if(this._loaded && this.config_file) {
-		log.debug("Saving config to " + this.config_file);
 		fs.open(this.config_file, 'w', function(err, fd) {
 			if(err) {
 				log.error(err);
 				callback(err);
 			} else {
 //				var cfg = new Buffer(JSON.stringify(this._cache, null, 4));
-log.debug('save cache- ' + this._cache);
-console.dir(this._cache)
                 var cfg = new Buffer.from(JSON.stringify(this._cache, null, 4));
 				fs.write(fd, cfg, 0, cfg.length, 0, function(err, written, string) {
 					if(err) {

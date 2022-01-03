@@ -63,7 +63,7 @@ module.exports = function(server) {
 //    server.get('*/', restify.plugins.serveStatic({
     server.get("/*", restify.plugins.serveStatic({
         directory: './static',
-	 	default: 'index.html',
+	 	default: 'index.html'
 //	 	appendRequestPath: false
 	}));
 
