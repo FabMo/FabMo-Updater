@@ -9,7 +9,7 @@ var passport = authentication.passport;
 
 // Authenticate as the provided user
 var login = function(req, res, next) {
-  passport.authenticate('local', function(err, user, info) {
+  authentication.passport.authenticate('local', function(err, user, info) {
     if (err) {
       return next(err); // will generate a 500 error
     }

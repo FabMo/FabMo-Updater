@@ -110,7 +110,7 @@ function setConfig(id, value) {
   console.log("Setconfig: ", co)
   updater.setConfig(co, function(err, data) {
 ////## next previously comment out? why??
-    //update();
+    update();
   });
 }
 
@@ -153,49 +153,6 @@ function clearConsole() {
     log.text('');
 }
 
-// Fetch the current list of wifi networks from the updater
-// and update the network table in the UI.
-//   callback - Called once the table has been updated or error if there was an error
-function updateWifiNetworks(callback) {
-    updater.getWifiNetworks(function(err, networks) {
-        if(err) {
-            $('#wifi-network-table').hide();
-            $('#message-no-wifi-networks').show();
-            return callback(err);
-        }
-
-        // Clear the existing networks
-        var table = document.getElementById('wifi-network-table');
-        var rows = table.rows.length;
-        for(var i=1; i<rows; i++) {
-            table.deleteRow(1);
-        }
-
-        if(!networks || networks.length === 0) {
-            $('#wifi-network-table').hide();
-            $('#message-no-wifi-networks').show();
-        } else {
-            $('#wifi-network-table').show();
-            $('#message-no-wifi-networks').hide();
-        }
-        // Add the newly defined ones
-        networks.forEach(function(network) {
-            var row = table.insertRow(table.rows.length);
-            row.onclick = function(evt) {
-              $('#wifi-network-ssid').val(network.ssid);
-              $('#wifi-network-key').focus();
-            }
-            var ssid = row.insertCell(0);
-            var security = row.insertCell(1);
-            var strength = row.insertCell(2);
-            ssid.innerHTML = network.ssid || '<No SSID>';
-            security.innerHTML = (network.security || []).join('/');
-            strength.innerHTML = network.strength|| '';
-        });
-        callback();
-    });
-}
-
 // Launch the "simple updater" which just applies any prepared updates with a full page spinner
 // Confirm with a modal before launching
 function launchSimpleUpdater() {
@@ -234,7 +191,8 @@ function launchDashboard() {
 // Update the UI to reflect the provided updater state
 //   state - One of 'idle' 'disconnected' or 'updating'
 function setState(state) {
-    var stateText = state.charAt(0).toUpperCase() + state.slice(1);
+    //var stateText = state.charAt(0).toUpperCase() + state.slice(1);
+    var stateText = state.charAt(0) + state.slice(1);
     $('#updater-status-text').text(' ' + stateText);
     $('.label-updater-status').removeClass('info-down').addClass('info-up').text(' ' + stateText);
     $('#updater-status').removeClass('status-idle status-updating status-disconnected').addClass('status-' + state);
@@ -332,6 +290,9 @@ function dismissModal() {
   $('#btn-modal-cancel').off('click');
   modalShown = false;
   $('#modal').hide();
+  console.log("reloading view");   
+  window.location.reload();
+   
 }
 
 $(document).ready(function() {
@@ -380,9 +341,11 @@ $(document).ready(function() {
     setState('disconnected');
     showModal({
       title : 'Updater Disconnected',
-      message : 'This session is no longer connected to the updater.  This may be because the updater has changed networks.  This message will dismiss if connection is reestablished.',
+      message : 'This session is no longer connected to the updater.  This message will dismiss if connection is re-established. The network connection may have changed. You may need to refresh the page and it may be necessary to log in again.',
       icon : 'fa-chain-broken'
     });
+    console.log("dismissing model on disconnect");
+    dismissModal();
   });
 
   // TODO Obsolete?
@@ -433,144 +396,20 @@ $(document).ready(function() {
     updater.applyPreparedUpdates();
   });
 
+  // Hijacking what was "Factory Reset" for FabMo Restart on Raspberry Pi ....
   // Perform the factory reset
   // This function confirms with a modal before actually doing the reset
   $("#btn-factory-reset").click( function(evt) {
       evt.preventDefault();
-      showModal({
-        title : 'Factory Reset?',
-        message : 'This will reset your software to its factory state.  This process is not reversible and you will lose all data.  Are you certain you want to do this?  <em>Are you really really sure? This is a destructive operation.  It will take some time, and you will lose contact with the updater temporarily.</em>',
-        icon : 'fa-exclamation-circle',
-        okText : 'Yes!  I understand the risk!',
-        cancelText : 'No!  Get me out of here!',
-        ok : function() {
+          clearConsole();
           updater.factoryReset();
-          dismissModal();
-        },
-        cancel : function() {
-          dismissModal();
-        }
-      });
+          // delay 10 sec and then do a reload/refresh
+          setTimeout(function() {
+            window.location.reload();
+          }, 10000);
+          clearConsole();
     });
 
-  // Update the network management UI
-  updater.getEthernetConfig(function(err,data){
-    if(err){
-      console.log(err);
-      //TODO Hide ethernet section
-    }else{
-      
-      $("#ethernet-network-mode").change(function(e){
-        if($(this).val()==='dhcp' || $(this).val()==='off'){
-          // Disable the manual IP setup in the case that DHCP is selected or ethernet is disabled
-          $("#ethernet-network-ip-address").prop('disabled', true);
-          $("#ethernet-network-netmask").prop('disabled', true);
-          $("#ethernet-network-gateway").prop('disabled', true);
-          $("#ethernet-network-dns").prop('disabled', true);
-          $("#ethernet-network-dhcp-range-start").prop('disabled', true);
-          $("#ethernet-network-dhcp-range-end").prop('disabled', true);
-        }else{
-          // Otherwise, turn those inputs on
-          $("#ethernet-network-ip-address").prop('disabled', false);
-          $("#ethernet-network-netmask").prop('disabled', false);
-          $("#ethernet-network-gateway").prop('disabled', false);
-          $("#ethernet-network-dns").prop('disabled', false);
-          $("#ethernet-network-dhcp-range-start").prop('disabled', false);
-          $("#ethernet-network-dhcp-range-end").prop('disabled', false);
-        }
-      })
-
-      // Populate fields with the current updater settings
-      $("#ethernet-network-mode").val(data.mode || 'off');
-      $("#ethernet-network-ip-address").val(data.default_config.ip_address);
-      $("#ethernet-network-netmask").val(data.default_config.netmask);
-      $("#ethernet-network-gateway").val(data.default_config.gateway);
-      $("#ethernet-network-dns").val(data.default_config.dns.join(','));
-      $("#ethernet-network-dhcp-range-start").val(data.default_config.dhcp_range.start);
-      $("#ethernet-network-dhcp-range-end").val(data.default_config.dhcp_range.end);
-    }
-
-    // Read back the values when the user clicks the 'save' button
-    $('#btn-ethernet-network-save').click(function(e){
-      var ethConf = {
-        mode : $("#ethernet-network-mode").val(),
-        default_config : {
-          ip_address : $("#ethernet-network-ip-address").val(),
-          netmask : $("#ethernet-network-netmask").val(),
-          gateway : $("#ethernet-network-gateway").val(),
-          dns : $("#ethernet-network-dns").val().split(','),
-          dhcp_range:{
-            start : $("#ethernet-network-dhcp-range-start").val(),
-            end : $("#ethernet-network-dhcp-range-end").val()
-          }
-        }
-      };
-      // Write the values thus read back into the updater config
-      updater.setEthernetConfig(ethConf,function(err,data){
-        if(err){
-          console.log(err);
-        }else{
-          $("#ethernet-network-mode").val(data.mode || 'off');
-          $("#ethernet-network-ip-address").val(data.default_config.ip_address);
-          $("#ethernet-network-netmask").val(data.default_config.netmask);
-          $("#ethernet-network-gateway").val(data.default_config.gateway);
-          $("#ethernet-network-dns").val(data.default_config.dns.join(','));
-          $("#ethernet-network-dhcp-range-start").val(data.default_config.dhcp_range.start);
-          $("#ethernet-network-dhcp-range-end").val(data.default_config.dhcp_range.end);
-        }
-      });
-    });
-  });
-
-  // Buttons for entering AP mode and disabling the wifi
-  $("#btn-wifi-network-ap-mode").click(function() {updater.enableHotspot()});
-  $("#btn-wifi-network-disable").click(function() {updater.disableWifi()});
-  
-  // Wifi network ID submit:  This form configures the network ID, which serves both
-  // as the machine name and wifi SSID when in AP mode
-  $("#form-wifi-network-id").submit(function(evt) {
-    evt.preventDefault();
-    var name = $('#wifi-network-name').val();
-    var password = $('#wifi-network-password').val();
-    var options = {};
-    if(name) {
-        options['name'] = name;
-    }
-    if(password) {
-        options['password'] = password;
-    }
-    updater.setNetworkIdentity(options, function(err, data) {
-      if(err) {
-        console.error(err);
-      } else {
-        updater.getNetworkIdentity(function(err, id) {
-          $(".label-wifi-network-id").text(id.name);
-        });
-      }
-    });
-  });
-
-  // Wifi network form submit:  Allows you to enter a SSID and key and join a network.
-  // Shows a modal to confirm before changing networks.
-  $("#form-join-wifi-network").submit(function(evt) {
-    evt.preventDefault();
-    var ssid = $('#wifi-network-ssid').val();
-    var key = $('#wifi-network-key').val();
-    showModal({
-      title : 'Change wifi Network?',
-      message : 'Do you wish to join the Wifi network "' + ssid + '"? You will be <em>disconnected from the updater</em> and will need to reconnect to the target wireless network.',
-      icon : 'fa-question-circle',
-      okText : 'Yes',
-      cancelText : 'No',
-      ok : function() {
-        updater.connectToWifi(ssid, key);
-        dismissModal();
-      },
-      cancel : function() {
-        dismissModal();
-      }
-    });
-  });
 
   //
   // System Functions
@@ -615,23 +454,6 @@ $(document).ready(function() {
     });
   });
 
-  // Periodically poll for the list of wifi networks and update the UI accordingly
-  function updateService() {
-    updateWifiNetworks(function(err) {
-        setTimeout(updateService,5000); // TODO magic number
-    });
-  }
-  updateService();
-
-  // Get the network ID for the current wifi network
-  updater.getNetworkIdentity(function(err, id) {
-    if(err) { console.error(err); return; }
-////## temp for start of v3
-    id.name = " -- now handled in engine"
-    $(".label-wifi-network-id").text(id.name);
-  });
-
-
   // Retrieve the updater config and populate the fields used for editing it
   updater.getConfig(function(err, config) {
 
@@ -650,7 +472,6 @@ $(document).ready(function() {
     $('.label-platform').text(config.os + '/' + config.platform);
     $('.label-os-version').text(config.os_version);
     $('.label-machine-id').text(config.id);
-//    $('#consent_for_beacon').val(config.consent_for_beacon);
 
     // Set the OS from the updater config
     setOS(config.os);
@@ -667,35 +488,36 @@ $(document).ready(function() {
 
   });
 
-  ////## need regular updates
-  // TODO These functions are only called once at startup - they should maybe be updated 
-  //      routinely since a change in the engine's status/info can happen behind the scenes
-  
-  // Populate the table of engine information
-  updater.getEngineInfo(function(err, info) {
-    if(err) {
-      $('.label-engine-version').text('unavailable');
-      $('.label-fw-build').text('unavailable');
-      $('.label-fw-config').text('unavailable');
-      $('.label-fw-version').text('unavailable');
+  // Check Engine Info and Status routinely since a change can happen behind the scenes
+  function engineUpdateService() {
+    setTimeout(engineUpdateService,5000);
 
-    } else {
-      var engine_version_number = info.version.number || info.version.hash.substring(0,8) + '-' + info.version.type
-      $('.label-fw-build').text(info.firmware.build || 'unavailable');
-      $('.label-fw-config').text(info.firmware.config || 'unavailable');
-//      $('.label-fw-version').text('BAH!' || 'unavailable');
-      $('.label-fw-version').text((info.firmware.version).replace('-dirty','') || 'unavailable');
-      $('.label-engine-version').text(engine_version_number || 'unavailable');
-    }
-  });
+      // Populate the table of engine information
+      updater.getEngineInfo(function(err, info) {
+        if(err) {
+          $('.label-engine-version').text('unavailable');
+          $('.label-fw-build').text('unavailable');
+          $('.label-fw-config').text('unavailable');
+          $('.label-fw-version').text('unavailable');
 
-  // Populate the current status of the engine
-  updater.getEngineStatus(function(err, status) {
-    if(err) {
-      $('.label-engine-status').removeClass('info-up').addClass('info-down').text("down");
-    } else {
-        $('.label-engine-status').removeClass('info-down').addClass('info-up').text(status.state);
+        } else {
+          var engine_version_number = info.version.number || info.version.hash.substring(0,8) + '-' + info.version.type
+          $('.label-fw-build').text(info.firmware.build || 'unavailable');
+          $('.label-fw-config').text(info.firmware.config || 'unavailable');
+          $('.label-fw-version').text((info.firmware.version).replace('-dirty','') || 'unavailable');
+          $('.label-engine-version').text(engine_version_number || 'unavailable');
+        }
+      });
+      // Populate the current status of the engine
+      updater.getEngineStatus(function(err, status) {
+        if(err) {
+          $('.label-engine-status').removeClass('info-up').addClass('info-down').text("down");
+        } else {
+            $('.label-engine-status').removeClass('info-down').addClass('info-up').text(status.state);
+        }
+      });
     }
-  });
+
+  engineUpdateService();
 
 });

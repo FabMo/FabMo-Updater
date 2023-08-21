@@ -303,7 +303,6 @@ exports.updateFirmware = function(filename, callback) {
 // Initiate a factory reset
 exports.factoryReset = function(callback) {
 	var updater = require('../updater');
-	updater.setState('updating');
 	spawn('factory_reset');
 }
 

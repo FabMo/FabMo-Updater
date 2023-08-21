@@ -59,9 +59,9 @@ exports.configure = function(){
         if (!config.user.validPassword(username, password)) {
           return done(null, false, { message: 'Incorrect password.' });
         }
-        if(!data.isAdmin){
-          return done(null, false, { message: 'Must be admin' });
-        }
+        // if(!data.isAdmin){
+        //   return done(null, false, { message: 'Must be admin' });
+        // }
         var user = {
           'username': username,
           'password': data.password,

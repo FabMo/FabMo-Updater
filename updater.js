@@ -247,7 +247,7 @@ Updater.prototype.stop = function(callback) {
 // // TODO - I think this is a legacy function that does the GIT update - should be removed - everything is done with .fmp files now
 // Updater.prototype.updateEngine = function(version, callback) {
 //     if(this.status.state != 'idle') {
-//         callback(new Error('Cannot update the engine when in the ' + updater.status.state + ' state.'));
+//         callback(new Error('Cannot update the engine when in the ' + this.status.state + ' state.'));
 //     } else {
 //         hooks.updateEngine(version, callback);
 //     }
@@ -258,17 +258,17 @@ Updater.prototype.stop = function(callback) {
 // // TODO - This is legacy code that should no longer be used.  The update process is done with .fmp files now.
 // Updater.prototype.installEngine = function(version, callback) {
 //     if(this.status.state != 'idle') {
-//         callback(new Error('Cannot install the engine when in the ' + updater.status.state + ' state.'));
+//         callback(new Error('Cannot install the engine when in the ' + this.status.state + ' state.'));
 //     } else {
 //         hooks.installEngine(version, callback);
 //     }
 // }
 
-// Initiate a factory reset
+// Initiate a >FabMo Restart< on Raspberry Pi (hijacked Reset)
 // Since this program will be shut down when the reset is initiated, the callback is called before doing the actual reset.
 Updater.prototype.factoryReset = function(callback) {
     if(this.status.state != 'idle') {
-        callback(new Error('Cannot factory reset when in the ' + updater.status.state + ' state.'));
+        callback(new Error('Cannot factory reset when in the ' + this.status.state + ' state.'));
     } else {
         callback(); // Go ahead and callback because the factory reset is going to cause the process to bail.
         hooks.factoryReset();
@@ -280,7 +280,7 @@ Updater.prototype.factoryReset = function(callback) {
 // TODO - This is legacy code that should no longer be used.  The update process is done with .fmp files now.
 Updater.prototype.updateUpdater = function(version, callback) {
     if(this.status.state != 'idle') {
-        callback(new Error('Cannot update the updater when in the ' + updater.status.state + ' state.'));
+        callback(new Error('Cannot update the updater when in the ' + this.status.state + ' state.'));
     } else {
         callback(); // Go ahead and callback because the updater update is going to cause the process to bail.
         hooks.updateUpdater();
@@ -297,7 +297,7 @@ Updater.prototype.getVersions = function(callback) {
 // TODO - This is legacy code that should no longer be used.  The update process is done with .fmp files now.
 Updater.prototype.updateFirmware = function(callback) {
     if(this.status.state != 'idle') {
-        callback(new Error('Cannot update the firmware when in the ' + updater.status.state + ' state.'));
+        callback(new Error('Cannot update the firmware when in the ' + this.status.state + ' state.'));
     } else {
         hooks.updateFirmware(config.updater.get('firmware_file'), callback);
     }
@@ -309,7 +309,7 @@ Updater.prototype.updateFirmware = function(callback) {
 // TODO - This is legacy code that should no longer be used.  The update process is done with .fmp files now.
 Updater.prototype.doFMU = function(filename, callback) {
     if(this.status.state != 'idle') {
-        callback(new Error('Cannot apply FMU update when in the ' + updater.status.state + ' state.'));
+        callback(new Error('Cannot apply FMU update when in the ' + this.status.state + ' state.'));
     } else {
         hooks.doFMU(filename, callback);
     }
@@ -496,7 +496,7 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
 //   time - microseconds since unix epoch
 Updater.prototype.setTime = function(time, callback) {
     if(this.status.state != 'idle') {
-        callback(new Error('Cannot set the system time while in the ' + updater.status.state + ' state.'));
+        callback(new Error('Cannot set the system time while in the ' + this.status.state + ' state.'));
     } else {
         if(this.hasAccurateTime) {
             log.warn('Not accepting an externally provided time.  Local time is trusted.');
@@ -604,44 +604,7 @@ Updater.prototype.start = function(callback) {
             log.info('Checking updater data directory tree...');
             config.createDataDirectories(callback);
         },
-//         // Older versions of the updater had a different configuration file format, and encountering that format
-//         // can trip up the current version of the code, so we migrate that config file if we detect that
-//         function apply_config_shim(callback) {
-//             var updaterPath = config.getDataDir('config') + '/updater.json';
 
-// log.debug("path- " + updaterPath);
-
-//             try {
-//                 fs.readFile(updaterPath, function(err, data) {
-// //log.debug("data- " + data);
-
-//                     try {
-//                         d = JSON.parse(data)
-//                         if(d['network']) {
-//                             if(!d['network']['ethernet']) {
-//                                 delete d['network']
-//                                 log.info('Applying network configuration shim.');
-//                                 fs.writeFile(updaterPath, JSON.stringify(d, null, 2), function(err, data) {
-//                                     if(err) {
-//                                         log.error(err);
-//                                     }
-//                                     callback();
-//                                 });
-//                             } else {
-//                                 callback();
-//                             }
-//                         } else {
-//                             callback();
-//                         }
-//                     } catch(e) {
-//                         log.error(e);
-//                         callback();
-//                     }
-//                 });
-//             } catch(e) {
-//                 log.error(e);
-//             }
-//         },
         // Load and apply the updater configuration
         function configure(callback) {
             log.info('Loading configuration...');
@@ -651,18 +614,11 @@ Updater.prototype.start = function(callback) {
         // Load and apply the user configuration
         // This config is shared with the engine so that logins work in both places
         function load_users(callback) {
-            log.info('Loading users....')
+            log.info('Loading users -1- ....')
             config.configureUser(function(){
                 callback();
             });
         },
-
-////##
-        // function launchDetectionService(callback) {
-        //     log.info("Launching Detection Service...");
-        //     detection_service();
-        //     callback();
-        // },
 
         // Populate the updater config with some calculated values if this is the first time we've ever run
         function first_time_configure(callback) {
@@ -750,69 +706,6 @@ Updater.prototype.start = function(callback) {
           });
         }.bind(this),
 
-////##
-//         // // Initialize the network module
-//         function setup_network(callback) {
-
-//             var OS = config.platform;
-//             var PLATFORM = config.updater.get('platform');
-//             try {
-//                 if(selfUpdateFile) {
-//                     // If we were called with a self-update task - don't initialie a "real" network manager.  Network management
-//                     // isn't needed during a self update because it's not a good idea to change networks during an update.  
-//                     // Just use the `GenericNetworkManager` in that case - it will result in errors - but these are ignorable.
-//                     this.networkManager = new GenericNetworkManager(OS, PLATFORM);
-//                     return callback();
-//                 } else {
-// log.debug("... normal network startup from updater ###")
-//                     this.networkManager = network.createNetworkManager();
-//                 }
-//             } catch(e) {
-//                 log.warn(e);
-//                 this.networkManager = new GenericNetworkManager(OS, PLATFORM);
-//             }
-
-//             // Listen to the network manager's "network" event (which is emitted each time a new network is joined)
-//             // and when the event is encountered, initiate beacon reporting and update package checks
-//             this.networkManager.on('network', function(evt) {
-//                 if(evt.mode === 'station' || evt.mode === 'ethernet') {
-//                     // 30 Second delay is used here to make sure timesyncd has enough time to update network time
-//                     // before trying to pull an update (https requests will fail with an inaccurate system time)
-//                     log.info('Network is possibly available:  Going to check for packages in ' + PACKAGE_CHECK_DELAY + ' seconds.')
-//                     setTimeout(function() {
-//                     log.info('Doing beacon report due to network change');
-//                     this.beacon.setLocalAddresses(this.networkManager.getLocalAddresses());
-//                     this.beacon.once('network');
-//                         log.info('Running package check due to network change');
-//                         this.runAllPackageChecks();
-//                     }.bind(this), PACKAGE_CHECK_DELAY*1000);
-//                 }
-//             }.bind(this));
-
-//             // Call the network manager init function, which actually starts looking for networks, etc.
-//             log.info('Looking for and setting up the network...');
-//             try {
-//                 this.networkManager.init();
-//                 log.info('Network manager started.')
-//             } catch(e) {
-//                 log.error(e);
-//                 log.error('Problem starting network manager:' + e);
-//             }
-
-//             // Setup a recurring function that checks to see that the updater is online
-// ////##
-//             // var onlineCheck = function() {
-//             //     this.networkManager.isOnline(function(err, online) {
-//             //         if(online != this.status.online) {
-//             //             this.setOnline(online);
-//             //         }
-//             //     }.bind(this));
-//             // }.bind(this);
-//             // onlineCheck();
-//             // setInterval(onlineCheck,3000); // TODO - magic number, should factor out
-//             return callback(null);
-//         }.bind(this),
-
         // Run any FMUS that are in the configuration fmus directory, in alphabetical order.
         // The FMU used to be the way that packages were updated, but because they weren't very
         // flexible, and allowed for arbitrary code execution, we started to phase them out.
@@ -871,7 +764,6 @@ Updater.prototype.start = function(callback) {
             log.info('Setting up the webserver...');
             var server = restify.createServer({name:'FabMo Updater'});
             this.server = server;
-////##
             // Handle options request in firefox
             function unknownMethodHandler(req, res) {
             if (req.method.toLowerCase() === 'options') {
@@ -944,7 +836,6 @@ Updater.prototype.start = function(callback) {
             server.use(authentication.passport.session());
 
             log.info('Enabling gzip for transport...');
-            //// ## another fix below
             server.use(restify.plugins.gzipResponse());
 
             log.info('Configuring websocket...');

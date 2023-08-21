@@ -30,6 +30,7 @@ function configureUpdater(callback) {
 function configureUser(callback){
 	exports.user = new UserConfig();
 	var userFile = exports.user.getConfigFile();
+	log.debug('Loading user configuration from ' + userFile);
 
 	// The very first time we load the user config, if we don't find it, we should create it.  The engine will do the same.
 	exports.user.load(userFile, function(err, data) {
@@ -48,8 +49,7 @@ function configureUser(callback){
 			}
 		} else {
 			exports.user.initUsers(data, function(msg){
-                // msg??
-                log.info('export init users --> ');
+                log.info("Export Init Users -2- .... -->message: " + msg);
 				callback();
 			});	
 		}

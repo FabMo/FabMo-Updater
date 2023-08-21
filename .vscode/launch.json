@@ -15,7 +15,7 @@
             "type": "node-terminal",
             "name": "MyScript: debug",
             "request": "launch",
-            "command": "sudo node server.js --inspect",
+            "command": "node server.js --debug",
             "cwd": "${workspaceFolder}"
         },
         {

@@ -36,7 +36,7 @@
       <li class="menu-item" data-id="view-settings"><a href="#"><i class="fa fa-wrench"></i> Settings</a></li>
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
       <li class="menu-item" data-id="goto-dashboard"><a href="#"><i class="fa fa-tachometer"></i> Goto Dashboard</a></li>
-      <li class="menu-item" data-id="view-factory"><a href="#"><i class="fa fa-industry"></i> Factory Reset</a></li>
+      <li class="menu-item" data-id="view-factory"><a href="#"><i class="fa fa-industry"></i> Re-Start FabMo</a></li>
       <li class="menu-item" data-id="view-console"><a href="#"><i class="fa fa-terminal"></i> Console</a></li>
       <li class="menu-item" data-id="log-out"><a href="#"><i class="fa fa-sign-out"></i> Logout</a></li>
       <li class="menu-label status" id="updater-status">
@@ -242,15 +242,15 @@
 
     <!--
 
-      FACTORY RESET
+      FACTORY RESET // Now Hijacked for Restart
 
     -->
     <div class="content-pane" id="view-factory">
-      <h1><i class="fa fa-industry"></i> Factory Reset</h1>
-      <p>The button below will reset all system software to its factory state.  This is not a reversible operation, and you will lose all software settings, history and user data.  <em>Do not proceed unless you know what you are doing.</em></p>
-      <p>When a factory reset is performed, you will temporarily lose contact with the updater.  Please be patient.  Factory updates take about 5 minutes, and you may need to refresh this page to restore your connection.  The system will try to re-establish the current wireless configuration after the reset, but after a system power-cycle, all wireless settings will be forgotten.  The system will be in AP mode and you will need to reconnect and re-enter wireless credentials.</p>
-      <p>In other words, a factory reset is a little weird, and you really shouldn't do it unless you're absolutely sure you have to.</p>
-      <button id="btn-factory-reset" class="btn-red"><i class="fa fa-industry"></i> Factory Reset</button>
+      <h1><i class="fa fa-industry"></i> Re-Start FabMo</h1>
+      <p>The button below will perform a soft re-start of FabMo with an attempt to reconnect to G2. The operation is for special purposes only and is likely to make your location incorrect. You will need to re-home your tool.</p>
+      <p>When the restart is begun you will temporarily lose contact with FabMo. Please be patient. You may need to refresh this page to restore your connection.</p>
+      <p>You really shouldn't do this unless you're absolutely sure you need to.</p>
+      <button id="btn-factory-reset" class="btn-red"><i class="fa fa-industry"></i> Re-Start</button>
       <br/>
     </div>
 

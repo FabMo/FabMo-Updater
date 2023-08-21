@@ -69,7 +69,7 @@ UserConfig.prototype.initUsers = function(data, callback) {
 	this._loaded = true;
 	this.update(data, function(err, data){
 		if(err){
-log.debug('no data on inituser call!')
+			log.debug('no data on inituser call!')
             callback(err);
 		} else {
             callback(data);

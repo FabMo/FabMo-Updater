@@ -82,42 +82,101 @@ Config.prototype.load = function(filename, callback) {
 
 // Save this configuration object to disk
 //   callback - Called with null once the configuration is saved (or with error if error)
-Config.prototype.save = function(callback) {
-	if(this._loaded && this.config_file) {
-		fs.open(this.config_file, 'w', function(err, fd) {
-			if(err) {
-				log.error(err);
-				callback(err);
-			} else {
-//				var cfg = new Buffer(JSON.stringify(this._cache, null, 4));
-                var cfg = new Buffer.from(JSON.stringify(this._cache, null, 4));
-				fs.write(fd, cfg, 0, cfg.length, 0, function(err, written, string) {
-					if(err) {
-						log.error(err);
-						callback(err);
-					} else {
-						fs.fsync(fd, function(err) {
-							if(err) {
-								log.error(err);
-							}
-							fs.closeSync(fd);
-							// err might be null - this is the success case
-							callback(err);
-						}.bind(this));
-					}
-				}.bind(this));
-			}
-		}.bind(this));
-		/*
-		fs.writeFile(this.config_file, JSON.stringify(this._cache, null, 4), function(err, data) {
-			log.debug("Config file saved.");
-			callback(err, data);
-		});
-		*/
-	} else {
-		setImmediate(callback);
-	}
+// Config.prototype.save = function(callback) {
+// 	if(this._loaded && this.config_file) {
+// 		fs.open(this.config_file, 'w', function(err, fd) {
+// 			if(err) {
+// 				log.error(err);
+// 				callback(err);
+// 			} else {
+// //				var cfg = new Buffer(JSON.stringify(this._cache, null, 4));
+//                 var cfg = new Buffer.from(JSON.stringify(this._cache, null, 4));
+// 				fs.write(fd, cfg, 0, cfg.length, 0, function(err, written, string) {
+// 					if(err) {
+// 						log.error(err);
+// 						callback(err);
+// 					} else {
+// 						fs.fsync(fd, function(err) {
+// 							if(err) {
+// 								log.error(err);
+// 							}
+// 							fs.closeSync(fd);
+// 							// err might be null - this is the success case
+// 							callback(err);
+// 						}.bind(this));
+// 					}
+// 				}.bind(this));
+// 			}
+// 		}.bind(this));
+// //		/*
+// 		fs.writeFile(this.config_file, JSON.stringify(this._cache, null, 4), function(err, data) {
+// 			log.debug("Config file saved.");
+// 			callback(err, data);
+// 		});
+// //		*/
+// 	} else {
+// 		setImmediate(callback);
+// 	}
+// };
+
+
+Config.prototype.save = function (callback) {
+    var config_file = this.getConfigFile();
+    if (this._loaded && config_file) {
+        log.debug("Saving config to " + config_file);
+        fs.open(
+            config_file,
+            "w",
+            function (err, fd) {
+                if (err) {
+                    log.error(err);
+                    callback(err);
+                } else {
+                    var cfg = Buffer.from(JSON.stringify(this._cache, null, 4));
+                    fs.write(
+                        fd,
+                        cfg,
+                        0,
+                        cfg.length,
+                        0,
+                        function (err, written, string) {
+                            if (err) {
+                                log.info("config write failed");
+                                log.error(err);
+                                fs.closeSync(fd); // no error reporting
+                                callback(err);
+                            } else {
+                                fs.fsync(
+                                    fd,
+                                    function (err) {
+                                        if (err) {
+                                            log.info("config sync failed");
+                                            log.error(err);
+                                        } else {
+                                            log.info(
+                                                "config fsync succeeded: " +
+                                                    config_file
+                                            );
+                                        }
+                                        fs.closeSync(fd); // no error reporting
+                                        log.debug(
+                                            "  fsync done " + config_file
+                                        );
+                                        callback(err);
+                                    }.bind(this)
+                                );
+                            }
+                        }.bind(this)
+                    );
+                }
+            }.bind(this)
+        );
+    } else {
+        setImmediate(callback);
+    }
 };
+
+
 
 // Perform an initial load() from the configuration's settings files.
 // For this to work, the Config object has to have a default_config_file and config_file member

@@ -80,16 +80,17 @@ var updateFirmware = function(req, res, next) {
 };
 */
 
-// Initiate the factory reset
-// TODO - should this be a two step thing?  Big operation, here.
+//data : null // {'task' : data}
+// factoryReset Hijacked for restarting FabMo on Raspberry Pi
 var factoryReset = function(req, res, next) {
-    updater.factoryReset(function(err, data) {
+    log.info("Initiating Soft Restart of FabMo on Raspberry Pi !   ...>")
+	updater.factoryReset(function(err, data) {
 	  if(err) {
 	  	res.json({status : 'error', message : err});
 		} else {
 			var answer = {
 			    status : "success",
-			   	  data : null // {'task' : data}
+				  data : {status: "complete"}
 			};
 			res.json(answer);			
 		}
