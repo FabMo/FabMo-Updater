@@ -9,10 +9,9 @@ In systems where the network may be the only means of accessing the FabMo softwa
 
   1. Online Updates
   2. System identity and security management
-  3. Failsafe and factory reset operations
+  3. Restart operations
   4. Engine service management
-  5. System management (reboot, shutdown, etc.)
-
+  
 ## Installation
 The standard install location for the updater is `/fabmo-updater` - To install (on the first occasion):
 
@@ -24,12 +23,12 @@ The standard install location for the updater is `/fabmo-updater` - To install (
 The default location for the updater configuration file is `/opt/fabmo/config/updater.json` - if this file or the parent directory does not exist, they will be created the first time the updater is started -- it will then need to be started again.  The configuration file can be edited manually, but should not be modified while the updater is running.  The updater uses and relies on a number of other files in the `/opt/fabmo` directory.  Code that manages configuration can be found in the `/fabmo-updater/config` directory.
 
 ## First Launch
-The updater has been designed in anticipation of running on additional _os_'s and _platform_'s. On first launch, the updater will attempt to detect the system on which it is running.  The _os_ is detected reliably using functions internal to node.js, but the _platform,_ which corresponds to the specific hardware system on which the software is run, is determined by inference from features available at the time of launch. (The code to do this is found in `updater.js`) Examples of platforms might be `raspberry-pi` for the Raspberry Pi, or `beaglboneblack` for the TI BeagleBone Black.  At the time of this writing, only the `raspberry-pi` platform is available.
+The updater has been designed in anticipation of running on additional _os_'s and _platform_'s. On first launch, the updater will attempt to detect the system on which it is running.  The _os_ is detected reliably using functions internal to node.js, but the _platform,_ which corresponds to the specific hardware system on which the software is run, is determined by inference from features available at the time of launch.
 
 ## Design Specifics
 
 ### Web Interface
-A web interface is provided, which is by convention hosted on a port that is one higher than the port of the engine.  The default port for the FabMo engine is 80, so the default port for the updater is 81, unless changed.  The web interface of the updater is meant to be informative and simple to use, but ideally, update functionality for normal users can be simply initiated and monitored through the engine.  (fabmo.js provides functions to this effect)
+A web interface is provided, which is by convention hosted on a port that is one higher than the port of the engine.  The default port for the FabMo engine is 80, so the default port for the updater is 81, unless changed.  The web interface of the updater is meant to be informative and simple to use, but ideally, update functionality for normal users can be simply initiated and monitored through the engine.  
 
 Here, a "simple" update interface is provided that just applies the latest update version and exits, providing a full-screen spinner and message.  This interface also can be accessed by redirecting to the appropriate url, `/do_update`
 
@@ -38,9 +37,6 @@ In order to perform system functions using node.js without having to have specia
 
 ### Update (FMP) Packages
 The core function of the updater is to fetch and apply updates, both to itself and other products. This importantly includes the FabMo Engine. In order to do this, it fetches a manifest describing packages that are available to download, and rifles through these to find the most appropriate updates to apply.  It does this by comparing versions in the manifest with the versions of installed products on disk, and chooses the most recent version of each product (if it is newer than the current version) to download.  Releases are applied in priority order, based on the products being installed.  Self-updates (updates to the updater itself) are downloaded and applied first to make sure that other product packages that might need a newer updater have one available for installation.  The code that manages the download, prioritization, and application of new packages is located in the `/fmp` package
-
-### Self Updates
-The updater can update *itself*. To do this with caution, the updater must shut itself down and hand the update off to an external process in order to update, so progress monitoring can't be done.  The update is managed on the Raspberry Pi by a systemd service, but could be executed externally on different systems in different ways.  The command that initiates the self update is a hook for this reason.
 
 ## Getting Started with Development
 The following sections aim to provide a quick start guide for development.
