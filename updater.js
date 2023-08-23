@@ -4,10 +4,10 @@
  * This is the main application module for the updater.
  * 
  * The FabMo updater might be more accurately named the 'FabMo Agent' because its sole function is not updating.
- * It is also responsible for managing networks, reporting its presence to the cloud and to the local network, reporting versions, etc.
+ * It is also responsible for reporting versions, checking on the tool, and offering some management functions, etc.
  *
  * The updater periodically consults an online package manifest to see if there's new software available to install by comparing the versions
- * in the manifest with local versions on 
+ * in the manifest with local versions. 
  */
 var log = require('./log').logger('updater');
 //var detection_service = require('./detection_daemon');
@@ -18,19 +18,13 @@ var fmp = require('./fmp');
 var config = require('./config');
 var util = require('./util');
 var hooks = require('./hooks');
-////## var network = require('./network');
-////## var GenericNetworkManager = require('./network/manager').NetworkManager;
-//var doshell = require('./util').doshell;
-
 var crypto = require('crypto');
 var sessions = require("client-sessions");
 var restify = require('restify');
 var async = require('async');
 var process = require('process');
 var path = require('path');
-////##var socketio = require('socket.io')
 var events = require('events');
-//var util = require('util');
 var Util = require('util');
 var fs = require('fs-extra');
 var uuid = require('uuid');
@@ -74,9 +68,6 @@ var Updater = function()
     // task status know what their status is.
     this.tasks = {};
 
-////##    // The default network manager is the generic one (until the network module has been asked to load one specific to this platform)
-////##    this.networkManager = network.Generic;
-    
     // If a task was passed in on the command line, we add it to the collection of tasks as one that is pending
     if(task) {
         this.tasks[task] = 'pending';
@@ -89,7 +80,6 @@ Util.inherits(Updater, events.EventEmitter);
 
 // Get the version of this updater.
 // It works the same way as the function in `engine.js` that does the same thing for the engine
-////## initially pasted from engine
 Updater.prototype.getVersion = function(callback) {
     // grab the version and abbreviated SHA (if one)
     util.doshell('git describe', function(data) {
@@ -130,44 +120,6 @@ Updater.prototype.getVersion = function(callback) {
     }.bind(this));
 }
 
-
-// Updater.prototype.getVersion = function(callback) {
-//     this.version = {number : 'v0.0.0', type : 'unknown'};
-//     require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : __dirname, silent: true})
-//         .then(function(data) {
-//     parts = data.split('-');
-//         if(parts.length === 1) {
-//           var versionString = parts[0].trim();
-//         } else {
-//             var versionString = parts[0].trim() + '-' + parts[2].trim();
-//         }
-//            this.version = require('./fmp').parseVersion(versionString);
-//            callback(null, this.version);
-//         }.bind(this))
-//         .catch(function(e) {
-//             log.debug('Updater is not a source installation.');
-//         fs.readFile('version.json', 'utf8', function(err, data) {
-//             if(err) {
-//             log.error(err)
-//                     return callback(null, this.version);
-//                 }
-//                 try {
-//                     data = JSON.parse(data);
-//                     if(data.number) {
-//             this.version.number = data.number;
-//             this.version.type = data['type'] ? data['type'] : 'release';
-//                         this.version.date = data.date;
-//             }
-//                 } catch(e) {
-//                     log.warn("Could not read updater version.json: " + (e.message || e))
-//                     log.warn(e);
-//                 } finally {
-//                     callback(null, this.version);
-//                 }
-//             }.bind(this))
-//         }.bind(this));
-// }
-
 // Add a task to the task collection that is marked as 'pending'
 // Tasks can only be started when the updater is in the 'idle' state
 //   return the id of the task that was just created
@@ -207,20 +159,15 @@ Updater.prototype.failTask = function(key) { this.finishTask(key, 'failed'); }
 //   state - The new state
 Updater.prototype.setState = function(state) {
     this.status.state = state || this.status.state;
-    // // TODO - do we really need to check for online here?
-    // this.status.online = this.networkManager.isOnline(function(online) {
-    //     // TODO call setOnline here?
-    //     this.status.online = online;
-    //     this.emit('status',this.status);
-    // }.bind(this));
 }
 
+////##
 // Set the online flag (indicates whether the updater is online) to the provided value
 //   online - true to indicate that the updater can see the network.  False otherwise.
-Updater.prototype.setOnline = function(online) {
-    this.status.online = online;
-    this.emit('status', this.status);
-}
+// Updater.prototype.setOnline = function(online) {
+//     this.status.online = online;
+//     this.emit('status', this.status);
+// }
 
 Updater.prototype.addAvailablePackage = function(package) {
     for(var i=0; i<this.status.updates.length; i++) {
@@ -237,10 +184,11 @@ Updater.prototype.addAvailablePackage = function(package) {
     return package;
 }
 
+////##
 // TODO - ???
-Updater.prototype.stop = function(callback) {
-    callback(null);
-};
+// Updater.prototype.stop = function(callback) {
+//     callback(null);
+// };
 
 ////##
 // // Update the engine
@@ -270,7 +218,7 @@ Updater.prototype.factoryReset = function(callback) {
     if(this.status.state != 'idle') {
         callback(new Error('Cannot factory reset when in the ' + this.status.state + ' state.'));
     } else {
-        callback(); // Go ahead and callback because the factory reset is going to cause the process to bail.
+        callback(); // ?Go ahead and callback because the factory reset is going to cause the process to bail.
         hooks.factoryReset();
     }
 }
@@ -391,6 +339,7 @@ Updater.prototype.runPackageCheck = function(product) {
 // Run a package check for all products.  This is done serially, starting with the updater, then the engine.
 // Returns a promise that resolves when all checks are complete (or rejects if any of them failed)
 Updater.prototype.runAllPackageChecks = function() {
+    log.clear("Checking for Updates ...");
     return this.runPackageCheck('FabMo-Updater')
         .then(function(updaterPackage) {
             if(!updaterPackage) {
@@ -852,7 +801,7 @@ Updater.prototype.start = function(callback) {
                 log.info(server.name+ ' listening at '+ server.url);
                 callback(null, server);
             });
-log.debug("got to authentication");
+            log.debug("got to authentication");
             // TODO - why is this down here?
             authentication.configure();
 
@@ -868,21 +817,6 @@ log.debug("got to authentication");
             if(evt.packages_url) {
                 this.runAllPackageChecks();
             }
-////##
-            // if(evt.beacon_url) {
-            //     this.beacon.set('url', config.updater.get('beacon_url'));
-            // }
-
-            // // If the tool name changes, report the change to beacon
-            // if(evt.name) {
-            //     this.beacon.once('config');
-            // }
-
-            // // If beacon consent changes, let the beacon daemon know (possibly do a report)
-            // if (evt.consent_for_beacon) {
-            //     this.beacon.set("consent_for_beacon", evt.consent_for_beacon);
-            //     log.info("Consent for beacon is " + evt.consent_for_beacon);
-            // }
         }.bind(this));
         callback();
     }.bind(this),
@@ -915,38 +849,6 @@ log.debug("got to authentication");
         }
     }.bind(this),
 
-////##
-    // Start the beacon service
-    // function start_beacon(callback) {
-    //     var url = config.updater.get('beacon_url');
-    //     var consent = config.updater.get('consent_for_beacon');
-
-    //     log.info("Starting beacon service");
-    //     this.beacon = new Beacon({
-    //         url : url,
-    //         interval : BEACON_INTERVAL
-    //     });
-    //     switch(consent) {
-    //         case "true":
-    //         case true:
-    //                     log.info("Beacon is enabled");
-    //                     this.beacon.set("consent_for_beacon", "true");
-    //             break;
-
-    //         case "false":
-    //         case false:
-    //             log.info("Beacon is disabled");
-    //                     this.beacon.set("consent_for_beacon", "false");
-    //             break;
-    //         default:
-    //             log.info("Beacon consent is unspecified");
-    //                     this.beacon.set("consent_for_beacon", "true");
-    //             break;
-    //     }
-
-    //     this.beacon.start();
-
-    // }.bind(this)
     ],
         function(err, results) {
             if(err) {

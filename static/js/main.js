@@ -423,6 +423,7 @@ $(document).ready(function() {
     $("#btn-check-for-updates").addClass('disabled');
     $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
     $("#check-button-text").text('Checking...');
+    clearConsole();
     updater.checkForUpdates();
   });
 

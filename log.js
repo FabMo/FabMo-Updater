@@ -101,6 +101,11 @@ Logger.prototype.write = function(level, msg) {
 					});
 					break;
 
+				case 'clear':  // hack to clear the console
+					console.log(('   ' + msg).bold);
+					clearLogBuffer();
+					break;
+
 				case 'command':
 					console.log(('   ' + msg).bold);
 					break;
@@ -136,6 +141,7 @@ Logger.prototype.write = function(level, msg) {
 };
 
 // These functions provide a shorthand alternative to specifying the log level every time
+Logger.prototype.clear = function(msg) { this.write('clear', msg)}
 Logger.prototype.command = function(msg) { this.write('command', msg)}
 Logger.prototype.stdout = function(msg) { this.write('stdout', msg)}
 Logger.prototype.stderr = function(msg) { this.write('stderr', msg)}

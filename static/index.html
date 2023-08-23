@@ -63,10 +63,6 @@
         <tr><td class="info-key">Machine ID:</td> <td class="cell-value"><span class="info-value label-machine-id"/></td></tr>
         <tr><td class="info-key">OS Version:</td> <td><span class="info-value label-os-version"/></td></tr>
 
-        <tr class="info-header-row"><td class="info-key-header">Wifi Network</td><td>&nbsp;</td></tr>
-        <tr><td class="info-key">Wifi Network ID:</td> <td><span class="info-value label-wifi-network-id"></span></td></tr>
-        <tr><td class="info-key">Wifi Network Mode:</td> <td><span class="info-value label-wifi-network-mode"></span></td></tr>
-
         <tr class="info-header-row"><td class="info-key-header">Updater</td><td>&nbsp;</td></tr>
         <tr><td class="info-key">Updater Repository:</td> <td><span class="info-value label-updater-git"></span></td></tr>
         <tr><td class="info-key">Updater Version:</td> <td><span class="info-value label-updater-version"></span></td></tr>
@@ -116,82 +112,6 @@
       </p>
     </div>
 
-    <!--
-
-      NETWORK
-
-    -->
-    <div class="content-pane" id="view-wireless">
-      <h1><i class="fa fa-wifi"></i> Wireless Network</h1>
-      <h2>Wifi</h2>
-      <div id="wifi-section">
-        <p>Below is a list of available wireless networks.  Enter an SSID and key at the bottom of the table to join a network.  You can click a network in the list to fill in that network's SSID.  <em>Note that when you join a network, you will lose your connection to the updater and will need to reconnect from the chosen network.</em></p>
-        <div id="message-no-wifi-networks">
-          <h3>No wireless networks are currently visible.</h3>
-          <p>If you know a nearby network is active but not listed here, you can enter its SSID and network key in the form below, and an attempt will be made to join it anyway.</p>
-        </div>
-        <table id="wifi-network-table">
-          <thead>
-            <tr>
-              <th>SSID</th>
-              <th>Security</th>
-              <th>Strength</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr></tr>
-          </tbody>
-        </table>
-        <form id="form-join-wifi-network" class="form-horizontal">
-          <fieldset>
-            <label>Network ID: </label>
-            <input id="wifi-network-ssid" type="text" placeholder="SSID" />
-            <input id="wifi-network-key" type="password" placeholder="Wifi Network Key" />
-            <button id="btn-wifi-network-join" class="btn-green"><i class="fa fa-wifi"></i> Join Wifi Network</button>
-          </fieldset>
-        </form>
-        <h2>AP Mode</h2>
-        <p>In AP mode, the system acts as its own wireless access point, which can be connected to by any wifi-capable device.  In this mode, no internet access is available, so updates and other operations that require an internet connection cannot be performed. <span class="emphasis">Switching to AP mode will disconnect you from the updater.  You will have to change to the AP network once the operation is complete.</span></p>
-        <button id="btn-wifi-network-ap-mode" class="btn-blue"><i class="fa fa-wifi"></i> Switch to AP Mode</button>
-        <h2>Disable Wifi</h2>
-        <p>Clicking this button will disable the Wifi for this session (if you reboot your machine, wifi will come back). <span class="emphasis">Be carefull, if you press this button while connected through wifi, you will loose the connnection !</span></p>
-        <button id="btn-wifi-network-disable" class="btn-blue"><i class="fa fa-wifi"></i> Disable Wifi</button>
-      </div>
-    </div>
-
-    <div class="content-pane" id="view-network">
-      <div id="ethernet-section">
-        <h2>Ethernet</h2>
-        <form id="form-ethernet-network" class="form-vertical">
-          <fieldset>
-            <label>Mode :</label>
-            <select id="ethernet-network-mode">
-              <option value="magic">Magic</option>
-              <option value="dhcp">DHCP</option>
-              <option value="static">Static</option>
-              <option value="off">Off</option>
-            </select>
-            <h3>Default Configuration</h3>
-            <label>Ip Address :</label>
-            <input id="ethernet-network-ip-address" type="text" placeholder="ip address" />
-            <label>Netmask :</label>
-            <input id="ethernet-network-netmask" type="text" placeholder="netmask" />
-            <br/>
-            <label>Gateway :</label>
-            <input id="ethernet-network-gateway" type="text" placeholder="gateway" />
-            <label>DNS :</label>
-            <input id="ethernet-network-dns" type="text" placeholder="dns seperated by comma" />
-            <h3>DHCP range</h3>
-            <label>start :</label>
-            <input id="ethernet-network-dhcp-range-start" type="text" placeholder="dhcp range start" />
-            <label>end :</label>
-            <input id="ethernet-network-dhcp-range-end" type="text" placeholder="dhcp range end" />
-            <br/>
-            <button id="btn-ethernet-network-save" class="btn-green"><i class="fa fa-sitemap"></i> Change ethernet configuration</button>
-          </fieldset>
-        </form>
-      </div>
-    </div>
 
     <!--
 
@@ -242,14 +162,15 @@
 
     <!--
 
-      FACTORY RESET // Now Hijacked for Restart
+      FABMO RE-START // Hijacked from older Reset
 
     -->
     <div class="content-pane" id="view-factory">
       <h1><i class="fa fa-industry"></i> Re-Start FabMo</h1>
-      <p>The button below will perform a soft re-start of FabMo with an attempt to reconnect to G2. The operation is for special purposes only and is likely to make your location incorrect. You will need to re-home your tool.</p>
-      <p>When the restart is begun you will temporarily lose contact with FabMo. Please be patient. You may need to refresh this page to restore your connection.</p>
-      <p>You really shouldn't do this unless you're absolutely sure you need to.</p>
+      <p>The button below will perform a soft re-start of FabMo and attempt to reconnect to the G2 motion controller. You will need to re-home your tool.</p>
+      <p>You will temporarily lose contact with FabMo. Be patient.</p>
+      <p>Wait for the System Info to show that the Engine has returned to an "idle" state.</p>
+      <p></p>
       <button id="btn-factory-reset" class="btn-red"><i class="fa fa-industry"></i> Re-Start</button>
       <br/>
     </div>

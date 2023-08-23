@@ -83,7 +83,8 @@ var updateFirmware = function(req, res, next) {
 //data : null // {'task' : data}
 // factoryReset Hijacked for restarting FabMo on Raspberry Pi
 var factoryReset = function(req, res, next) {
-    log.info("Initiating Soft Restart of FabMo on Raspberry Pi !   ...>")
+	log.clear("Clearing ...");
+    log.info("Initiating Soft Restart of FabMo on Raspberry Pi !  WAIT for FabMo return ...>")
 	updater.factoryReset(function(err, data) {
 	  if(err) {
 	  	res.json({status : 'error', message : err});
