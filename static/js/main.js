@@ -175,8 +175,8 @@ function launchSimpleUpdater() {
 // Confirm with a modal before exiting
 function launchDashboard() {
   showModal({
-    title : 'Go to Dashboard?',
-    message : 'Do you want to leave the updater and go to the FabMo dashboard?',
+    title : 'Return to FabMo?',
+    message : 'Do you want to leave the updater and return to the FabMo interface?',
     okText : 'Yes',
     cancelText : 'No',
     ok : function() {
