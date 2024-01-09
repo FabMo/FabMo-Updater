@@ -170,7 +170,8 @@ function createBuildDirectories() {
 
 function getProductVersion() {
     return doshell('git describe --dirty', {cwd : reposDirectory}).then(function(v) {
-		v = v.trim().replace('-dirty', '!');
+		v = v.trim().replace('-dirty', '');
+		//v = v.trim().replace('-dirty', '!');
 		parts = v.split('-');
 		versionString = buildType === 'rc' ? candidateVersion : parts[0]
 		if(parts[2]) {

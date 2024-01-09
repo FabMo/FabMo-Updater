@@ -16,7 +16,8 @@ exports.getVersion = function(callback) {
     var version = {number : 'v0.0.0', type : 'unknown'};
 
     // First check - look in the git tags
-    return require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : config.updater.get('engine_dir'), silent : true})
+    return require('./util').doshell_promise("git describe --match='v*.*.*'", {cwd : config.updater.get('engine_dir'), silent : true})
+    //return require('./util').doshell_promise("git describe --dirty=! --match='v*.*.*'", {cwd : config.updater.get('engine_dir'), silent : true})
         .then(function(data) {
             parts = data.split('-');
             if(parts.length === 1) {
