@@ -29,7 +29,7 @@ var UpdaterAPI = function() {
 
 // Return the URL of the engine instance for this host
 UpdaterAPI.prototype.getEngineURL = function() {
-console.log('Got Engine URL - ',this.engine_url)
+    console.log('Got Engine URL - ',this.engine_url)
     return this.engine_url;
 }
 
@@ -82,7 +82,6 @@ UpdaterAPI.prototype._initializeWebsocket = function() {
 UpdaterAPI.prototype.emit = function(evt, data) {
 	var handlers = this.events[evt];
 	if(handlers) {
-console.log('emitting event(s)')
         for(var i=0; i<handlers.length; i++) {
 			handlers[i](data);
 		}

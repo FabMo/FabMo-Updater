@@ -91,7 +91,7 @@
       <h1><span class="fa fa-download"></span> Software Update</h1>
       <p>
         <div id="check-for-updates-controls">
-        <p id="message-noupdates">There are no software updates available. </p>
+        <p id="message-noupdates">There are no software updates available for automatic download. </p>
         <button id="btn-check-for-updates" class="btn"><i class="fa fa-cloud-download fa-lg" id="check-button-icon"></i> <span id="check-button-text"> Check for Updates</span></button>
         </div>
 
@@ -101,15 +101,17 @@
           <button id="btn-update-apply" class="btn-green disabled"><i class="fa fa-tags fa-lg"></i>  <span id="update-button-text">Update</span></button>
           </div>
       </p>
-      <br />
       <h1><i class="fa fa-file"></i> Manual Update</h1>
       <p>
-        <p>Click the button below to apply an update from an .fmu or .fmp file.</p>
+        <p>Click the button below to apply an update from an .fmp file.</p>
         <button id="btn-update-manual" class="btn-blue"><i class="fa fa-file fa-lg"></i>  Update With File...</button>
         <span class="progressbar hide">
           <div class="fill"></div>
         </span>
       </p>
+      <div id="report-progress" style="display:none">
+        <p><i id="report-title" class="fa fa-spinner fa-spin fa-lg"></i><span id="report-message"> UPDATE PROGRESS: Loaded File! Beginning install ...</span></p>
+      </div>
     </div>
 
 

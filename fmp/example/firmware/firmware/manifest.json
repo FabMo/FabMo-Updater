@@ -2,7 +2,7 @@
 	"product" : "G2-Core",
 	"repository" : "https://github.com/FabMo/FabMo-Engine",
 	"os" : "linux",
-	"platform" : "edison",
+	"platform" : "raspberry-pi",
 	"version" : "v99.99.99",
 	"services" : ["fabmo"],
 	"updaterNeeded" : "2.0.0",

@@ -1,8 +1,8 @@
 {
    "product":"FabMo-Updater",
    "os":"linux",
-   "platform":"edison",
-   "system":"handibot",
+   "platform":"raspberry-pi",
+   "system":"dt",
    "token":"/fabmo-updater/install_token",
    "repository":"https://github.com/FabMo/FabMo-Updater",
    "updaterNeeded":"v2.0.0",

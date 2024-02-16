@@ -477,3 +477,20 @@ td {
 .updates-available {
 	color: #B5D837;
 }
+
+#report-progress {
+    font-family:  Verdana, Geneva, sans-serif;
+    width: 600px;
+    font-size: 14px;
+    background-color: #e7820f;
+    color: white;
+    padding: 0.5em 1em;
+    text-align: left;
+    border-radius: 0.25em;
+    transition: all 0.3s ease 0s;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}

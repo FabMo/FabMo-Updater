@@ -10,6 +10,8 @@ var updater = new UpdaterAPI();
 
 // True when there's a modal on screen
 var modalShown = false;
+// True when the updater is awaiting a returned 'idle' from rebooted FabMo; wait til we know it's back up
+var awaitingReboot = false; 
 
 // Left side menu.  Mostly changes the content pane, but
 // jumps out of the updater altogether for a few items (dashboard, simple updater, logout)
@@ -215,9 +217,9 @@ function setState(state) {
             icon.removeClass(classes).addClass('fa-spin fa-spinner');
             break;
     }
-  $('#check-button-text').text(' Check for updates');
-  $('#btn-check-for-updates').removeClass('disabled');
-  $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+    $('#check-button-text').text(' Check for updates');
+    $('#btn-check-for-updates').removeClass('disabled');
+    $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
 }
 
 // Show the modal dialog with the provided options
@@ -303,9 +305,39 @@ $(document).ready(function() {
     setConfig(this.id, this.value);
   });
 
-  // Updater log event - append new log messages to console
+  // Clear the console at startup
+  clearConsole();
+  awaitingReboot = false;
+
+  // Updater log event - append new log messages to console and update PROGRESS report display depending on content
   updater.on('log', function(msg) {
+
+    // Check on progress and provide global report message
+    if (msg.indexOf("Received file ") > -1) {
+        $('#report-progress').css("display", "block");
+        log.clear();
+    }   
+    if (msg.indexOf("Deleting /fabmo") > -1) {
+        $('#report-message').text(" UPDATE PROGRESS: Deleting old version ...");
+    }   
+    if (msg.indexOf("Expanding") > -1) {
+        $('#report-message').text(" UPDATE PROGRESS: Expanding archive and installing new version ...");
+    }   
+    if (msg.indexOf("Installing firmware") > -1) {
+        $('#report-message').text(" UPDATE PROGRESS: Updating real-time motion firmware ...");
+    }   
+    if (msg.indexOf("Starting services") > -1) {
+        $('#report-message').text(" UPDATE PROGRESS: Re-starting Fabmo ...");
+        awaitingReboot = true;
+    }   
+    // If message contains items that start with "pages)" then this is a firmware update progress report;
+    // Do not display the message (it is designed for a terminal and very messy without some special handling) 
+    if (($('#report-progress').css("display") == "block") && (msg.indexOf("pages)")) > -1) {
+        msg =  "[====================>] 100%  FIRMWARE UPDATED";
+    }
+
     printf(msg);
+
   });
 
   // Updater status event - update the UI to reflect the current updater status
@@ -348,7 +380,15 @@ $(document).ready(function() {
     dismissModal();
   });
 
-  // TODO Obsolete?
+  // Additional button to return to the FabMo dashboard after uploading an update from progress report
+  $('#report-progress').click(function() {
+    if (updater.status.state === 'idle') {
+        console.log("launching dashboard-2");
+        launchDashboard();
+    }
+  });
+
+// TODO Obsolete?
   $("#btn-update-latest").click( function(evt) {
     evt.preventDefault();
     updater.updateEngine('master');
@@ -388,7 +428,7 @@ $(document).ready(function() {
           dismissModal();
         }
       });
-    });
+  });
 
   // Apply prepared updates
   $("#btn-update-apply").click( function(evt) {
@@ -433,6 +473,7 @@ $(document).ready(function() {
   // Button to browse for a manual update
   $('#btn-update-manual').click(function() {
     jQuery('#file').trigger('click');
+    clearConsole();
   });
 
   // Upload a package file manually
@@ -443,12 +484,17 @@ $(document).ready(function() {
       files.push({file:evt.target.files[i]});
     }
     updater.submitManualUpdate(files, {}, function(err, data) {
+      awaitingReboot = false;
       setTimeout(function() {
         $('.progressbar').addClass('hide');
+        // just to prevent display of leftover progress bar; reset
+        $('#report-title').removeClass('fa-check').addClass('fa-spinner').addClass('fa-spin');
+        $('#report-message').html(" UPDATE PROGRESS: Loaded File! Beginning install ...");
+        // now display it again
+        $('#report-progress').css("display", "block");
         $('#file').val(null);
         $('.progressbar .fill').width(0);
       }, 750);
-
     }, function(progress) {
       var pg = (progress*100).toFixed(0) + '%';
       $('.progressbar .fill').width(pg);
@@ -509,12 +555,17 @@ $(document).ready(function() {
           $('.label-engine-version').text(engine_version_number || 'unavailable');
         }
       });
-      // Populate the current status of the engine
+      // Populate the current status of the engine and update last step in the update progress report
       updater.getEngineStatus(function(err, status) {
         if(err) {
           $('.label-engine-status').removeClass('info-up').addClass('info-down').text("down");
         } else {
             $('.label-engine-status').removeClass('info-down').addClass('info-up').text(status.state);
+            if (awaitingReboot) {  
+                $('#report-title').removeClass('fa-spinner').removeClass('fa-spin').addClass('fa-check');
+                $('#report-message').html("COMPLETE: FabMo Restarted! (click <span> <button id='goto-dash' class='btn-black'><i class='fa fa-tachometer'></i> Return to FabMo</button></span> to continue)");
+                awaitingReboot = false;
+            }
         }
       });
     }

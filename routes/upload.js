@@ -32,6 +32,7 @@ UPLOAD_TIMEOUT = 3600000;
 //       TODO - We don't actually do anything with `callback` should eliminate it.
 function createUpload(metadata, callback) {
     var key = uuid.v1();
+    log.clear("Updating from file ...")
     log.info('Creating upload ' + key);
     UPLOAD_INDEX[key] = {
         file_count : metadata.files.length,
