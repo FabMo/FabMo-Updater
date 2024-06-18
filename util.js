@@ -6,19 +6,37 @@
  * Note that it has the same name as nodes internal util module.
  * Node's util is included with require('util') and this module with require('./util')
  */
-var path = require('path');
-var log = require('./log').logger('util');
-var fs = require('fs');
-//var fs = require('fs');
-var uuid = require('uuid');
-//var fs = require('fs');
-var escapeRE = require('escape-regexp-component');
-var exec = require('child_process').exec;
-var Q = require('q');
-var http = require('http');
-var mime = require('mime');
-var restify = require('restify');
-var errors = restify.errors;
+// var path = require('path');
+// var log = require('./log').logger('util');
+// var fs = require('fs');
+// //var fs = require('fs');
+// var uuid = require('uuid');
+// //var fs = require('fs');
+// var escapeRE = require('escape-regexp-component');
+// var exec = require('child_process').exec;
+// var Q = require('q');
+// var http = require('http');
+// var mime = require('mime');
+// var restify = require('restify');
+// var errors = restify.errors;
+
+const path = require('path');
+const log = require('./log').logger('util');
+const fs = require('fs');
+const uuid = require('uuid');
+const escapeRE = require('escape-regexp-component');
+const exec = require('child_process').exec;
+const Q = require('q');
+const http = require('http');
+const restify = require('restify');
+const errors = restify.errors;
+
+let mime;
+
+// Function to dynamically import mime module
+(async () => {
+    mime = await import('mime');
+  })();
 
 ////var MethodNotAllowedError = errors.MethodNotAllowedError;
 ////var NotAuthorizedError = errors.NotAuthorizedError;
@@ -244,27 +262,137 @@ var move = function (src, dest, cb) {
 	});
 };
 
-// restify serveStatic shim
+// // restify serveStatic shim
+// function serveStatic(opts) {
+//     opts = opts || {};
+//     /*
+//     assert.object(opts, 'options');
+//     assert.string(opts.directory, 'options.directory');
+//     assert.optionalNumber(opts.maxAge, 'options.maxAge');
+//     assert.optionalObject(opts.match, 'options.match');
+//     assert.optionalString(opts.charSet, 'options.charSet');
+//     */
+
+//     var p = path.normalize(opts.directory).replace(/\\/g, '/');
+//     var re = new RegExp('^' + escapeRE(p) + '/?.*');
+
+//     function serveFileFromStats(file, err, stats, isGzip, req, res, next) {
+//         if (err) {
+//             next(new ResourceNotFoundError(err,
+//                 req.path()));
+//             return;
+//         } else if (!stats.isFile()) {
+//             next(new ResourceNotFoundError('%s does not exist', req.path()));
+//             return;
+//         }
+
+//         if (res.handledGzip && isGzip) {
+//             res.handledGzip();
+//         }
+
+//         var fstream = fs.createReadStream(file + (isGzip ? '.gz' : ''));
+//         var maxAge = opts.maxAge === undefined ? 3600 : opts.maxAge;
+//         fstream.once('open', function (fd) {
+//             res.cache({maxAge: maxAge});
+//             res.set('Content-Length', stats.size);
+//             res.set('Content-Type', mime.lookup(file));
+//             res.set('Last-Modified', stats.mtime);
+//             if (opts.charSet) {
+//                 var type = res.getHeader('Content-Type') +
+//                     '; charset=' + opts.charSet;
+//                 res.setHeader('Content-Type', type);
+//             }
+//             if (opts.etag) {
+//                 res.set('ETag', opts.etag(stats, opts));
+//             }
+//             res.writeHead(200);
+//             fstream.pipe(res);
+//             fstream.once('end', function () {
+//                 next(false);
+//             });
+//         });
+//     }
+
+//     function serveNormal(file, req, res, next) {
+//         fs.stat(file, function (err, stats) {
+//             if (!err && stats.isDirectory() && opts.default) {
+//                 // Serve an index.html page or similar
+//                 file = path.join(file, opts.default);
+//                 fs.stat(file, function (dirErr, dirStats) {
+//                     serveFileFromStats(file,
+//                         dirErr,
+//                         dirStats,
+//                         false,
+//                         req,
+//                         res,
+//                         next);
+//                 });
+//             } else {
+//                 serveFileFromStats(file,
+//                     err,
+//                     stats,
+//                     false,
+//                     req,
+//                     res,
+//                     next);
+//             }
+//         });
+//     }
+
+//     function serve(req, res, next) {
+//         var uricomp = decodeURIComponent(req.path());
+//         var file = path.join(opts.directory, uricomp);
+
+//         if (req.method !== 'GET' && req.method !== 'HEAD') {
+//             next(new MethodNotAllowedError(req.method));
+//             return;
+//         }
+
+//         if (!re.test(file.replace(/\\/g, '/'))) {
+//             next(new NotAuthorizedError(req.path()));
+//             return;
+//         }
+
+//         if (opts.match && !opts.match.test(file)) {
+//             next(new NotAuthorizedError(req.path()));
+//             return;
+//         }
+
+//         if (opts.gzip && req.acceptsEncoding('gzip')) {
+//             fs.stat(file + '.gz', function (err, stats) {
+//                 if (!err) {
+//                     res.setHeader('Content-Encoding', 'gzip');
+//                     serveFileFromStats(file,
+//                         err,
+//                         stats,
+//                         true,
+//                         req,
+//                         res,
+//                         next);
+//                 } else {
+//                     serveNormal(file, req, res, next);
+//                 }
+//             });
+//         } else {
+//             serveNormal(file, req, res, next);
+//         }
+
+//     }
+
+//     return (serve);
+// }
+
 function serveStatic(opts) {
     opts = opts || {};
-    /*
-    assert.object(opts, 'options');
-    assert.string(opts.directory, 'options.directory');
-    assert.optionalNumber(opts.maxAge, 'options.maxAge');
-    assert.optionalObject(opts.match, 'options.match');
-    assert.optionalString(opts.charSet, 'options.charSet');
-    */
+    const p = path.normalize(opts.directory).replace(/\\/g, '/');
+    const re = new RegExp('^' + escapeRE(p) + '/?.*');
 
-    var p = path.normalize(opts.directory).replace(/\\/g, '/');
-    var re = new RegExp('^' + escapeRE(p) + '/?.*');
-
-    function serveFileFromStats(file, err, stats, isGzip, req, res, next) {
+    async function serveFileFromStats(file, err, stats, isGzip, req, res, next) {
         if (err) {
-            next(new ResourceNotFoundError(err,
-                req.path()));
+            next(new errors.ResourceNotFoundError(err, req.path()));
             return;
         } else if (!stats.isFile()) {
-            next(new ResourceNotFoundError('%s does not exist', req.path()));
+            next(new errors.ResourceNotFoundError('%s does not exist', req.path()));
             return;
         }
 
@@ -272,16 +400,15 @@ function serveStatic(opts) {
             res.handledGzip();
         }
 
-        var fstream = fs.createReadStream(file + (isGzip ? '.gz' : ''));
-        var maxAge = opts.maxAge === undefined ? 3600 : opts.maxAge;
-        fstream.once('open', function (fd) {
-            res.cache({maxAge: maxAge});
+        const fstream = fs.createReadStream(file + (isGzip ? '.gz' : ''));
+        const maxAge = opts.maxAge === undefined ? 3600 : opts.maxAge;
+        fstream.once('open', async function (fd) {
+            res.cache({ maxAge: maxAge });
             res.set('Content-Length', stats.size);
-            res.set('Content-Type', mime.lookup(file));
+            res.set('Content-Type', mime.default.getType(file)); // Using mime.default for ES module
             res.set('Last-Modified', stats.mtime);
             if (opts.charSet) {
-                var type = res.getHeader('Content-Type') +
-                    '; charset=' + opts.charSet;
+                const type = res.getHeader('Content-Type') + '; charset=' + opts.charSet;
                 res.setHeader('Content-Type', type);
             }
             if (opts.etag) {
@@ -298,45 +425,32 @@ function serveStatic(opts) {
     function serveNormal(file, req, res, next) {
         fs.stat(file, function (err, stats) {
             if (!err && stats.isDirectory() && opts.default) {
-                // Serve an index.html page or similar
                 file = path.join(file, opts.default);
                 fs.stat(file, function (dirErr, dirStats) {
-                    serveFileFromStats(file,
-                        dirErr,
-                        dirStats,
-                        false,
-                        req,
-                        res,
-                        next);
+                    serveFileFromStats(file, dirErr, dirStats, false, req, res, next);
                 });
             } else {
-                serveFileFromStats(file,
-                    err,
-                    stats,
-                    false,
-                    req,
-                    res,
-                    next);
+                serveFileFromStats(file, err, stats, false, req, res, next);
             }
         });
     }
 
     function serve(req, res, next) {
-        var uricomp = decodeURIComponent(req.path());
-        var file = path.join(opts.directory, uricomp);
+        const uricomp = decodeURIComponent(req.path());
+        const file = path.join(opts.directory, uricomp);
 
         if (req.method !== 'GET' && req.method !== 'HEAD') {
-            next(new MethodNotAllowedError(req.method));
+            next(new errors.MethodNotAllowedError(req.method));
             return;
         }
 
         if (!re.test(file.replace(/\\/g, '/'))) {
-            next(new NotAuthorizedError(req.path()));
+            next(new errors.NotAuthorizedError(req.path()));
             return;
         }
 
         if (opts.match && !opts.match.test(file)) {
-            next(new NotAuthorizedError(req.path()));
+            next(new errors.NotAuthorizedError(req.path()));
             return;
         }
 
@@ -344,13 +458,7 @@ function serveStatic(opts) {
             fs.stat(file + '.gz', function (err, stats) {
                 if (!err) {
                     res.setHeader('Content-Encoding', 'gzip');
-                    serveFileFromStats(file,
-                        err,
-                        stats,
-                        true,
-                        req,
-                        res,
-                        next);
+                    serveFileFromStats(file, err, stats, true, req, res, next);
                 } else {
                     serveNormal(file, req, res, next);
                 }
@@ -358,12 +466,11 @@ function serveStatic(opts) {
         } else {
             serveNormal(file, req, res, next);
         }
-
     }
 
-    return (serve);
+    return serve;
 }
-
+  
 // Return a directorey tree that is the result of walking the tree provided by filename
 // TODO better error handling here
 //   filename - The root of the walk
@@ -438,15 +545,30 @@ function eject(command, args) {
     process.exit(0);
 }
 
-exports.getClientAddress = getClientAddress;
-exports.serveStatic = serveStatic;
-exports.Queue = Queue;
-exports.move = move;
-exports.walkDir = walkDir;
-exports.createUniqueFilename = createUniqueFilename;
-exports.fixJSON = fixJSON;
-exports.extend = extend;
-exports.doshell = doshell;
-exports.doshell_promise = doshell_promise;
-exports.eject = eject;
-exports.retry = retry;
+// exports.getClientAddress = getClientAddress;
+// exports.serveStatic = serveStatic;
+// exports.Queue = Queue;
+// exports.move = move;
+// exports.walkDir = walkDir;
+// exports.createUniqueFilename = createUniqueFilename;
+// exports.fixJSON = fixJSON;
+// exports.extend = extend;
+// exports.doshell = doshell;
+// exports.doshell_promise = doshell_promise;
+// exports.eject = eject;
+// exports.retry = retry;
+
+module.exports = {
+    getClientAddress,
+    serveStatic,
+    Queue,
+    move,
+    walkDir,
+    createUniqueFilename,
+    fixJSON,
+    extend,
+    doshell,
+    doshell_promise,
+    eject,
+    retry
+  };

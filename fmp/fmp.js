@@ -26,7 +26,9 @@ var http = require('http');
 var https = require('https');
 var fs = require('fs-extra');
 var util = require('../util');
-var request = require('request');
+//var request = require('request');
+
+const axios = require('axios')
 
 // TODO - this is platform specific
 var TEMP_DIRECTORY = '/tmp';
@@ -146,31 +148,54 @@ function compareProducts(a,b) {
 // Return a promise that fulfills with a registry object loaded from the provided URL
 // Returns a promise that resolves with the parsed packages list (or rejects with an error)
 //   url - The url from which to retrieve the list of packages
-function fetchPackagesList(url) {
-	log.info('Retrieving a list of packages from ' + url)
-	var deferred = Q.defer();
-	try {
-		// TODO - Magic number - pull this timeout out
-		request(url, {timeout: 5000}, function (error, response, body) {
-		  	if(error) {
-		  		return deferred.reject(error);
-		  	}
-		  	if (response.statusCode == 200) {
+// function fetchPackagesList(url) {
+// 	log.info('Retrieving a list of packages from ' + url)
+// 	var deferred = Q.defer();
+// 	try {
+// 		// TODO - Magic number - pull this timeout out
+// 		request(url, {timeout: 5000}, function (error, response, body) {
+// 		  	if(error) {
+// 		  		return deferred.reject(error);
+// 		  	}
+// 		  	if (response.statusCode == 200) {
 
-		    	try {
-		    		var p = JSON.parse(body);
-					return deferred.resolve(p);
-		    	} catch(err) {
-		    		return deferred.reject(err);
-		    	}
-		  	} else {
-		  		return deferred.reject(new Error(response.statusMessage));
-		  	}
-		});
-	} catch(err) {
-		deferred.reject(err);
-	}
-	return deferred.promise;
+// 		    	try {
+// 		    		var p = JSON.parse(body);
+// 					return deferred.resolve(p);
+// 		    	} catch(err) {
+// 		    		return deferred.reject(err);
+// 		    	}
+// 		  	} else {
+// 		  		return deferred.reject(new Error(response.statusMessage));
+// 		  	}
+// 		});
+// 	} catch(err) {
+// 		deferred.reject(err);
+// 	}
+// 	return deferred.promise;
+// }
+function fetchPackagesList(url) {
+    log.info('Retrieving a list of packages from ' + url);
+    const deferred = Q.defer();
+    
+    axios.get(url, { timeout: 5000 })
+        .then(response => {
+            if (response.status === 200) {
+                try {
+                    const p = response.data;
+                    deferred.resolve(p);
+                } catch (err) {
+                    deferred.reject(err);
+                }
+            } else {
+                deferred.reject(new Error(response.statusText));
+            }
+        })
+        .catch(error => {
+            deferred.reject(error);
+        });
+
+    return deferred.promise;
 }
 
 // Given the filename for a package manifest, return a promise that fulfills with the manifest object
@@ -535,48 +560,93 @@ function filterPackages(registry, options) {
 // Download the actual package file (specified by package.url)
 // Return a promise that resolves with the package object
 //   package - Package metadata object from the package registry.  (Anything with a 'url' attribute will do)
+// function downloadPackage(package) {
+// 	// Deal with insane package
+// 	if(!package) {return Q();}
+// 	if(!package.url) {
+// 		log.warn('No url specified in download package');
+// 		return Q();
+// 	}
+
+// 	var deferred = Q.defer();
+// 	// TODO this is a magic path - this should be specified in the settings somewhere
+// 	//      (or defined up at the top of this file, or passed in as an argument)
+// 	var filename = "/opt/fabmo/update.fmp";
+
+// 	// Kick off the package download with request
+// 	log.info('Starting download of ' + package.url);
+// 	var file = fs.createWriteStream(filename);
+// 	var statusCode;
+// 	var statusMessage;
+// 	request(package.url)
+// 		.on('error', function(err) { // Handle errors
+//     		deferred.reject(err);
+//   		})
+//   		.on('response', function(response) {
+//   			statusCode = response.statusCode;
+//   			statusMessage = response.statusMessage;
+//   		})
+// 		.pipe(file).on('finish', function() {
+// 			file.close(function(err) {
+//       			if(err) {
+//       				return deferred.reject(err);
+//       			}
+//       			if(statusCode !== 200) {
+//       				return deferred.reject(new Error(statusCode + ' ' + statusMessage));
+//       			}
+//       			// Resolve with the package object
+// 	  			log.info('Download of ' + package.url + ' is complete.')
+//   				package.local_filename = filename;
+//   				deferred.resolve(package);
+//       			});  // close() is async, call cb after close completes.
+//     		});
+
+// 	return deferred.promise;
+// }
 function downloadPackage(package) {
-	// Deal with insane package
-	if(!package) {return Q();}
-	if(!package.url) {
-		log.warn('No url specified in download package');
-		return Q();
-	}
+    // Deal with insane package
+    if (!package) { return Q(); }
+    if (!package.url) {
+        log.warn('No url specified in download package');
+        return Q();
+    }
 
-	var deferred = Q.defer();
-	// TODO this is a magic path - this should be specified in the settings somewhere
-	//      (or defined up at the top of this file, or passed in as an argument)
-	var filename = "/opt/fabmo/update.fmp";
+    const deferred = Q.defer();
+    const filename = "/opt/fabmo/update.fmp"; // Magic path
 
-	// Kick off the package download with request
-	log.info('Starting download of ' + package.url);
-	var file = fs.createWriteStream(filename);
-	var statusCode;
-	var statusMessage;
-	request(package.url)
-		.on('error', function(err) { // Handle errors
-    		deferred.reject(err);
-  		})
-  		.on('response', function(response) {
-  			statusCode = response.statusCode;
-  			statusMessage = response.statusMessage;
-  		})
-		.pipe(file).on('finish', function() {
-			file.close(function(err) {
-      			if(err) {
-      				return deferred.reject(err);
-      			}
-      			if(statusCode !== 200) {
-      				return deferred.reject(new Error(statusCode + ' ' + statusMessage));
-      			}
-      			// Resolve with the package object
-	  			log.info('Download of ' + package.url + ' is complete.')
-  				package.local_filename = filename;
-  				deferred.resolve(package);
-      			});  // close() is async, call cb after close completes.
-    		});
+    log.info('Starting download of ' + package.url);
+    const file = fs.createWriteStream(filename);
 
-	return deferred.promise;
+    axios({
+        method: 'get',
+        url: package.url,
+        responseType: 'stream'
+    })
+    .then(response => {
+        if (response.status !== 200) {
+            deferred.reject(new Error(response.status + ' ' + response.statusText));
+            return;
+        }
+        
+        response.data.pipe(file);
+
+        file.on('finish', () => {
+            file.close(err => {
+                if (err) {
+                    deferred.reject(err);
+                } else {
+                    log.info('Download of ' + package.url + ' is complete.');
+                    package.local_filename = filename;
+                    deferred.resolve(package);
+                }
+            });
+        });
+    })
+    .catch(err => {
+        deferred.reject(err);
+    });
+
+    return deferred.promise;
 }
 
 // Check the package source for an available update that is appropriate for the provided constraints
@@ -674,10 +744,10 @@ function checkForAvailablePackage(product) {
 		});
 }
 
-
+exports.fetchPackagesList = fetchPackagesList;
 exports.installPackage = installPackage;
 exports.installUnpackedPackage = installUnpackedPackage;
-exports.installPackageFromFile = installPackageFromFile
+exports.installPackageFromFile = installPackageFromFile;
 exports.checkForAvailablePackage = checkForAvailablePackage;
 exports.downloadPackage = downloadPackage;
 exports.parseVersion = parseVersion;

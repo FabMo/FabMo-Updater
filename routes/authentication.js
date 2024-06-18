@@ -7,25 +7,51 @@ var log = require('../log').logger('authentication');
 var authentication = require('../authentication');
 var passport = authentication.passport;
 
-// Authenticate as the provided user
-var login = function(req, res, next) {
+// // Authenticate as the provided user
+// var login = function(req, res, next) {
+//   authentication.passport.authenticate('local', function(err, user, info) {
+//     if (err) {
+//       return next(err); // will generate a 500 error
+//     }
+//     // Generate a JSON response reflecting authentication status
+//     if (! user) {
+//       return res.send(401,{ status:'error', message : info.message, userAlreadyLogedIn:info.userAlreadyLogedIn});
+//     }
+//     req.login(user, function(err){
+//       if(err){
+//         return next(err);
+//       }
+//       authentication.setCurrentUser(user);
+//       return res.send({ status:'success', message : 'authentication succeeded' });
+//     });
+//   })(req, res, next);
+// };
+
+function login(req, res, next) {
+  console.log('Login request received');
   authentication.passport.authenticate('local', function(err, user, info) {
     if (err) {
+      console.log('Authentication error:', err);
       return next(err); // will generate a 500 error
     }
-    // Generate a JSON response reflecting authentication status
-    if (! user) {
-      return res.send(401,{ status:'error', message : info.message, userAlreadyLogedIn:info.userAlreadyLogedIn});
+    if (!user) {
+      console.log('Authentication failed:', info.message);
+      return res.send(401, { status: 'error', message: info.message, userAlreadyLogedIn: info.userAlreadyLogedIn });
     }
-    req.login(user, function(err){
-      if(err){
-        return next(err);
-      }
-      authentication.setCurrentUser(user);
-      return res.send({ status:'success', message : 'authentication succeeded' });
-    });
+
+    // Set user information in the session
+    req.session.user = {
+      id: user.id,
+      username: user.username,
+      // Add any other user information you need
+    };
+
+    console.log('User authenticated:', user);
+    authentication.setCurrentUser(user);
+    return res.send({ status: 'success', message: 'authentication succeeded' });
   })(req, res, next);
-};
+}
+
 
 // Add a user
 // TODO - is this route really needed in the updater?  (Maybe?)
