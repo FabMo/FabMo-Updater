@@ -1,3 +1,3 @@
 #!/bin/bash
 
-echo "No drive lock supported on RPI"
+echo "No drive lock supported on RPi"

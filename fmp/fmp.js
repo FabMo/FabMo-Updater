@@ -277,43 +277,44 @@ function unpackPackage(filename) {
 // Return a promise that resolves with the result of the operation.
 //   operation - The operation object.  See fmp_operations.js for viable operations
 function executeOperation(operation) {
-	var deferred = Q.defer();
-	try {
-		// Double check to make sure this operation is defined
-		if(!(operation.op in fmpOperations)) {
-			throw new Error('Operation "' + operation.op + '" found in the manifest is unknown.');
-		}
-		log.info('Executing operation: ' + operation.op)
-		// Execute the operation (return the operations promise to complete)
-		return fmpOperations[operation.op](operation);
-	} catch(e) {
-		deferred.reject(e);
-	}
-	return deferred.promise
+    const deferred = Q.defer();
+    try {
+        if (!(operation.op in fmpOperations)) {
+            throw new Error('Operation "' + operation.op + '" found in the manifest is unknown.');
+        }
+        log.info('Executing operation: ' + operation.op);
+        return fmpOperations[operation.op](operation)
+            .then(deferred.resolve)
+            .catch(deferred.reject);
+    } catch (e) {
+        deferred.reject(e);
+    }
+    return deferred.promise;
 }
 
 // Execute the operations in the provided manifest in sequence. Return a promise that resolves with the package manifest object.
 //   manifest - Parsed manifest containing the operations to execute.
 function executeOperations(manifest) {
-	var deferred = Q.defer();
-	var cwd = manifest.cwd
-	async.eachSeries(
-		manifest.operations,
-		function(operation, callback) {
-			operation.cwd = cwd;
-			executeOperation(operation)
-				.then(function() {callback();})
-				.catch(callback)
-		},
-		function(err) {
-			if(err) {
-				return deferred.reject(err);
-			}
-			return deferred.resolve(manifest);
-		}
-	);
-	return deferred.promise
+    const deferred = Q.defer();
+    const cwd = manifest.cwd;
+    async.eachSeries(
+        manifest.operations,
+        function (operation, callback) {
+            operation.cwd = cwd;
+            executeOperation(operation)
+                .then(() => callback())
+                .catch(callback);
+        },
+        function (err) {
+            if (err) {
+                return deferred.reject(err);
+            }
+            return deferred.resolve(manifest);
+        }
+    );
+    return deferred.promise;
 }
+
 
 // Delete the token file specified by the provided package manifest.  Do nothing if there is no token file specified.
 // Return a promise that resolves with the manifest object
@@ -751,3 +752,6 @@ exports.installPackageFromFile = installPackageFromFile;
 exports.checkForAvailablePackage = checkForAvailablePackage;
 exports.downloadPackage = downloadPackage;
 exports.parseVersion = parseVersion;
+
+exports.executeOperation = executeOperation;
+exports.executeOperations = executeOperations;

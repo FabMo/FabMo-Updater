@@ -15,7 +15,7 @@
     "colors": "1.4.x",
     "escape-regexp-component": "1.0.2",
     "fs-extra": "11.2.0",
-    "glob": "10.4.1",
+    "glob": "^10.4.1",
     "is-online": "^10.0.0",
     "mime": "4.0.3",
     "minimist": "^1.2.8",
