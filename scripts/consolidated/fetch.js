@@ -7,7 +7,7 @@
  * Usage
  */
 
-////## If we want to do "Consolidated" we need to update to request to axios
+////## If we want to do "Consolidated" build we need to update "request" to "axios"
 
 // var request = require('request')
 // var fs = require('fs')

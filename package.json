@@ -35,7 +35,7 @@
   "engine": "node 15.14.0",
   "apidoc": {
     "name": "FabMo Updater",
-    "version": "3.0.6",
+    "version": "3.0.7",
     "description": "FabMo-Updater",
     "title": "FabMo-Engine Update Agent"
   },

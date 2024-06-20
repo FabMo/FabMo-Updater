@@ -6,20 +6,7 @@
  * Note that it has the same name as nodes internal util module.
  * Node's util is included with require('util') and this module with require('./util')
  */
-// var path = require('path');
-// var log = require('./log').logger('util');
-// var fs = require('fs');
-// //var fs = require('fs');
-// var uuid = require('uuid');
-// //var fs = require('fs');
-// var escapeRE = require('escape-regexp-component');
-// var exec = require('child_process').exec;
-// var Q = require('q');
-// var http = require('http');
-// var mime = require('mime');
-// var restify = require('restify');
-// var errors = restify.errors;
-
+// updated for RPi "Bookworm"
 const path = require('path');
 const log = require('./log').logger('util');
 const fs = require('fs');
@@ -37,10 +24,6 @@ let mime;
 (async () => {
     mime = await import('mime');
   })();
-
-////var MethodNotAllowedError = errors.MethodNotAllowedError;
-////var NotAuthorizedError = errors.NotAuthorizedError;
-////var ResourceNotFoundError = errors.ResourceNotFoundError;
 
 // Run a function that returns a promise.  If that promise rejects, 
 // retry the function at the specified interval for the specified number of retries.
@@ -145,7 +128,6 @@ function extend(a,b, force) {
 }
 
 // Return only the filename for the provided path
-// TODO - Is this silly?
 exports.filename = function(pathname) {
     parts = pathname.split(path.sep);
     return parts[parts.legnth-1];
@@ -263,125 +245,6 @@ var move = function (src, dest, cb) {
 };
 
 // // restify serveStatic shim
-// function serveStatic(opts) {
-//     opts = opts || {};
-//     /*
-//     assert.object(opts, 'options');
-//     assert.string(opts.directory, 'options.directory');
-//     assert.optionalNumber(opts.maxAge, 'options.maxAge');
-//     assert.optionalObject(opts.match, 'options.match');
-//     assert.optionalString(opts.charSet, 'options.charSet');
-//     */
-
-//     var p = path.normalize(opts.directory).replace(/\\/g, '/');
-//     var re = new RegExp('^' + escapeRE(p) + '/?.*');
-
-//     function serveFileFromStats(file, err, stats, isGzip, req, res, next) {
-//         if (err) {
-//             next(new ResourceNotFoundError(err,
-//                 req.path()));
-//             return;
-//         } else if (!stats.isFile()) {
-//             next(new ResourceNotFoundError('%s does not exist', req.path()));
-//             return;
-//         }
-
-//         if (res.handledGzip && isGzip) {
-//             res.handledGzip();
-//         }
-
-//         var fstream = fs.createReadStream(file + (isGzip ? '.gz' : ''));
-//         var maxAge = opts.maxAge === undefined ? 3600 : opts.maxAge;
-//         fstream.once('open', function (fd) {
-//             res.cache({maxAge: maxAge});
-//             res.set('Content-Length', stats.size);
-//             res.set('Content-Type', mime.lookup(file));
-//             res.set('Last-Modified', stats.mtime);
-//             if (opts.charSet) {
-//                 var type = res.getHeader('Content-Type') +
-//                     '; charset=' + opts.charSet;
-//                 res.setHeader('Content-Type', type);
-//             }
-//             if (opts.etag) {
-//                 res.set('ETag', opts.etag(stats, opts));
-//             }
-//             res.writeHead(200);
-//             fstream.pipe(res);
-//             fstream.once('end', function () {
-//                 next(false);
-//             });
-//         });
-//     }
-
-//     function serveNormal(file, req, res, next) {
-//         fs.stat(file, function (err, stats) {
-//             if (!err && stats.isDirectory() && opts.default) {
-//                 // Serve an index.html page or similar
-//                 file = path.join(file, opts.default);
-//                 fs.stat(file, function (dirErr, dirStats) {
-//                     serveFileFromStats(file,
-//                         dirErr,
-//                         dirStats,
-//                         false,
-//                         req,
-//                         res,
-//                         next);
-//                 });
-//             } else {
-//                 serveFileFromStats(file,
-//                     err,
-//                     stats,
-//                     false,
-//                     req,
-//                     res,
-//                     next);
-//             }
-//         });
-//     }
-
-//     function serve(req, res, next) {
-//         var uricomp = decodeURIComponent(req.path());
-//         var file = path.join(opts.directory, uricomp);
-
-//         if (req.method !== 'GET' && req.method !== 'HEAD') {
-//             next(new MethodNotAllowedError(req.method));
-//             return;
-//         }
-
-//         if (!re.test(file.replace(/\\/g, '/'))) {
-//             next(new NotAuthorizedError(req.path()));
-//             return;
-//         }
-
-//         if (opts.match && !opts.match.test(file)) {
-//             next(new NotAuthorizedError(req.path()));
-//             return;
-//         }
-
-//         if (opts.gzip && req.acceptsEncoding('gzip')) {
-//             fs.stat(file + '.gz', function (err, stats) {
-//                 if (!err) {
-//                     res.setHeader('Content-Encoding', 'gzip');
-//                     serveFileFromStats(file,
-//                         err,
-//                         stats,
-//                         true,
-//                         req,
-//                         res,
-//                         next);
-//                 } else {
-//                     serveNormal(file, req, res, next);
-//                 }
-//             });
-//         } else {
-//             serveNormal(file, req, res, next);
-//         }
-
-//     }
-
-//     return (serve);
-// }
-
 function serveStatic(opts) {
     opts = opts || {};
     const p = path.normalize(opts.directory).replace(/\\/g, '/');
@@ -544,19 +407,6 @@ function eject(command, args) {
     child.unref();
     process.exit(0);
 }
-
-// exports.getClientAddress = getClientAddress;
-// exports.serveStatic = serveStatic;
-// exports.Queue = Queue;
-// exports.move = move;
-// exports.walkDir = walkDir;
-// exports.createUniqueFilename = createUniqueFilename;
-// exports.fixJSON = fixJSON;
-// exports.extend = extend;
-// exports.doshell = doshell;
-// exports.doshell_promise = doshell_promise;
-// exports.eject = eject;
-// exports.retry = retry;
 
 module.exports = {
     getClientAddress,

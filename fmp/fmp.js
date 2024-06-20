@@ -34,17 +34,6 @@ const axios = require('axios')
 var TEMP_DIRECTORY = '/tmp';
 
 // Parse a version string, and return an object that describes details of the version number
-// Example:
-//   parseVersion('v2.3.3-g20ec0a1-rc') -> 
-//      {
-//	       dirty:false, 
-//           scm:'git', 
-//          hash:'20ec0a1',
-//          type:'rc',
-//         major:2,
-//         minor:3,
-//         patch:3
-//		}
 function parseVersion(v) {
 	var retval = {
 		'dirty' : false,
@@ -148,32 +137,6 @@ function compareProducts(a,b) {
 // Return a promise that fulfills with a registry object loaded from the provided URL
 // Returns a promise that resolves with the parsed packages list (or rejects with an error)
 //   url - The url from which to retrieve the list of packages
-// function fetchPackagesList(url) {
-// 	log.info('Retrieving a list of packages from ' + url)
-// 	var deferred = Q.defer();
-// 	try {
-// 		// TODO - Magic number - pull this timeout out
-// 		request(url, {timeout: 5000}, function (error, response, body) {
-// 		  	if(error) {
-// 		  		return deferred.reject(error);
-// 		  	}
-// 		  	if (response.statusCode == 200) {
-
-// 		    	try {
-// 		    		var p = JSON.parse(body);
-// 					return deferred.resolve(p);
-// 		    	} catch(err) {
-// 		    		return deferred.reject(err);
-// 		    	}
-// 		  	} else {
-// 		  		return deferred.reject(new Error(response.statusMessage));
-// 		  	}
-// 		});
-// 	} catch(err) {
-// 		deferred.reject(err);
-// 	}
-// 	return deferred.promise;
-// }
 function fetchPackagesList(url) {
     log.info('Retrieving a list of packages from ' + url);
     const deferred = Q.defer();
@@ -562,48 +525,6 @@ function filterPackages(registry, options) {
 // Return a promise that resolves with the package object
 //   package - Package metadata object from the package registry.  (Anything with a 'url' attribute will do)
 // function downloadPackage(package) {
-// 	// Deal with insane package
-// 	if(!package) {return Q();}
-// 	if(!package.url) {
-// 		log.warn('No url specified in download package');
-// 		return Q();
-// 	}
-
-// 	var deferred = Q.defer();
-// 	// TODO this is a magic path - this should be specified in the settings somewhere
-// 	//      (or defined up at the top of this file, or passed in as an argument)
-// 	var filename = "/opt/fabmo/update.fmp";
-
-// 	// Kick off the package download with request
-// 	log.info('Starting download of ' + package.url);
-// 	var file = fs.createWriteStream(filename);
-// 	var statusCode;
-// 	var statusMessage;
-// 	request(package.url)
-// 		.on('error', function(err) { // Handle errors
-//     		deferred.reject(err);
-//   		})
-//   		.on('response', function(response) {
-//   			statusCode = response.statusCode;
-//   			statusMessage = response.statusMessage;
-//   		})
-// 		.pipe(file).on('finish', function() {
-// 			file.close(function(err) {
-//       			if(err) {
-//       				return deferred.reject(err);
-//       			}
-//       			if(statusCode !== 200) {
-//       				return deferred.reject(new Error(statusCode + ' ' + statusMessage));
-//       			}
-//       			// Resolve with the package object
-// 	  			log.info('Download of ' + package.url + ' is complete.')
-//   				package.local_filename = filename;
-//   				deferred.resolve(package);
-//       			});  // close() is async, call cb after close completes.
-//     		});
-
-// 	return deferred.promise;
-// }
 function downloadPackage(package) {
     // Deal with insane package
     if (!package) { return Q(); }

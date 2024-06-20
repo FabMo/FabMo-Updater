@@ -8,25 +8,6 @@ var authentication = require('../authentication');
 var passport = authentication.passport;
 
 // // Authenticate as the provided user
-// var login = function(req, res, next) {
-//   authentication.passport.authenticate('local', function(err, user, info) {
-//     if (err) {
-//       return next(err); // will generate a 500 error
-//     }
-//     // Generate a JSON response reflecting authentication status
-//     if (! user) {
-//       return res.send(401,{ status:'error', message : info.message, userAlreadyLogedIn:info.userAlreadyLogedIn});
-//     }
-//     req.login(user, function(err){
-//       if(err){
-//         return next(err);
-//       }
-//       authentication.setCurrentUser(user);
-//       return res.send({ status:'success', message : 'authentication succeeded' });
-//     });
-//   })(req, res, next);
-// };
-
 function login(req, res, next) {
   console.log('Login request received');
   authentication.passport.authenticate('local', function(err, user, info) {
@@ -52,7 +33,6 @@ function login(req, res, next) {
   })(req, res, next);
 }
 
-
 // Add a user
 // TODO - is this route really needed in the updater?  (Maybe?)
 var addUser = function(req, res, next) {
@@ -77,7 +57,6 @@ var addUser = function(req, res, next) {
     res.send(200,{status:'error',message:"you need to be admin to register new users"});
     return;
   }
-
 
 };
 
