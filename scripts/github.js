@@ -89,7 +89,7 @@ function getReleaseAssets(release, options) {
     return deferred.promise;
 }
 
-function deleteReleaseAsset(asset, options) {
+function deleteReleaseAssets(asset, options) {
     const deferred = Q.defer();
     const auth = {};
 

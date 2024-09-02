@@ -152,7 +152,8 @@ function clean() {
 
 function getLatestReleasedVersion() {
 	if(buildType === 'release' && !versionNumber) {
-		return doshell('git tag --sort=v:refname | tail -2', {cwd : reposDirectory})
+		return doshell("git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1", {cwd : reposDirectory})
+		// return doshell('git tag --sort=v:refname | tail -2', {cwd : reposDirectory}) // this on bringing up bad names
 			.then(function(v) {
 				versionNumber = v.split('\n')[0].trim();
                 		commitish = versionNumber;
