@@ -80,6 +80,9 @@ echo "Clearing the approot..."
 rm -rf /opt/fabmo/approot
 sync
 
+echo "Reload Systemd Services..."
+systemctl daemon-reload
+
 echo "Restarting the engine..."
 systemctl start fabmo
 

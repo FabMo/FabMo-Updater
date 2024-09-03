@@ -26,7 +26,8 @@ $('.menu-item').click(function() {
         break;
 
       case 'goto-dashboard':
-        launchDashboard();
+        var reload = false;
+        launchDashboard(reload);
         break;
       
       case 'log-out':
@@ -175,13 +176,21 @@ function launchSimpleUpdater() {
 
 // Exit the updater to the FabMo dashboard
 // Confirm with a modal before exiting
-function launchDashboard() {
+function launchDashboard(hardReload) {
   showModal({
     title : 'Return to FabMo?',
     message : 'Do you want to leave the updater and return to the FabMo interface?',
     okText : 'Yes',
     cancelText : 'No',
     ok : function() {
+      if (hardReload) {
+          // Clear local and session storage
+          localStorage.clear();
+          sessionStorage.clear();
+          // Reload with cache-busting parameter
+          const timestamp = new Date().getTime();
+          window.location.href = window.location.href.split('?')[0] + '?reload=' + timestamp;
+      }
       window.open(updater.getEngineURL(), "_self");
     },
     cancel : function() {
@@ -384,7 +393,8 @@ $(document).ready(function() {
   $('#report-progress').click(function() {
     if (updater.status.state === 'idle') {
         console.log("launching dashboard-2");
-        launchDashboard();
+        var hardReload = true;
+        launchDashboard(hardReload);
     }
   });
 
