@@ -4,6 +4,7 @@ const async = require('async');
 const glob = require('glob');
 const child_process = require('child_process');
 const path = require('path');
+const { type } = require('os');
 const log = require('../log').logger('fmp');
 
 // Denodeified functions
@@ -41,47 +42,29 @@ const resolveCwdPath = function(cwd, pth) {
 
 // Delete the files provided by the `paths` attribute
 //   operation - Operation object
-//      paths - List of files to delete.  glob-style wildcards are acceptable.
+//   paths - List of files to delete.  glob-style wildcards are acceptable.
 function deleteFiles(operation) {
     const deferred = Q.defer();
     try {
         if (!operation.paths) {
             throw new Error('No paths to delete.');
         }
-        // Iterate over all paths (which may have wildcards)
+        // Iterate over all paths
         async.each(
             operation.paths,
             function(path, callback) {
-                // Glob wildcards into individual paths
-                glob(path, {}, function(err, files) {
+                log.debug(`Deleting path: ${path}`);
+                // Remove the directory or file
+                fs.remove(path, function(err) {
                     if (err) {
+                        log.warn(`Error deleting path: ${err.message}`);
                         return callback(err);
                     }
-                    // Iterate over individual file paths
-                    async.each(
-                        files,
-                        function(file, callback) {
-                            log.info('Deleting ' + file);
-                            // Remove files/folders one by one
-                            fs.remove(file, function(err) {
-                                if (err) {
-                                    return callback(err);
-                                }
-                                callback();
-                            });
-                        },
-                        // If any removal fails
-                        function(err) {
-                            if (err) {
-                                log.warn(err);
-                                return callback(err);
-                            }
-                            callback();
-                        }
-                    );
+                    log.info(`Successfully deleted: ${path}`);
+                    callback();
                 });
             },
-            // If any path processing operation fails (globbing or removing files)
+            // If any path processing operation fails
             function(err) {
                 if (err) {
                     return deferred.reject(err);

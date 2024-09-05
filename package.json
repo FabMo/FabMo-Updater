@@ -9,13 +9,13 @@
   },
   "dependencies": {
     "async": "3.2.x",
-    "axios": "^1.7.2",
+    "axios": "^1.7.7",
     "byline": "5.0.0",
     "client-sessions": "0.8.0",
     "colors": "1.4.x",
     "escape-regexp-component": "1.0.2",
     "fs-extra": "11.2.0",
-    "glob": "^10.4.1",
+    "glob": "^10.4.5",
     "is-online": "^10.0.0",
     "mime": "4.0.3",
     "minimist": "^1.2.8",
@@ -35,7 +35,7 @@
   "engine": "node 15.14.0",
   "apidoc": {
     "name": "FabMo Updater",
-    "version": "3.0.7",
+    "version": "3.0.9",
     "description": "FabMo-Updater",
     "title": "FabMo-Engine Update Agent"
   },
