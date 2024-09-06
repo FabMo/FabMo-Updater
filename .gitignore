@@ -8,6 +8,7 @@ logs
 *.log
 
 version.json
+credentials.json
 
 # Runtime data
 pids
