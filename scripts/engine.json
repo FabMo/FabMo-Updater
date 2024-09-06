@@ -26,8 +26,7 @@
        {
             "op" : "deleteFiles",
             "paths" : [
-                "/opt/fabmo/approot",
-        		"/opt/fabmo/profiles"
+                "/opt/fabmo"
             ]
         }
 	]

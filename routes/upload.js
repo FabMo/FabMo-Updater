@@ -108,7 +108,7 @@ function upload(req, res, next, callback) {
         var upload_data = null;
 
         try {
-            upload_data = updateUpload(key, index, file);
+            upload_data = updateUpload(key, index, file);  //1-get type
         } catch(e) {
             log.error(e);
             return res.json({
@@ -137,7 +137,7 @@ function upload(req, res, next, callback) {
     } else { /* Metadata type POST */
 
         try {
-            var key = createUpload(req.body, callback);
+            var key = createUpload(req.body, callback); //2-call createUpload
         } catch(e) {
             log.error(e);
             return res.json( {

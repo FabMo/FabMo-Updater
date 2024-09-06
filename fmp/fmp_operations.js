@@ -53,7 +53,7 @@ function deleteFiles(operation) {
         async.each(
             operation.paths,
             function(path, callback) {
-                log.debug(`Deleting path: ${path}`);
+                log.info(`Deleting path: ${path}`);
                 // Remove the directory or file
                 fs.remove(path, function(err) {
                     if (err) {
