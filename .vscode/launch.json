@@ -17,19 +17,18 @@
             "type": "node-terminal"
         },
         {
-            "name": "Launch Program",
-            "program": "${workspaceFolder}/server.js",
+            "type": "node",
             "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
+            "name": "Launch pubVERSION",
+            "program": "${workspaceFolder}/scripts/build.js",
+            "args": [
+                "--product=engine",
+                "--release",
+                "--publish"
             ],
-            "type": "pwa-node"
-        },
-        {
-            "type": "pwa-chrome",
-            "request": "launch",
-            "name": "Open index.html",
-            "file": "/fabmo/dashboard/apps/configuration.fma/index.html"
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }

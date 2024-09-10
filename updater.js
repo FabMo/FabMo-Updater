@@ -299,7 +299,7 @@ Updater.prototype.runPackageCheck = function(product) {
     this.packageCheckHasRun = true;
 
     if(this.packageDownloadInProgress) {
-        log.warn('Not checking for package updates because this is already in progress')
+        log.warn('Not checking for package updates because this is already in progress');
         return Q();
     }
 
@@ -308,31 +308,57 @@ Updater.prototype.runPackageCheck = function(product) {
     var PLATFORM = config.updater.get('platform');
 
     this.packageDownloadInProgress = true;
-    return fmp.checkForAvailablePackage(product)
-            .catch(function(err) {
-                log.warn('There was a problem retrieving the list of packages: ' + JSON.stringify(err))
-            })
-            .then(fmp.downloadPackage)
-            .catch(function(err) {
-                log.warn('There was a problem downloading a package: ' + err)
-            })
-            .then(function(package) {
-                if(package) {
-                    log.info('Adding package to the list of available updates.')
-                    log.info('  Product: ' + package.product);
-                    log.info('  Version: ' + package.version);
-                    log.info('      URL: ' + package.url);
-                    log.info('     File: ' + package.local_filename);
-                    return this.addAvailablePackage(package);
+
+    const downloadWithRetry = (package, retries = 3) => {
+        return fmp.downloadPackage(package)
+            .catch(err => {
+                if (retries > 0) {
+                    log.warn(`Download failed, retrying... (${3 - retries + 1}/3)`);
+                    return downloadWithRetry(package, retries - 1);
+                } else {
+                    throw err;
                 }
-                log.info('No new packages are available for ' + OS + '/' + PLATFORM + '.');
-            }.bind(this))
-            .catch(function(err) {
-                log.error(err);
-            })
+            });
+    };
+
+    return fmp.checkForAvailablePackage(product)
+    .then(function(package) {
+        if (!package) {
+            log.warn('No package returned from checkForAvailablePackage');
+        } else {
+            log.debug('Package found: ' + JSON.stringify(package));
+        }
+        return package;
+    })
+        .catch(function(err) {
+            log.warn('There was a problem retrieving the list of packages: ' + JSON.stringify(err));
+            throw err; // Re-throw the error to propagate it to the next catch block
+        })
+        .then(function(package) {
+            log.info('Attempting to download package: ' + JSON.stringify(package));
+            return downloadWithRetry(package);
+        })
+        .catch(function(err) {
+            log.warn('There was a problem downloading a package: ' + err);
+            throw err; // Re-throw the error to propagate it to the next catch block
+        })
+        .then(function(package) {
+            if(package) {
+                log.info('Adding package to the list of available updates.');
+                log.info('  Product: ' + package.product);
+                log.info('  Version: ' + package.version);
+                log.info('      URL: ' + package.url);
+                log.info('     File: ' + package.local_filename);
+                return this.addAvailablePackage(package);
+            }
+            log.info('No new packages are available for ' + OS + '/' + PLATFORM + '.');
+        }.bind(this))
+        .catch(function(err) {
+            log.error(err);
+        })
         .finally(function() {
-          log.info('Package check complete.');
-          this.packageDownloadInProgress = false;
+            log.info('Package check complete.');
+            this.packageDownloadInProgress = false;
         }.bind(this));
 }
 

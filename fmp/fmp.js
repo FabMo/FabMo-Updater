@@ -22,8 +22,8 @@ var path = require('path');
 var log = require('../log').logger('fmp');
 var config = require('../config');
 var engine = require('../engine');
-var http = require('http');
-var https = require('https');
+//var http = require('http');
+//var https = require('https');
 var fs = require('fs-extra');
 var util = require('../util');
 //var request = require('request');
@@ -143,18 +143,23 @@ function fetchPackagesList(url) {
     
     axios.get(url, { timeout: 5000 })
         .then(response => {
+            log.debug('Response status: ' + response.status);
             if (response.status === 200) {
                 try {
                     const p = response.data;
+                    log.debug('Packages list: ' + JSON.stringify(p));
                     deferred.resolve(p);
                 } catch (err) {
+                    log.error('Error parsing packages list: ' + err);
                     deferred.reject(err);
                 }
             } else {
+                log.error('Error retrieving packages list: ' + response.statusText);
                 deferred.reject(new Error(response.statusText));
             }
         })
         .catch(error => {
+            log.error('Error fetching packages list: ' + error);
             deferred.reject(error);
         });
 
@@ -474,50 +479,51 @@ function installUnpackedPackage(manifest_filename) {
 //                             Option values can also be multiple values, separated by '|' characters
 //             Example 3:  filterPackages(registry, {product : 'FabMo-Engine|FabMo-Updater', })
 //                         would return a list of packages only for the engine OR the updater.
-function filterPackages(registry, options) {
-	// If we didn't get a sane input, return a list of no packages
-	// TODO - I'm sure there's a reason not to throw an exception here, but it might
-	//        make more sense to raise an error if we were called with something that isn't registry-like
-	if(!registry || !registry.packages) { return []; }
+// function filterPackages(registry, options) {
+// 	// If we didn't get a sane input, return a list of no packages
+// 	// TODO - I'm sure there's a reason not to throw an exception here, but it might
+// 	//        make more sense to raise an error if we were called with something that isn't registry-like
+// 	if(!registry || !registry.packages) { return []; }
 
-	// 
+function filterPackages(registry, options) {
+	log.info('Filtering packages with options: ' + JSON.stringify(options));
+	if (!registry || !registry.packages) {
+		log.warn('No packages found in the registry');
+		return [];
+	}
+
 	var packages = registry.packages.filter(function(package) {
-		// This function returns true if a package is to be kept, based on its attributes
-		for(var key in options) {
-			if(options.hasOwnProperty(key)) {
+		for (var key in options) {
+			if (options.hasOwnProperty(key)) {
 				try {
-					allowed = options[key].split('|');
-					var accept = false;
-					for(var i=0; i<allowed.length; i++) {
-						var field = allowed[i];
-						// Accept this package if keys match
-						if(field === package[key] || package[key] === '*') {
-							accept = true;
-							break;
-						}
-					}
-					if(!accept) {
+					var optionValue = options[key];
+					var packageValue = package[key];
+					if (optionValue !== '*' && optionValue !== packageValue) {
 						return false;
 					}
-				} catch(e) {
+				} catch (e) {
+					log.error('Error filtering package: ' + e);
 					return false;
 				}
 			}
 		}
-		// TODO This should probably be false?  This reads as an 'accept' type filter above, so 
-		// if we pass *no* options above, it should reject everything?
 		return true;
 	});
 
-    // Packages are returned in update-priority order
-	return packages
-		.sort(function(a,b) {
-			if(a.product === b.product) {
-				return compareVersions(a.version, b.version);
-			}
-			return compareProducts(a.product, b.product);
-		})
-		.reverse();
+	log.debug('Filtered packages: ' + JSON.stringify(packages));
+
+	packages = packages
+	.sort(function(a, b) {
+		if (a.product === b.product) {
+			return compareVersions(a.version, b.version);
+		}
+		return compareProducts(a.product, b.product);
+	})
+	.reverse();
+
+log.debug('Filtered packages after sorting and reversing: ' + JSON.stringify(packages));
+
+return packages;
 }
 
 // Given a package metadata object (from the package registry)
@@ -527,6 +533,7 @@ function filterPackages(registry, options) {
 // function downloadPackage(package) {
 function downloadPackage(package) {
     // Deal with insane package
+	log.debug('package object: ' + JSON.stringify(package));
     if (!package) { return Q(); }
     if (!package.url) {
         log.warn('No url specified in download package');

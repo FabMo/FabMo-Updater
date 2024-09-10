@@ -249,90 +249,90 @@ function serveStatic(opts) {
     opts = opts || {};
     const p = path.normalize(opts.directory).replace(/\\/g, '/');
     const re = new RegExp('^' + escapeRE(p) + '/?.*');
-
+  
     async function serveFileFromStats(file, err, stats, isGzip, req, res, next) {
-        if (err) {
-            next(new errors.ResourceNotFoundError(err, req.path()));
-            return;
-        } else if (!stats.isFile()) {
-            next(new errors.ResourceNotFoundError('%s does not exist', req.path()));
-            return;
-        }
-
-        if (res.handledGzip && isGzip) {
-            res.handledGzip();
-        }
-
-        const fstream = fs.createReadStream(file + (isGzip ? '.gz' : ''));
-        const maxAge = opts.maxAge === undefined ? 3600 : opts.maxAge;
-        fstream.once('open', async function (fd) {
-            res.cache({ maxAge: maxAge });
-            res.set('Content-Length', stats.size);
+      if (err) {
+        next(new errors.ResourceNotFoundError(err, req.path()));
+        return;
+      } else if (!stats.isFile()) {
+        next(new errors.ResourceNotFoundError('%s does not exist', req.path()));
+        return;
+      }
+  
+      if (res.handledGzip && isGzip) {
+        res.handledGzip();
+      }
+  
+      const fstream = fs.createReadStream(file + (isGzip ? '.gz' : ''));
+      const maxAge = opts.maxAge === undefined ? 3600 : opts.maxAge;
+      fstream.once('open', async function (fd) {
+        res.cache({ maxAge: maxAge });
+        res.set('Content-Length', stats.size);
             res.set('Content-Type', mime.default.getType(file)); // Using mime.default for ES module
-            res.set('Last-Modified', stats.mtime);
-            if (opts.charSet) {
-                const type = res.getHeader('Content-Type') + '; charset=' + opts.charSet;
-                res.setHeader('Content-Type', type);
-            }
-            if (opts.etag) {
-                res.set('ETag', opts.etag(stats, opts));
-            }
-            res.writeHead(200);
-            fstream.pipe(res);
-            fstream.once('end', function () {
-                next(false);
-            });
+        res.set('Last-Modified', stats.mtime);
+        if (opts.charSet) {
+          const type = res.getHeader('Content-Type') + '; charset=' + opts.charSet;
+          res.setHeader('Content-Type', type);
+        }
+        if (opts.etag) {
+          res.set('ETag', opts.etag(stats, opts));
+        }
+        res.writeHead(200);
+        fstream.pipe(res);
+        fstream.once('end', function () {
+          next(false);
         });
+      });
     }
-
+  
     function serveNormal(file, req, res, next) {
-        fs.stat(file, function (err, stats) {
-            if (!err && stats.isDirectory() && opts.default) {
-                file = path.join(file, opts.default);
-                fs.stat(file, function (dirErr, dirStats) {
-                    serveFileFromStats(file, dirErr, dirStats, false, req, res, next);
-                });
-            } else {
-                serveFileFromStats(file, err, stats, false, req, res, next);
-            }
-        });
-    }
-
-    function serve(req, res, next) {
-        const uricomp = decodeURIComponent(req.path());
-        const file = path.join(opts.directory, uricomp);
-
-        if (req.method !== 'GET' && req.method !== 'HEAD') {
-            next(new errors.MethodNotAllowedError(req.method));
-            return;
-        }
-
-        if (!re.test(file.replace(/\\/g, '/'))) {
-            next(new errors.NotAuthorizedError(req.path()));
-            return;
-        }
-
-        if (opts.match && !opts.match.test(file)) {
-            next(new errors.NotAuthorizedError(req.path()));
-            return;
-        }
-
-        if (opts.gzip && req.acceptsEncoding('gzip')) {
-            fs.stat(file + '.gz', function (err, stats) {
-                if (!err) {
-                    res.setHeader('Content-Encoding', 'gzip');
-                    serveFileFromStats(file, err, stats, true, req, res, next);
-                } else {
-                    serveNormal(file, req, res, next);
-                }
-            });
+      fs.stat(file, function (err, stats) {
+        if (!err && stats.isDirectory() && opts.default) {
+          file = path.join(file, opts.default);
+          fs.stat(file, function (dirErr, dirStats) {
+            serveFileFromStats(file, dirErr, dirStats, false, req, res, next);
+          });
         } else {
-            serveNormal(file, req, res, next);
+          serveFileFromStats(file, err, stats, false, req, res, next);
         }
+      });
     }
-
+  
+    function serve(req, res, next) {
+      const uricomp = decodeURIComponent(req.path());
+      const file = path.join(opts.directory, uricomp);
+  
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        next(new errors.MethodNotAllowedError(req.method));
+        return;
+      }
+  
+      if (!re.test(file.replace(/\\/g, '/'))) {
+        next(new errors.NotAuthorizedError(req.path()));
+        return;
+      }
+  
+      if (opts.match && !opts.match.test(file)) {
+        next(new errors.NotAuthorizedError(req.path()));
+        return;
+      }
+  
+      if (opts.gzip && req.acceptsEncoding('gzip')) {
+        fs.stat(file + '.gz', function (err, stats) {
+          if (!err) {
+            res.setHeader('Content-Encoding', 'gzip');
+            serveFileFromStats(file, err, stats, true, req, res, next);
+          } else {
+            serveNormal(file, req, res, next);
+          }
+        });
+      } else {
+        serveNormal(file, req, res, next);
+      }
+    }
+  
     return serve;
-}
+  }
   
 // Return a directorey tree that is the result of walking the tree provided by filename
 // TODO better error handling here

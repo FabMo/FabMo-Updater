@@ -12,14 +12,12 @@ function getFileContents(owner, repos, file, options) {
     const deferred = Q.defer();
     const auth = {};
 
-    if (options.username || options.password) {
-        auth.username = options.username;
-        auth.password = options.password;
+    if (options.token) {
+        auth.Authorization = `token ${options.token}`;
     }
 
     axios.get(`https://api.github.com/repos/${owner}/${repos}/contents/${file}`, {
-        auth,
-        headers: HEADERS
+        headers: { ...HEADERS, ...auth }
     })
         .then(response => {
             const file = response.data;
@@ -38,9 +36,8 @@ function updateFileContents(file, newContents, commitMessage, options) {
     const deferred = Q.defer();
     const auth = {};
 
-    if (options.username || options.password) {
-        auth.username = options.username;
-        auth.password = options.password;
+    if (options.token) {
+        auth.Authorization = `token ${options.token}`;
     }
 
     log.info(`Putting ${file.url}`);
@@ -51,8 +48,7 @@ function updateFileContents(file, newContents, commitMessage, options) {
         sha: file.sha,
         content: Buffer.from(newContents).toString('base64')
     }, {
-        auth,
-        headers: HEADERS
+        headers: { ...HEADERS, ...auth }
     })
         .then(response => {
             deferred.resolve(response.data);
@@ -69,14 +65,12 @@ function getReleaseAssets(release, options) {
     const deferred = Q.defer();
     const auth = {};
 
-    if (options.username || options.password) {
-        auth.username = options.username;
-        auth.password = options.password;
+    if (options.token) {
+        auth.Authorization = `token ${options.token}`;
     }
 
     axios.get(release.assets_url, {
-        auth,
-        headers: HEADERS
+        headers: { ...HEADERS, ...auth }
     })
         .then(response => {
             deferred.resolve(response.data);
@@ -93,26 +87,38 @@ function deleteReleaseAssets(asset, options) {
     const deferred = Q.defer();
     const auth = {};
 
-    if (options.username || options.password) {
-        auth.username = options.username;
-        auth.password = options.password;
+    if (options.token) {
+        auth.Authorization = `token ${options.token}`;
     }
 
-    axios.delete(asset.url, {
-        auth,
-        headers: HEADERS
-    })
-        .then(response => {
-            if (response.status !== 204) {
-                deferred.reject(new Error(response.statusText));
-            } else {
-                deferred.resolve(null);
-            }
+    const maxRetries = 3;
+    let attempt = 0;
+
+    function attemptDelete() {
+        attempt++;
+        axios.delete(asset.url, {
+            headers: { ...HEADERS, ...auth },
+            timeout: 10000 // Increase timeout to 10 seconds
         })
-        .catch(error => {
-            log.error(error);
-            deferred.reject(error);
-        });
+            .then(response => {
+                if (response.status !== 204) {
+                    deferred.reject(new Error(response.statusText));
+                } else {
+                    deferred.resolve(null);
+                }
+            })
+            .catch(error => {
+                if (attempt < maxRetries && error.code === 'EPIPE') {
+                    log.warn(`Retrying deleteReleaseAssets (attempt ${attempt}) due to EPIPE error`);
+                    setTimeout(attemptDelete, 1000); // Retry after 1 second
+                } else {
+                    log.error(error);
+                    deferred.reject(error);
+                }
+            });
+    }
+
+    attemptDelete();
 
     return deferred.promise;
 }
@@ -121,16 +127,14 @@ function deleteRelease(release, options) {
     const deferred = Q.defer();
     const auth = {};
 
-    if (options.username || options.password) {
-        auth.username = options.username;
-        auth.password = options.password;
+    if (options.token) {
+        auth.Authorization = `token ${options.token}`;
     }
 
     log.info(`Deleting release: ${release.tag_name}`);
 
     axios.delete(release.url, {
-        auth,
-        headers: HEADERS
+        headers: { ...HEADERS, ...auth }
     })
         .then(response => {
             if (response.status !== 204) {
@@ -151,14 +155,12 @@ function getReleaseByTag(owner, repos, tagName, options) {
     const deferred = Q.defer();
     const auth = {};
 
-    if (options.username || options.password) {
-        auth.username = options.username;
-        auth.password = options.password;
+    if (options.token) {
+        auth.Authorization = `token ${options.token}`;
     }
 
     axios.get(`https://api.github.com/repos/${owner}/${repos}/releases`, {
-        auth,
-        headers: HEADERS
+        headers: { ...HEADERS, ...auth }
     })
         .then(response => {
             const releases = response.data;
@@ -182,14 +184,12 @@ function updateRelease(release, object, options) {
     const deferred = Q.defer();
     const auth = {};
 
-    if (options.username || options.password) {
-        auth.username = options.username;
-        auth.password = options.password;
+    if (options.token) {
+        auth.Authorization = `token ${options.token}`;
     }
 
     axios.patch(release.url, object, {
-        auth,
-        headers: HEADERS
+        headers: { ...HEADERS, ...auth }
     })
         .then(response => {
             deferred.resolve(response.data);
@@ -202,57 +202,45 @@ function updateRelease(release, object, options) {
     return deferred.promise;
 }
 
-function createRelease(owner, repos, tagName, targetCommitish, options) {
+async function createRelease(owner, repos, tagName, targetCommitish, options) {
     const deferred = Q.defer();
-    const auth = {};
+    const url = `https://api.github.com/repos/${owner}/${repos}/releases`;
+    const auth = options.token ? { Authorization: `token ${options.token}` } : {};
 
-    if (options.username || options.password) {
-        auth.username = options.username;
-        auth.password = options.password;
-    }
+    // Ensure target_commitish is always set
+    targetCommitish = tagName === targetCommitish ? 'master' : targetCommitish;
 
-    axios.get(`https://api.github.com/repos/${owner}/${repos}/releases`, {
-        auth,
-        headers: HEADERS
-    })
-        .then(response => {
-            const releases = response.data;
-            for (const release of releases) {
-                if (release.tag_name === tagName) {
-                    log.info(`Release for ${tagName} already exists`);
-                    deferred.resolve(release);
-                    return;
-                }
+    const payload = {
+        tag_name: tagName,
+        target_commitish: targetCommitish,
+        name: tagName,
+        body: options.message,
+        draft: false,
+        prerelease: false
+    };
+
+    log.debug(`Creating release for ${tagName} on ${owner}/${repos}`);
+    log.debug(`Payload for release creation: ${JSON.stringify(payload)}`);
+
+    try {
+        const response = await axios.post(url, payload, {
+            headers: {
+                'User-Agent': USER_AGENT,
+                'Content-Type': 'application/json',
+                ...auth
             }
-
-            log.info(`Release for ${tagName} does not already exist`);
-
-            const json = {
-                tag_name: tagName,
-                target_commitish: tagName === targetCommitish ? undefined : targetCommitish,
-                message: options.message
-            };
-
-            axios.post(`https://api.github.com/repos/${owner}/${repos}/releases`, json, {
-                auth,
-                headers: HEADERS
-            })
-                .then(response => {
-                    if (response.status !== 201) {
-                        deferred.reject(new Error(`${response.status}: ${response.statusText}`));
-                    } else {
-                        deferred.resolve(response.data);
-                    }
-                })
-                .catch(error => {
-                    log.error(error);
-                    deferred.reject(error);
-                });
-        })
-        .catch(error => {
-            log.error(error);
-            deferred.reject(error);
         });
+
+        if (response.status !== 201) {
+            throw new Error(`Failed to create release: ${response.status} ${response.statusText}`);
+        }
+
+        log.info(`Release created successfully: ${JSON.stringify(response.data)}`);
+        deferred.resolve(response.data);
+    } catch (error) {
+        log.error(`Failed to create release: ${error.response ? JSON.stringify(error.response.data) : error.message}`);
+        deferred.reject(error);
+    }
 
     return deferred.promise;
 }
@@ -272,45 +260,37 @@ function URITemplateSubst(template, obj) {
     return parts.join('').replace(/[\?\&]$/g, '');
 }
 
-function addReleaseAsset(release, filename, options) {
+async function addReleaseAsset(release, filename, options) {
     const deferred = Q.defer();
     const name = path.basename(filename);
     const uploadURL = URITemplateSubst(release.upload_url, { name });
-    const auth = {};
+    const auth = options.token ? { Authorization: `token ${options.token}` } : {};
 
-    if (options.username || options.password) {
-        auth.username = options.username;
-        auth.password = options.password;
-    }
+    try {
+        const stat = await fs.promises.stat(filename);
+        log.debug(`Uploading asset to URL: ${uploadURL}`);
+        log.debug(`Asset size: ${stat.size}`);
+        log.debug(`Asset path: ${filename}`);
 
-    fs.stat(filename, (err, stat) => {
-        if (err) {
-            deferred.reject(err);
-            return;
+        const response = await axios.post(uploadURL, fs.createReadStream(filename), {
+            headers: {
+                'User-Agent': USER_AGENT,
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': stat.size,
+                ...auth
+            }
+        });
+
+        if (response.status !== 201) {
+            throw new Error(`Failed to upload asset: ${response.status} ${response.statusText}`);
         }
 
-        fs.createReadStream(filename).pipe(
-            axios.post(uploadURL, fs.createReadStream(filename), {
-                auth,
-                headers: {
-                    'User-Agent': USER_AGENT,
-                    'Content-Length': stat.size
-                }
-            })
-                .then(response => {
-                    if (response.status !== 201) {
-                        deferred.reject(new Error(response.data));
-                    } else {
-                        log.info(`Added release asset: ${filename}`);
-                        deferred.resolve(response.data.browser_download_url);
-                    }
-                })
-                .catch(error => {
-                    log.error(error);
-                    deferred.reject(error);
-                })
-        );
-    });
+        log.info(`Added release asset: ${filename}`);
+        deferred.resolve(response.data.browser_download_url);
+    } catch (error) {
+        log.error(`Error uploading asset: ${error.response ? JSON.stringify(error.response.data) : error.message}`);
+        deferred.reject(error);
+    }
 
     return deferred.promise;
 }
@@ -328,18 +308,15 @@ function getCredentials() {
     if (!creds) {
         const schema = {
             properties: {
-                username: {
-                    required: true,
-                    message: 'Github Username:'
-                },
-                password: {
+                token: {
                     required: true,
                     hidden: true,
-                    message: 'Github Password:'
+                    message: 'GitHub Personal Access Token:'
                 }
             }
         };
 
+        log.debug(creds);
         prompt.start();
         prompt.message = '';
         prompt.delimiter = '';

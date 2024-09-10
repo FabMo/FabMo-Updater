@@ -441,9 +441,25 @@ $(document).ready(function() {
   });
 
   // Apply prepared updates
-  $("#btn-update-apply").click( function(evt) {
+  $("#btn-update-apply").click(function(evt) {
     evt.preventDefault();
-    updater.applyPreparedUpdates();
+    $('.progressbar').removeClass('hide');
+
+    updater.applyPreparedUpdates(function(err, data) {
+        awaitingReboot = false;
+        setTimeout(function() {
+            $('.progressbar').addClass('hide');
+            // just to prevent display of leftover progress bar; reset
+            $('#report-title').removeClass('fa-check').addClass('fa-spinner').addClass('fa-spin');
+            $('#report-message').html("UPDATE PROGRESS: Applying prepared updates...");
+            // now display it again
+            $('#report-progress').css("display", "block");
+            $('.progressbar .fill').width(0);
+        }, 750);
+    }, function(progress) {
+        var pg = (progress * 100).toFixed(0) + '%';
+        $('.progressbar .fill').width(pg);
+    });
   });
 
   // Hijacking what was "Factory Reset" for FabMo Restart on Raspberry Pi ....

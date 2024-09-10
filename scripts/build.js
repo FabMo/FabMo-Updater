@@ -9,7 +9,17 @@
  * Related files in this directory:
  *    engine.json - Package manifest template for engine builds
  *   updater.json - Package manifest template for updater builds
- *      github.js - Some functions for communicating with the github release API 
+ *      github.js - Some functions for communicating with the github release API
+ * 
+ * 9/9/24 In the process of updating files, dependencies and actions for builds
+ *  - just hacking these files to get an update process in place
+ * 	- at least 5 years to cover
+ * 	- there is a Deprecation Warning associated with the createBuildDirectories function; spdy, restify, http2, etc. UNRESOLVED / ignored for moment
+ * 	- there is an ERROR at the call to deleteReleaseAssets; not sure why; UNRESOLVED/commented out for moment 
+ * 	- reordered to make more sense in flow of debugging
+ * 	- lots of debugging statements added
+ * 	- also publishRelease test file added
+ *  
  */
 var exec = require('child_process').exec;
 var Q = require('q');
@@ -20,7 +30,20 @@ var github = require('./github');
 var fmp = require('../fmp');
 var util = require('../util');
 var log = require('../log').logger('build');
-//require('longjohn'); // Used for logging, not for production
+;//require('longjohn'); // Used for logging, not for production
+
+
+const { createRelease, addReleaseAsset, getCredentials, deleteReleaseAssets, getReleaseByTag, deleteRelease } = require('./github'); // Adjust the path as needed
+const options = {
+    token: '',
+    message: 'Test Release message\n\nThis is a multi-line message.\nIt includes several lines of text.\n\n* Item 1\n* Item 2\n* Item 3'
+};
+
+// const log = require('../log').logger('build');
+// const Q = require('q');
+// const fs = require('fs');
+// const path = require('path');
+// //const doshell = require('./doshell'); // Assuming doshell is a custom function for executing shell commands
 
 var buildDate = new Date().toISOString();
 log.info('Build date: ' + buildDate);
@@ -49,7 +72,7 @@ switch(argv.product) {
 
 var IGNORE_NPM_ERROR = argv['ignore-npm-error'];
 var SKIP_NPM_INSTALL = !argv['do-npm-install'];
-var RETRIES = argv['retries'] || 5;
+var RETRIES = argv['retries'] || 2;
 
 // Globals that are setup by the build process
 var githubReposOwner = 'FabMo';
@@ -77,7 +100,7 @@ var candidateVersion;			// The version of the next release, if this build is a r
 var isFinalRelease = false;		// Set to true if this is going to be a final release
 var releaseName = '';			// The name of the release on github.  This will be dev, release_candidate, or the versioned release number (eg v1.2.3)
 var package = {};				// The package object that will appear in the package listing
-var githubCredentials;
+//var githubCredentials;
 
 if(argv['rc']) {
 	buildType = 'rc';
@@ -150,6 +173,18 @@ function clean() {
 	return doshell('rm -rf ' + buildDirectory);
 }
 
+function createBuildDirectories() {
+	log.info("Creating build directory tree");
+	return doshell('mkdir -p ' + buildDirectory + ' ' + stagingDirectory + ' ' + distDirectory);
+}
+
+function loadManifestTemplate() {
+	return Q.nfcall(fs.readFile, manifestTemplatePath)
+		.then(function(data) {
+			manifest = JSON.parse(data);
+		})
+}
+
 function getLatestReleasedVersion() {
 	if(buildType === 'release' && !versionNumber) {
 		return doshell("git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1", {cwd : reposDirectory})
@@ -164,9 +199,10 @@ function getLatestReleasedVersion() {
 	}
 }
 
-function createBuildDirectories() {
-	log.info("Creating build directory tree");
-	return doshell('mkdir -p ' + buildDirectory + ' ' + stagingDirectory + ' ' + distDirectory);
+function checkout() {
+    log.info("Checking out version " + commitish)
+	return doshell('git fetch origin --tags; git checkout ' + commitish, {cwd : reposDirectory});
+	return Q();
 }
 
 function getProductVersion() {
@@ -199,12 +235,6 @@ function getProductVersion() {
 		fmpArchiveName = fmpArchiveBaseName + '_' + versionString + '.fmp';
 		fmpArchivePath = distPath(fmpArchiveName);
 	});
-}
-
-function checkout() {
-    log.info("Checking out version " + commitish)
-	return doshell('git fetch origin --tags; git checkout ' + commitish, {cwd : reposDirectory});
-	return Q();
 }
 
 function npmClean() {
@@ -274,6 +304,11 @@ function clearStagingArea() {
 	return doshell('rm -rf ' + stagingDirectory + '/*');
 }
 
+function stageFilesArchive() {
+	log.info('Copying firmware into staging area')
+	return doshell('mv files.tar.gz ' + stagingDirectory, {cwd : buildDirectory});
+}
+
 function stageFirmware() {
 	if(product === 'updater') {
 		return Q();
@@ -282,9 +317,15 @@ function stageFirmware() {
 	return doshell('cp ' + firmwarePath + ' ' + path.resolve(stagingDirectory, 'g2.bin'), {cwd : reposDirectory});
 }
 
-function stageFilesArchive() {
-	log.info('Copying firmware into staging area')
-	return doshell('mv files.tar.gz ' + stagingDirectory, {cwd : buildDirectory});
+function stageManifestJSON() {
+	log.info('Compiling package manifest')
+	manifest.version = versionString
+	return Q.nfcall(fs.writeFile, stagePath('manifest.json'), JSON.stringify(manifest))
+}
+
+function createFMPArchive() {
+	log.info("Creating FMP archive")
+	return doshell('tar -czf ' + fmpArchivePath + ' ./*', {cwd:stagingDirectory})
 }
 
 function getMD5Hash() {
@@ -300,77 +341,54 @@ function getMD5Hash() {
 		});
 }
 
-function loadManifestTemplate() {
-	return Q.nfcall(fs.readFile, manifestTemplatePath)
-		.then(function(data) {
-			manifest = JSON.parse(data);
-		})
-}
+async function publishGithubRelease() {  // and publish here from list with retries, now 2
+    if (!argv.publish) {
+        return Q();
+    }
 
-function stageManifestJSON() {
-	log.info('Compiling package manifest')
-	manifest.version = versionString
-	return Q.nfcall(fs.writeFile, stagePath('manifest.json'), JSON.stringify(manifest))
-}
+    log.info("Publishing Github release...");
 
-function createFMPArchive() {
-	log.info("Creating FMP archive")
-	return doshell('tar -czf ' + fmpArchivePath + ' ./*', {cwd:stagingDirectory})
-}
+	try {
+        const githubCredentials = await getCredentials();
+        log.debug(JSON.stringify(githubCredentials, null, 4));
+        log.debug(githubCredentials.message);
+        log.debug("owner- " + githubReposOwner);
+        log.debug("repos- " + githubRepos);
+        log.debug("releaseName- " + releaseName);
+        log.debug("commitish- " + commitish);
 
-function updatePackagesList() {
-	if(!argv.publish) { return Q(); }
-	var thisVersion = fmp.parseVersion(package.version);
-	var packageLists = {
-		'dev' :  'manifest/packages-dev.json',
-		'rc' :  'manifest/packages-rc.json',
-		'release' :  'manifest/packages.json'
-	}
+		//commitish = 'master'; // for now, we are always releasing from master
 
-	log.info("Updating package entry on fabmo.github.io/" + packageLists[thisVersion.type]);
+        let release;
 
-	return github.getFileContents(githubReposOwner, 'fabmo.github.io', packageLists[thisVersion.type], githubCredentials)
-		.then(function(file) {
-			switch(thisVersion.type) {
-				case 'rc':
-				case 'dev':
-					var updated = false;
-					oldPackageList = JSON.parse(file.content.toString());
-					for(var i=0; i<oldPackageList.packages.length; i++) {
-						if(oldPackageList.packages[i].product === package.product) {
-							oldPackageList.packages[i] = package;
-							updated = true;
-						}
-					}
-					if(!updated) {
-						oldPackageList.packages.push(package);
-					}
-					
-					return github.updateFileContents(file, JSON.stringify(oldPackageList,null,2), "Add version " + versionString, githubCredentials)
-				case 'release':
-					var updated = false;
-					oldPackageList = JSON.parse(file.content.toString());
-					for(var i=0; i<oldPackageList.packages.length; i++) {
-						if(oldPackageList.packages[i].product === package.product && oldPackageList.packages[i].version === package.version) {
-							oldPackageList.packages[i] = package;
-							updated = true;
-						}
-					}
-					if(!updated) {
-						oldPackageList.packages.push(package);
-					}
-					return github.updateFileContents(file, JSON.stringify(oldPackageList,null,2), "Add version " + versionString, githubCredentials)
-				break;
+        // Check if the release already exists
+        const existingRelease = await getReleaseByTag(githubReposOwner, githubRepos, releaseName, githubCredentials);
+        if (existingRelease) {
+            log.info(`Release ${releaseName} already exists. Deleting existing release and tag.`);
+            await deleteRelease(existingRelease, githubCredentials);
+            await doshell(`git push origin :refs/tags/${releaseName}`, { cwd: reposDirectory });
+        }
 
-				default:
-					throw new Error("Unknown release type: " + thisVersion.type);
-					break;
-			}
-		});
+        // Create a new release
+        release = await createRelease(githubReposOwner, githubRepos, releaseName, commitish, githubCredentials);
+
+        // Delete existing assets with the same name
+        //await deleteReleaseAssets(release, new RegExp(fmpArchiveBaseName + '.*'), githubCredentials);
+
+        changelog = release.body || '';
+        log.info("Uploading FMP package " + fmpArchiveName + " to github...");
+
+        const downloadURL = await addReleaseAsset(release, fmpArchivePath, githubCredentials);
+        packageDownloadURL = downloadURL;
+
+        return Q();
+    } catch (error) {
+        log.error('Error during release process:', error);
+        return Q.reject(error);
+    }
 }
 
 function createPackageEntry() {
-
 	log.info("Creating package entry");
 	var fields = ['os','product','platform','system','updaterNeeded','version']
 
@@ -389,58 +407,75 @@ function createPackageEntry() {
 	return Q(package);
 }
 
-function publishGithubRelease() {
-	var release;
-	if(argv.publish) {
-		log.info("Publishing Github release...")
-		return github.getCredentials()
-			.then(function(creds) {
-				githubCredentials = creds;
-				githubCredentials.message = message;
-			})
-			.then(function() {
-				if(releaseName === 'dev' || releaseName === 'release_candidate') {
-					log.info("Deleting remote tag '" + releaseName + "'")
-					return doshell('git push origin :refs/tags/' + releaseName, {cwd : reposDirectory})
-						.then(function() {
-							return github.getReleaseByTag(githubReposOwner, githubRepos, releaseName, githubCredentials);
-						})
-						.then(function(r) {
-							return (r ? github.deleteRelease(r, githubCredentials) : Q())
-								.then(function() {
-									return github.createRelease(githubReposOwner, githubRepos, releaseName, commitish, githubCredentials);
-								});
-						})
-						.then(function(r) {
-							release = r;
-						})
-				} else {
-					return github.createRelease(githubReposOwner, githubRepos, releaseName, commitish, githubCredentials)
-						.then(function(r) {
-							release = r;
-						})
+async function updatePackagesList() {  // Here's where we plan to PUBLISH the manifest
+	if(!argv.publish) { return Q(); }
+	var thisVersion = fmp.parseVersion(package.version);
+	var packageLists = {
+		'dev' :  'manifest/packages-dev.json',
+		'rc' :  'manifest/packages-rc.json',
+		'release' :  'manifest/packages.json'
+	}
+
+	log.info("Updating package entry on fabmo.github.io/" + packageLists[thisVersion.type]);
+
+	try {
+		const githubCredentials = await getCredentials();
+		log.debug(JSON.stringify(githubCredentials, null, 4));
+		log.debug(githubCredentials.message);
+		log.debug("owner- " + githubReposOwner);
+		log.debug("repos- " + githubRepos);
+		log.debug("releaseName- " + releaseName);
+		log.debug("commitish- " + commitish);
+
+		return github.getFileContents(githubReposOwner, 'fabmo.github.io', packageLists[thisVersion.type], githubCredentials)
+			.then(function(file) {
+				var oldPackageList = JSON.parse(file.content.toString());
+				switch(thisVersion.type) {
+					case 'rc':
+					case 'dev':
+						var updated = false;
+						for(var i=0; i<oldPackageList.packages.length; i++) {
+							if(oldPackageList.packages[i].product === package.product) {
+								oldPackageList.packages[i] = package;
+								updated = true;
+							}
+						}
+						if(!updated) {
+							oldPackageList.packages.push(package);
+						}
+						
+						return github.updateFileContents(file, JSON.stringify(oldPackageList,null,2), "Add version " + versionString, githubCredentials)
+					case 'release':
+						var updated = false;
+						oldPackageList = JSON.parse(file.content.toString());
+						for(var i=0; i<oldPackageList.packages.length; i++) {
+							if(oldPackageList.packages[i].product === package.product && oldPackageList.packages[i].version === package.version) {
+								oldPackageList.packages[i] = package;
+								updated = true;
+							}
+						}
+						if(!updated) {
+							oldPackageList.packages.push(package);
+						}
+						return github.updateFileContents(file, JSON.stringify(oldPackageList,null,2), "Add version " + versionString, githubCredentials)
+
+					default:
+						throw new Error("Unknown release type: " + thisVersion.type);
 				}
-			})
-			.then(function() {
-				return github.deleteReleaseAssets(release, new RegExp(fmpArchiveBaseName + '.*'), githubCredentials);
-			})
-			.then(function() {
-				changelog = release.body || '';
-				log.info("Uploading FMP package " + fmpArchiveName + " to github...")
-
-				return github.addReleaseAsset(release, fmpArchivePath, githubCredentials);
-
-			}).then(function(downloadURL) {
-				packageDownloadURL = downloadURL;
-				return Q();
 			});
-	} else {
-		return Q();
+	} catch (error) {
+		log.error('Error getting github credentials:', error);
+		return Q.reject(error);
 	}
 }
 
+function finsishedScripts() {
+	log.info("Finished scripts.");
+}
+
+
 clean()
-.then(createBuildDirectories)
+.then(createBuildDirectories)		// getting depreceation warning here; problem with spdy and restify; not sure how to fix; OK? 
 .then(loadManifestTemplate)      	// Set manifest
 .then(getLatestReleasedVersion)  	// Set version
 .then(checkout)
@@ -458,10 +493,12 @@ clean()
 .then(stageManifestJSON)
 .then(createFMPArchive)
 .then(getMD5Hash)					// Set md5
-.then(util.retry(publishGithubRelease, RETRIES, 1000))
+.then(util.retry(publishGithubRelease, RETRIES, 5000))
 .then(createPackageEntry)
-.then(util.retry(updatePackagesList, RETRIES, 1000))
+.then(util.retry(updatePackagesList, RETRIES, 5000))
+.then(finsishedScripts)
 .catch(function(err) {
 	log.error("Final catch:");
 	log.error(err);
 }).done();
+log.info("Build script complete.");
