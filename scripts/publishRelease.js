@@ -6,11 +6,11 @@ const { createRelease, addReleaseAsset } = require('./github'); // Adjust the pa
 
 const owner = 'FabMo';
 const repos = 'FabMo-Engine';
-const tagName = 'v4.0.17';
+const tagName = 'v4.0.21';
 const targetCommitish = 'master';
 const options = {
     token: '',
-    message: 'Test Release message\n\nThis is a multi-line message.\nIt includes several lines of text.\n\n* Item 1\n* Item 2\n* Item 3'
+    message: 'Test Release OpenSBP updates (arrays, PAUSE/DIALOG) ... '
 };
 
 async function publishRelease() {
@@ -18,7 +18,7 @@ async function publishRelease() {
         const release = await createRelease(owner, repos, tagName, targetCommitish, options);
         console.log('Release created:', release);
 
-        const assetPath = '/root/build/dist/fabmo-engine_linux_raspberry-pi_v4.0.17.fmp';
+        const assetPath = '/root/build/dist/fabmo-engine_linux_raspberry-pi_v4.0.21.fmp';
         const assetUrl = await addReleaseAsset(release, assetPath, options);
         console.log('Asset uploaded:', assetUrl);
     } catch (error) {
