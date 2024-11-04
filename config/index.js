@@ -50,7 +50,7 @@ function configureUser(callback){
 		} else {
 			exports.user.initUsers(data, function(msg){
                 log.info("Export Init Users -2- .... -->message: " + msg);
-				callback();
+			 	callback();
 			});	
 		}
 	});

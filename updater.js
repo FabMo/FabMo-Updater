@@ -595,9 +595,10 @@ Updater.prototype.start = function(callback) {
             });
         },
 
-        // Populate the updater config with some calculated values if this is the first time we've ever run
+        // Populate the updater config with some calculated values if this is the first time we've ever run and
+        // ... we don't have a user profile loaded that would indicate this is just a profile change.
         function first_time_configure(callback) {
-            if(!config.updater.userConfigLoaded) {
+            if(!config.updater.userConfigLoaded && !config.user.userConfigLoaded) {
                 UpdaterConfigFirstTime(callback);
             } else {
                 callback();
