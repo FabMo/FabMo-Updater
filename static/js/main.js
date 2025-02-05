@@ -124,31 +124,110 @@ var lastLevel = ''
 function prettify(line) {
   var line_re = /^(\w*)\:(.*)/i;
   var match = line_re.exec(line);
-  if(match) {
-    var level = match[1];
-    var msg = match[2];
-    lastLevel = level;
-    return '<span class="loglevel-' + level + '">' + level + ':</span>' + msg + '\n'
+  
+  if (match) {
+      var level = match[1] + ':'; // Ensure it matches the checkbox values
+      if (!activeFilters.has(level)) {
+          return ''; // Skip lines that don't match active filters
+      }
+      
+      var msg = match[2];
+      lastLevel = level;
+      return '<span class="loglevel-' + level + '">' + level + '</span>' + msg + '\n';
   } else {
-    blank = [];
-    for(var i=0; i<lastLevel.length; i++) {
-      blank = blank + ' ';
-    }
-    return blank + '  ' + line + '\n'
+      return line + '\n';
   }
+}
+
+
+function updateConsoleDisplay() {
+  var log = $('#console .content');
+  var allLines = log.text().split('\n');
+  log.html(''); // Clear console
+  allLines.forEach(function(line) {
+      if (prettify(line).trim() !== '') {
+          log.append(prettify(line));
+      }
+  });
+}
+
+
+function shouldDisplay(line) {
+  var match = line.match(/^(\w+):/);
+  if (!match) return false;
+
+  var level = match[0]; // Log level including ":"
+  return activeFilters.has(level);
+}
+
+
+function updateConsoleDisplay() {
+  var log = $('#console .content');
+  var allLines = log.text().split('\n'); // Get current logs
+  log.html(''); // Clear the console
+  
+  allLines.forEach(function(line) {
+      if (shouldDisplay(line)) {
+          log.append(prettify(line));
+      }
+  });
 }
 
 // Print a line to the "console"
 //   s - The line to print (No \n necessary)
 function printf(s) {
-    var log = $('#console .content');
-    lines = s.split('\n');
-    lines.forEach(function(line) {
-        log.append(prettify(line));
-    });
-    var scrollpane = $('#console');
-    scrollpane[0].scrollTop = scrollpane[0].scrollHeight;
+  var log = $('#console .content');
+  var lines = s.split('\n');
+
+  lines.forEach(function(line) {
+      if (shouldDisplay(line)) {  // Only add if it matches active filters
+          log.append(prettify(line));
+      }
+  });
+
+  var scrollpane = $('#console');
+  scrollpane[0].scrollTop = scrollpane[0].scrollHeight;
 }
+
+
+// Store active filters
+// Store active filters as a Set
+var activeFilters = new Set();
+
+// Initialize active filters based on checked checkboxes
+$('.log-filter:checked').each(function() {
+    activeFilters.add($(this).val());
+});
+
+// Event listener for checkbox changes
+$('.log-filter').on('change', function() {
+  if (this.checked) {
+      activeFilters.add(this.value);
+  } else {
+      activeFilters.delete(this.value);
+  }
+  
+  // Save current filter states to localStorage
+  localStorage.setItem('logFilters', JSON.stringify([...activeFilters]));
+
+  updateConsoleDisplay(); // Refresh console
+});
+
+$(document).ready(function() {
+  var savedFilters = JSON.parse(localStorage.getItem('logFilters'));
+
+  if (savedFilters) {
+      activeFilters = new Set(savedFilters);
+
+      // Apply stored filter settings to checkboxes
+      $('.log-filter').each(function() {
+          this.checked = activeFilters.has(this.value);
+      });
+  }
+
+  updateConsoleDisplay(); // Apply filtering on load
+});
+
 
 // Clear the contents of the updater console
 function clearConsole() {
@@ -398,48 +477,6 @@ $(document).ready(function() {
     }
   });
 
-// TODO Obsolete?
-  $("#btn-update-latest").click( function(evt) {
-    evt.preventDefault();
-    updater.updateEngine('master');
-  });
-
-  // TODO Obsolete?
-  $("#btn-update-updater-latest").click( function(evt) {
-    evt.preventDefault();
-    updater.updateUpdater('master');
-  });
-
-  // TODO Obsolete?
-  $("#form-update-stable").submit(function(evt) {
-    evt.preventDefault();
-    updater.updateEngine($("#update-version").val());
-  });
-
-  // TODO Obsolete?
-  $("#btn-update-firmware").click( function(evt) {
-    evt.preventDefault();
-    updater.updateFirmware();
-  });
-
-  // TODO Obsolete?
-  $("#btn-reinstall").click( function(evt) {
-      evt.preventDefault();
-      showModal({
-        title : 'Reinstall Engine?',
-        message : 'This will reinstall the FabMo engine <em>from scratch</em> - You will lose all your settings and apps, and will take several minutes.  This is only to be done in circumstances in which <em>the engine is corrupted and unrecoverable by any other means</em> - Are you sure you wish to do this?  Are you absolutely sure?',
-        icon : 'fa-exclamation-circle',
-        okText : 'Yes!  I understand the risk!',
-        cancelText : 'No!  Get me out of here!',
-        ok : function() {
-          updater.installEngine()
-        },
-        cancel : function() {
-          dismissModal();
-        }
-      });
-  });
-
   // Apply prepared updates
   $("#btn-update-apply").click(function(evt) {
     evt.preventDefault();
@@ -480,18 +517,6 @@ $(document).ready(function() {
   //
   // System Functions
   //
-
-  // TODO - Obsolete?
-  $("#btn-start-engine").click(function() {updater.startEngine()});
-  $("#btn-stop-engine").click(function() {updater.stopEngine()});
-
-  $("#btn-check-for-updates").click(function() {
-    $("#btn-check-for-updates").addClass('disabled');
-    $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
-    $("#check-button-text").text('Checking...');
-    clearConsole();
-    updater.checkForUpdates();
-  });
 
   // Console clear button
   $('#btn-console-clear').click(function() {clearConsole()});
