@@ -121,6 +121,15 @@ var lastLevel = ''
 // Prettify a line for "console" output
 // Returns HTML that colorizes the log level
 //   line - The line to format
+var logLevelColors = {
+  "info": "loglevel-info",
+  "debug": "loglevel-debug",
+  "warn": "loglevel-warn",
+  "error": "loglevel-error",
+  "g2": "loglevel-g2",
+  "shell": "loglevel-shell"
+};
+
 function prettify(line) {
   var line_re = /^(\w*)\:(.*)/i;
   var match = line_re.exec(line);
@@ -133,12 +142,11 @@ function prettify(line) {
       
       var msg = match[2];
       lastLevel = level;
-      return '<span class="loglevel-' + level + '">' + level + '</span>' + msg + '\n';
+      return `<span class="loglevel-${level} ">${level}</span> ${msg}\n`;
   } else {
       return line + '\n';
   }
 }
-
 
 function updateConsoleDisplay() {
   var log = $('#console .content');
@@ -150,7 +158,6 @@ function updateConsoleDisplay() {
       }
   });
 }
-
 
 function shouldDisplay(line) {
   var match = line.match(/^(\w+):/);
@@ -477,6 +484,7 @@ $(document).ready(function() {
     }
   });
 
+
   // Apply prepared updates
   $("#btn-update-apply").click(function(evt) {
     evt.preventDefault();
@@ -519,6 +527,61 @@ $(document).ready(function() {
   //
 
   // Console clear button
+// Get server IP dynamically from current window location
+var serverIP = window.location.hostname;
+
+var lastProcessedIndex = 0; // Track the last processed line index
+
+async function fetchExternalLogs() {
+    try {
+        let response = await fetch(`http://${serverIP}/log`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        let data = await response.text();
+        processExternalLogData(data);
+    } catch (error) {
+        console.error("Failed to fetch external logs:", error);
+    }
+}
+
+// Fetch logs every 500ms
+setInterval(fetchExternalLogs, 500);
+
+function processExternalLogData(logData) {
+    var logContainer = document.getElementById('external-log');
+
+    if (!logContainer) {
+        console.error("Error: Log container not found!");
+        return;
+    }
+
+    // Ensure proper splitting of lines and remove empty lines
+    var lines = logData.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+
+    // Extract only the new lines
+    let newLines = lines.slice(lastProcessedIndex);
+    lastProcessedIndex = lines.length; // Update the tracker
+
+    newLines.forEach(function(line) {
+        // **Only process lines that match our log filters**
+        if (/^(debug|info|g2|shell|warn|error)/i.test(line)) {
+            let logEntry = document.createElement('div');
+            logEntry.style.whiteSpace = "pre-wrap"; // Ensure proper word wrapping
+            logEntry.style.margin = "2px 0"; // Adds spacing for readability
+            logEntry.innerHTML = prettify(line); // Use innerHTML to retain styling
+
+            logContainer.prepend(logEntry); // Prepend to show the latest logs first
+        }
+    });
+
+    logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll to bottom
+}
+
+
+
   $('#btn-console-clear').click(function() {clearConsole()});
 
   // Button to browse for a manual update

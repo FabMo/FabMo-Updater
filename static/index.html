@@ -20,23 +20,12 @@
   <div id="menu">
     <ul class="items">
       <li class="menu-title"><span>FabMo Updater</span></li>
-<!--
-      <li class="menu-label">
-        <a href="#">
-          <i id="system-icon" class="fa fa-question"></i> <span class="label-wifi-network-id">&lt;name&gt;</span>
-          </a>
-      </li>
--->
+
       <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> FabMo System Info</a></li>
-<!--
-      <li class="menu-item" data-id="view-wireless"><a href="#"><i class="fa fa-wifi"></i> Wireless</a></li>
-      <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-plug"></i> Network</a></li>
--->
+
       <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download update-indicator"></i><span class="update-indicator"> FabMo Software Updates</span></a></li>
       <li class="menu-item" data-id="view-settings"><a href="#"><i class="fa fa-wrench"></i> Settings</a></li>
-<!--
-      <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
--->
+
       <li class="menu-item" data-id="goto-dashboard"><a href="#"><i class="fa fa-tachometer"></i> Return to FabMo</a></li>
       <li class="menu-item" data-id="view-factory"><a href="#"><i class="fa fa-industry"></i> Re-Start FabMo</a></li>
       <li class="menu-item" data-id="view-console"><a href="#"><i class="fa fa-terminal"></i> Console</a></li>
@@ -137,12 +126,6 @@
          <button id="btn-wifi-network-id" class="btn-green">Set System ID</button>
         </fieldset>
       </form>
-      <!--
-      <h2>Engine Control</h2>
-      <p>The buttons below can be used to start and stop the engine software.  <em>These operations do not normally need to be performed manually.</em></p>
-      <button id="btn-start-engine" class="button btn-green">Start Engine</button>
-      <button id="btn-stop-engine" class="button btn-red">Stop Engine</button>
-      -->
       <h2>Configuration</h2>
       <fieldset>
         <ul>
@@ -150,28 +133,9 @@
             <label class="settings" for="config-packages_url">Packages URL: </label>
             <input class="config-input long" id="config-packages_url" type="text" placeholder="URL for update packages file" />
           </li>
-          <!--
-          <li>
-            <label class="settings" for="config-beacon_url">Beacon URL: </label>
-            <input class="config-input long" id="config-beacon_url" type="text" placeholder="URL for the beacon server" />
-          </li>
-          <li>
-            <label class="settings" for="config-beacon_consent">Beacon Consent: </label>
-            <select class="config-input long" id="consent_for_beacon"/>
-              <option value="true">True</option>
-              <option value="false">False</option>
-            </select>
-          </li>
-          -->
         <ul>
       </fieldset>
     </div>
-
-    <!--
-
-      FABMO RE-START // Hijacked from older Reset
-
-    -->
     <div class="content-pane" id="view-factory">
       <h1><i class="fa fa-industry"></i> Re-Start FabMo</h1>
       <p>The button below will perform a soft re-start of the full FabMo program and attempt to reconnect to the G2 motion controller. You will need to re-home your tool.</p>
@@ -183,7 +147,9 @@
     </div>
 
     <!-- Console (Always Visible) -->
-    <div id="console-header">
+<div id="console-header">
+            <!--Set of Checkboxes for selecting what elements are displayed in the console-->
+    <div style="overflow: auto; width: 30%; border: 1px solid #ccc; padding: 10px;">
       <div class="checkbox-group">
         <label><input type="checkbox" class="log-filter" value="info:" checked> Info</label>
         <label><input type="checkbox" class="log-filter" value="debug:" checked > Debug</label>
@@ -192,17 +158,143 @@
         <label><input type="checkbox" class="log-filter" value="g2:" checked> G2</label>
         <label><input type="checkbox" class="log-filter" value="shell:"checked> Shell</label>        
       </div>
-      Updater Console &nbsp;
-      <!--<i id="btn-console-copy" class="fa fa-clipboard fa-md"></i>
-      &nbsp; -->
-      <i id="btn-console-clear" class="fa fa-md fa-remove"></i>
-      &nbsp;
-      <span id="message-console"></span>
+      <hr>
+      <!-- Checkboxes to toggle visibility -->
+      <div style="margin-bottom: 10px;">
+        <label><input type="checkbox" id="toggle-updater" checked> Show Updater Console</label>
+        <label><input type="checkbox" id="toggle-fabmo" checked> Show FabMo Console</label>
+        <label><input type="checkbox" id="toggle-status" checked> Show Status</label>
+      </div>
     </div>
-    <div id="console">
-      <div class="content"></div>
+    <i id="btn-console-clear" class="fa fa-md fa-remove">Clear Console</i>&nbsp;
+<hr>
+<!-- Wrapper for all consoles -->
+<div style=" overflow: hidden;display: flex; justify-content: space-evenly; align-items: flex-start; gap: 10px;">
+
+  <div id="updater-wrapper">
+    <h3>Updater Console:</h3>
+    <div class="updater console-container">
+      <div id="console" class="console-content">
+        <div class="content">Updater log content...</div>
+      </div>
     </div>
   </div>
+
+  <div id="fabmo-wrapper">
+    <h3>FabMo Console:</h3>
+    <div id="fabmo-console" class="console-container">
+      <div id="console" class="console-content">
+        <div id="external-log" class="external-log-content">FabMo log content...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="status-wrapper">
+    <h3>Status:</h3>
+    <div id="status-console" class="console-container">
+      <div id="status-content" class="console-content">
+        Status updates will be displayed here...
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .console-container {
+    height: 36vh; /* Fixed height to prevent page overflow */
+    width: 100%; /* Ensures it takes the available space */
+    /*border: 1px solid #ccc;*/
+    padding: 1px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .console-content {
+    flex-grow: 1;
+    overflow-y: auto; /* Enables scrolling */
+    max-height: 100%; /* Ensures it doesn't exceed the parent */
+    padding: 1px;
+  
+    /*border: 1px solid #ddd;*/
+  }
+
+  /* Ensuring flex sizing is respected */
+  #updater-wrapper, #fabmo-wrapper, #status-wrapper {
+    flex: 1; /* Ensures all sections are evenly spaced */
+    min-width: 30%; /* Prevents sections from collapsing */
+  }
+</style>
+<script>
+  function toggleVisibility(id, wrapperId) {
+    document.getElementById(id).addEventListener("change", function() {
+      const section = document.getElementById(wrapperId);
+      section.style.display = this.checked ? "block" : "none";
+    });
+  }
+
+  toggleVisibility("toggle-updater", "updater-wrapper");
+  toggleVisibility("toggle-fabmo", "fabmo-wrapper");
+  toggleVisibility("toggle-status", "status-wrapper");
+</script>
+<script>
+  // Get server IP dynamically from current window location
+  var serverIP = window.location.hostname;
+
+  // Function to fetch and update status data
+  async function fetchStatusData() {
+      try {
+          let response = await fetch(`http://${serverIP}:80/status`);
+
+          if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          let data = await response.json(); // Expecting JSON response
+          updateStatusConsole(data);
+      } catch (error) {
+          console.error("Failed to fetch status data:", error);
+      }
+  }
+
+  // Fetch status every 500ms
+  setInterval(fetchStatusData, 500);
+
+  function updateStatusConsole(statusData) {
+      var statusContainer = document.getElementById('status-content');
+
+      if (!statusContainer) {
+          console.error("Error: Status container not found!");
+          return;
+      }
+
+      // Clear previous content to avoid duplication
+      statusContainer.innerHTML = "";
+
+      // Process JSON data and format it for display
+      Object.entries(statusData).forEach(([key, value]) => {
+          let statusEntry = document.createElement('div');
+          statusEntry.style.whiteSpace = "pre-wrap"; // Ensure proper word wrapping
+          statusEntry.style.margin = "2px 0"; // Adds spacing for readability
+          statusEntry.innerHTML = `<strong>${key}:</strong> ${prettifyStatus(value)}`; // Prettify JSON output
+
+          statusContainer.appendChild(statusEntry);
+      });
+
+      statusContainer.scrollTop = statusContainer.scrollHeight; // Auto-scroll if needed
+  }
+
+  function prettifyStatus(value) {
+      if (typeof value === "object") {
+          return JSON.stringify(value, null, 2); // Pretty-print objects
+      }
+      return value;
+  }
+</script>
+  <hr>
+
+</div>
+
 </div>
 
 <div id="modal">
@@ -217,7 +309,15 @@
     </div>
   </div>
 </div>
-
+<style>
+  .loglevel-info { color: #4CAF50; }  /* Green */
+  .loglevel-debug { color: #2196F3; } /* Blue */
+  .loglevel-warn { color: #FFC107; }  /* Yellow */
+  .loglevel-error { color: #F44336; } /* Red */
+  .loglevel-g2 { color: #9C27B0; }    /* Purple */
+  .loglevel-shell { color: #FF5722; } /* Orange */
+  </style>
+<!-- <script src="js/persistance.js"></script> for persistance of checkboxes across mutliple states of the code --> 
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/libs/jquery.min.js"></script>
 <script src="js/libs/updaterapi.js"></script>
