@@ -85,12 +85,16 @@
       <p>You may also wish to save your current configuration before proceeding so you can reload it.</p>
       <br>
         <div id="check-for-updates-controls">
-        <p id="message-noupdates">There are no software updates available for automatic download. </p>
-        <button id="btn-check-for-updates">
-          <i id="check-button-icon" class="fa fa-cloud-download"></i>
-          <span id="check-button-text">Check for Updates</span>
-        </button>
-      
+          
+          <div id="update-status">
+            <div id="update-loader" class="spinner" style="display: none;"></div>
+            <span id="update-status-text">Checking for updates...</span>
+          </div>
+          
+          <button id="btn-check-for-updates" style="display: none;">
+            <i id="check-button-icon" class="fa fa-cloud-download"></i>
+            <span id="check-button-text">Check for Updates</span>
+          </button>
         </div>
 
         <div id="message-updates" class="hide">

@@ -315,61 +315,125 @@ function setState(state) {
     }
     $("#btn-check-for-updates").click(function(evt) {
       evt.preventDefault();
-      console.log("Check for Updates button clicked");  // For debugging
+      console.log("Check for Updates button clicked");  // Debugging
   
-      // Disable the button during the check and show a spinner
+      // Disable button and show spinner during check
       $('#btn-check-for-updates').addClass('disabled');
       $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-spin fa-gear');
-      $('#check-button-text').text('Checking for Updates...'); // Update text during check
+      $('#check-button-text').text('Checking for Updates...');
   
-      // Call the existing checkForUpdates method
+      // Call checkForUpdates API
       updater.checkForUpdates(function(err, data) {
-          console.log("Check for updates response:", err, data);  // Debugging output
+          console.log("Check for updates response:", err, data);  // Debugging
   
           if (err) {
               console.error("Error checking for updates:", err);
-              //alert("Failed to check for updates. Please try again.");
-              $('#check-button-text').text('Check for Updates'); // Reset text on error
-          } else if (data?.updates?.length > 0) {
-              //alert("Updates available! Downloading...");
-  
-              // Change button text to "Downloading Update..."
-              $('#check-button-text').text('Downloading Update...');
-  
-              // Optionally, trigger the download automatically if needed
-              updater.applyPreparedUpdates(function(applyErr, applyData) {
-                  if (applyErr) {
-                      console.error("Error applying updates:", applyErr);
-                      //alert("Failed to download the update.");
-                      $('#check-button-text').text('Check for Updates'); // Reset on failure
-                  } else {
-                      //alert("Update downloaded and applied successfully!");
-                      $('#check-button-text').text('Update Applied'); // Indicate success
-                  }
-  
-                  // Re-enable button and reset icon after process
-                  $('#btn-check-for-updates').removeClass('disabled');
-                  $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
-              });
-  
-          } else if (data?.updates?.length === 0) {
-              //alert("No updates found.");
-              $('#check-button-text').text('Check for Updates'); // Reset text
-          } else {
-              console.warn("Unexpected response format:", data);
-              //alert("Unexpected response. Please check the console for details.");
-              $('#check-button-text').text('Check for Updates'); // Reset text
-          }
-  
-          // Re-enable button and reset icon if not downloading
-          if (!data?.updates?.length) {
+              alert("Failed to check for updates. Please try again.");
+              $('#check-button-text').text('Check for Updates');
               $('#btn-check-for-updates').removeClass('disabled');
               $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+          } else {
+              // Do not display "No updates found" here immediately
+              // Rely on WebSocket status events to show update availability or download progress
+              console.log("Awaiting status update for download progress...");
           }
       });
   });
   
 }
+// Search for avalible update on page load
+$(document).ready(function() {
+  console.log("Page loaded, starting update check...");
+
+  // Initially hide the update button and spinner
+  $('#btn-check-for-updates').hide();
+  $('#update-loader').hide();
+  let updateAvailable = false;
+
+  // Function to check for updates
+  function checkForUpdates() {
+      console.log("Checking for updates...");
+
+      // Show spinner and status text
+      $('#update-loader').show();
+      $('#update-status-text').text('Checking for updates...');
+
+      updater.checkForUpdates(function(err, data) {
+          console.log("Update check response:", err, data);  // Debugging
+
+          // Hide spinner after check completes
+          $('#update-loader').hide();
+
+          if (err) {
+              console.error("Error checking for updates:", err);
+              $('#update-status-text').text('Error checking for updates.');
+          } else if (data?.updates?.length > 0) {
+              if (!updateAvailable) {
+                  console.log("Update available:", data.updates[0]);
+                  updateAvailable = true;
+
+                  // Show the "Update" button
+                  $('#btn-check-for-updates').show();
+                  $('#check-button-text').text('Update Available');
+                  $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cloud-upload');
+                  $('#update-status-text').text('New update available!');
+              }
+          } else {
+              if (updateAvailable) {
+                  console.log("No updates available.");
+                  updateAvailable = false;
+
+                  // Hide the "Update" button if no updates are available
+                  $('#btn-check-for-updates').hide();
+              }
+              $('#update-status-text').text('Your system is up-to-date.');
+          }
+      });
+  }
+
+  // Initial check on page load
+  checkForUpdates();
+
+  // Recheck every 5 seconds
+  setInterval(checkForUpdates, 5000);
+
+  // Update button click handler
+  $("#btn-check-for-updates").click(function(evt) {
+      evt.preventDefault();
+      console.log("Update button clicked");
+
+      // Disable button and show spinner during download
+      $('#btn-check-for-updates').addClass('disabled');
+      $('#check-button-icon').removeClass('fa-cloud-upload').addClass('fa-spin fa-gear');
+      $('#check-button-text').text('Downloading Update...');
+
+      // Apply prepared updates
+      updater.applyPreparedUpdates(function(err, data) {
+          if (err) {
+              console.error("Error applying updates:", err);
+              alert("Failed to download the update. Please try again.");
+              $('#btn-check-for-updates').removeClass('disabled');
+              $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-upload');
+              $('#check-button-text').text('Update Available');
+          } else {
+              console.log("Update downloaded and applied successfully!");
+              alert("Update applied successfully!");
+
+              // Update UI to reflect success
+              $('#check-button-text').text('Update Applied');
+              $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-check');
+              $('#btn-check-for-updates').addClass('disabled');
+              $('#update-status-text').text('Your system is up-to-date.');
+              
+              // After update, hide button and reset state
+              updateAvailable = false;
+              $('#btn-check-for-updates').hide();
+          }
+      });
+  });
+});
+
+
 
 // Show the modal dialog with the provided options
 //   options:
@@ -491,31 +555,47 @@ $(document).ready(function() {
 
   // Updater status event - update the UI to reflect the current updater status
   updater.on('status', function(status) {
+    console.log("Status update received:", status);  // Debugging log
 
-    // Basic state stuff
+    // Basic state handling
     setState(status.state);
     setOnline(status.online);
 
-    // Show updates if there are any to apply
-    if(status.updates && status.updates.length > 0) {
-      var update = status.updates[0];
-      $('#message-changelog').text(update.changelog);
-      $('#update-button-text').text('Update ' + update.product + ' to ' + update.version);
-      $('#message-updates').removeClass('hide');
-      $('#message-noupdates').addClass('hide');
-      $('.update-indicator').addClass('updates-available')
-      $('#check-for-updates-controls').addClass('hide');
-    } else {
-      $('#check-for-updates-controls').removeClass('hide');
-      $('#message-updates').addClass('hide');
-      $('#message-noupdates').removeClass('hide');
-      $('.update-indicator').removeClass('updates-available')
-
+    // Detect if an update is being downloaded
+    if (status.state === 'updating') {
+        $('#check-button-text').text('Downloading Update...');
+        $('#btn-check-for-updates').addClass('disabled');
+        $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-spin fa-gear');
     }
 
-    // TODO - why do we dismiss the modal here?
+    // Show updates if they are available after download
+    if (status.updates && status.updates.length > 0) {
+        var update = status.updates[0];
+        $('#message-changelog').text(update.changelog);
+        $('#update-button-text').text('Update ' + update.product + ' to ' + update.version);
+        $('#message-updates').removeClass('hide');
+        $('#message-noupdates').addClass('hide');
+        $('.update-indicator').addClass('updates-available');
+        $('#check-for-updates-controls').addClass('hide');
+        $('#check-button-text').text('Update Available');
+        $('#btn-check-for-updates').removeClass('disabled');
+        $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+    } else if (status.state === 'idle') {
+        // No updates found and system is idle
+        $('#check-button-text').text('No updates found');
+        $('#btn-check-for-updates').removeClass('disabled');
+        $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+    }
+
+    // Dismiss any modals after status update
     dismissModal();
-  });
+});
+if (data?.updates?.length > 0) {
+  $('#update-status').text('New update available!');
+} else {
+  $('#update-status').text('Your system is up-to-date.');
+}
+
 
   // Show the disconnected dialog when we lose the websocket connection to the updater
   updater.on('disconnect', function(state) {

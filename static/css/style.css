@@ -494,3 +494,35 @@ td {
     -ms-user-select: none;
     user-select: none;
 }
+/* Spinner Styling */
+.spinner {
+	border: 4px solid #f3f3f3; /* Light grey */
+	border-top: 4px solid #3498db; /* Blue */
+	border-radius: 50%;
+	width: 16px;
+	height: 16px;
+	animation: spin 1s linear infinite;
+	display: inline-block;
+	margin-right: 10px; /* Spacing between spinner and text */
+	vertical-align: middle;
+  }
+  
+  /* Spinner Animation */
+  @keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+  }
+  
+  /* Status Container */
+  #update-status {
+	display: flex;
+	align-items: center;
+	margin-top: 10px;
+	font-family: Arial, sans-serif;
+  }
+  
+  #update-status-text {
+	font-size: 14px;
+	color: #555;
+  }
+  
