@@ -131,22 +131,23 @@ var logLevelColors = {
 };
 
 function prettify(line) {
-  var line_re = /^(\w*)\:(.*)/i;
+  var line_re = /^(\w+)\:(.*)/i; // Matches log level and message
   var match = line_re.exec(line);
   
   if (match) {
-      var level = match[1] + ':'; // Ensure it matches the checkbox values
-      if (!activeFilters.has(level)) {
-          return ''; // Skip lines that don't match active filters
+      var level = match[1].toLowerCase(); // e.g., 'info', 'debug', etc.
+      var msg = match[2].trim();
+
+      if (!logLevelColors[level]) {
+          level = 'info'; // Default to info if unknown level
       }
-      
-      var msg = match[2];
-      lastLevel = level;
-      return `<span class="loglevel-${level} ">${level}</span> ${msg}\n`;
+
+      return `<span class="${logLevelColors[level]}">${match[1]}:</span> ${msg}\n`;
   } else {
-      return line + '\n';
+      return `<span>${line}</span>\n`; // Default formatting for unmatched lines
   }
 }
+
 
 function updateConsoleDisplay() {
   var log = $('#console .content');
@@ -315,33 +316,60 @@ function setState(state) {
     $("#btn-check-for-updates").click(function(evt) {
       evt.preventDefault();
       console.log("Check for Updates button clicked");  // For debugging
-    
+  
       // Disable the button during the check and show a spinner
       $('#btn-check-for-updates').addClass('disabled');
       $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-spin fa-gear');
-    
+      $('#check-button-text').text('Checking for Updates...'); // Update text during check
+  
       // Call the existing checkForUpdates method
       updater.checkForUpdates(function(err, data) {
           console.log("Check for updates response:", err, data);  // Debugging output
-    
+  
           if (err) {
               console.error("Error checking for updates:", err);
-              alert("Failed to check for updates. Please try again.");
-          } else if (data && data.updates && data.updates.length > 0) {
-              alert("Updates available!");
-              // Optionally, display updates in the UI
+              //alert("Failed to check for updates. Please try again.");
+              $('#check-button-text').text('Check for Updates'); // Reset text on error
+          } else if (data?.updates?.length > 0) {
+              //alert("Updates available! Downloading...");
+  
+              // Change button text to "Downloading Update..."
+              $('#check-button-text').text('Downloading Update...');
+  
+              // Optionally, trigger the download automatically if needed
+              updater.applyPreparedUpdates(function(applyErr, applyData) {
+                  if (applyErr) {
+                      console.error("Error applying updates:", applyErr);
+                      //alert("Failed to download the update.");
+                      $('#check-button-text').text('Check for Updates'); // Reset on failure
+                  } else {
+                      //alert("Update downloaded and applied successfully!");
+                      $('#check-button-text').text('Update Applied'); // Indicate success
+                  }
+  
+                  // Re-enable button and reset icon after process
+                  $('#btn-check-for-updates').removeClass('disabled');
+                  $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+              });
+  
+          } else if (data?.updates?.length === 0) {
+              //alert("No updates found.");
+              $('#check-button-text').text('Check for Updates'); // Reset text
           } else {
-              alert("No updates found.");
+              console.warn("Unexpected response format:", data);
+              //alert("Unexpected response. Please check the console for details.");
+              $('#check-button-text').text('Check for Updates'); // Reset text
           }
-    
-          // Re-enable button and reset icon after check
-          $('#btn-check-for-updates').removeClass('disabled');
-          $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+  
+          // Re-enable button and reset icon if not downloading
+          if (!data?.updates?.length) {
+              $('#btn-check-for-updates').removeClass('disabled');
+              $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+          }
       });
-    });
+  });
+  
 }
-
-
 
 // Show the modal dialog with the provided options
 //   options:
