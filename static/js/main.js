@@ -316,6 +316,28 @@ function setState(state) {
     $('#btn-check-for-updates').removeClass('disabled');
     $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
 }
+$("#btn-check-for-updates").click(function(evt) {
+  evt.preventDefault();
+  $('#btn-check-for-updates').addClass('disabled'); // Disable button during check
+  $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-spin fa-gear'); // Show spinning icon
+
+  // Call updater to check for updates
+  updater.checkForUpdates(function(err, updates) {
+      if (err) {
+          console.error("Error checking for updates:", err);
+          alert("Failed to check for updates. Please try again.");
+      } else if (updates && updates.length > 0) {
+          alert("Updates available!");
+          // Optionally, trigger UI update to show available updates
+      } else {
+          alert("No updates found.");
+      }
+
+      // Re-enable button after check
+      $('#btn-check-for-updates').removeClass('disabled');
+      $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+  });
+});
 
 // Show the modal dialog with the provided options
 //   options:
@@ -653,20 +675,19 @@ function processExternalLogData(logData) {
   function engineUpdateService() {
     setTimeout(engineUpdateService,5000);
 
-    updater.getEngineInfo(function(err, info) {
-      if(err) {
-        $('.label-engine-version').text('unavailable');
-        $('.label-fw-build').text('unavailable');
-        $('.label-fw-config').text('unavailable');
-        $('.label-fw-version').text('unavailable');
-      } else {
-        var engine_version_number = info.version && (info.version.number || (info.version.hash ? info.version.hash.substring(0,8) + '-' + info.version.type : 'unavailable'));
-        $('.label-engine-version').text(engine_version_number || 'unavailable');
-        $('.label-fw-build').text(info.firmware && info.firmware.build || 'unavailable');
-        $('.label-fw-config').text(info.firmware && info.firmware.config || 'unavailable');
-        $('.label-fw-version').text(info.firmware && info.firmware.version ? info.firmware.version.replace('-dirty', '') : 'unavailable');
-      }
-    });
+        updater.getEngineInfo(function(err, info) {
+          if(err) {
+            $('.label-engine-version').text('unavailable');
+            $('.label-fw-build').text('unavailable');
+            $('.label-fw-config').text('unavailable');
+            $('.label-fw-version').text('unavailable');
+          } else {
+            var engine_version_number = info.version && (info.version.number || (info.version.hash ? info.version.hash.substring(0,8) + '-' + info.version.type : 'unavailable'));
+            $('.label-engine-version').text(engine_version_number || 'unavailable');
+            $('.label-fw-build').text(info.firmware && info.firmware.build || 'unavailable');
+            $('.label-fw-config').text(info.firmware && info.firmware.config || 'unavailable');
+            $('.label-fw-version').text(info.firmware && info.firmware.version ? info.firmware.version.replace('-dirty', '') : 'unavailable');
+          }
     
       });
       // Populate the current status of the engine and update last step in the update progress report
