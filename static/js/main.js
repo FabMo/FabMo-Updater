@@ -312,32 +312,36 @@ function setState(state) {
             icon.removeClass(classes).addClass('fa-spin fa-spinner');
             break;
     }
-    $('#check-button-text').text(' Check for updates');
-    $('#btn-check-for-updates').removeClass('disabled');
-    $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+    $("#btn-check-for-updates").click(function(evt) {
+      evt.preventDefault();
+      console.log("Check for Updates button clicked");  // For debugging
+    
+      // Disable the button during the check and show a spinner
+      $('#btn-check-for-updates').addClass('disabled');
+      $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-spin fa-gear');
+    
+      // Call the existing checkForUpdates method
+      updater.checkForUpdates(function(err, data) {
+          console.log("Check for updates response:", err, data);  // Debugging output
+    
+          if (err) {
+              console.error("Error checking for updates:", err);
+              alert("Failed to check for updates. Please try again.");
+          } else if (data && data.updates && data.updates.length > 0) {
+              alert("Updates available!");
+              // Optionally, display updates in the UI
+          } else {
+              alert("No updates found.");
+          }
+    
+          // Re-enable button and reset icon after check
+          $('#btn-check-for-updates').removeClass('disabled');
+          $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+      });
+    });
 }
-$("#btn-check-for-updates").click(function(evt) {
-  evt.preventDefault();
-  $('#btn-check-for-updates').addClass('disabled'); // Disable button during check
-  $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-spin fa-gear'); // Show spinning icon
 
-  // Call updater to check for updates
-  updater.checkForUpdates(function(err, updates) {
-      if (err) {
-          console.error("Error checking for updates:", err);
-          alert("Failed to check for updates. Please try again.");
-      } else if (updates && updates.length > 0) {
-          alert("Updates available!");
-          // Optionally, trigger UI update to show available updates
-      } else {
-          alert("No updates found.");
-      }
 
-      // Re-enable button after check
-      $('#btn-check-for-updates').removeClass('disabled');
-      $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
-  });
-});
 
 // Show the modal dialog with the provided options
 //   options:
