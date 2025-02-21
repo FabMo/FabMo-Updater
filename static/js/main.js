@@ -674,22 +674,21 @@ function processExternalLogData(logData) {
   // Check Engine Info and Status routinely since a change can happen behind the scenes
   function engineUpdateService() {
     setTimeout(engineUpdateService,5000);
-
-        updater.getEngineInfo(function(err, info) {
-          if(err) {
-            $('.label-engine-version').text('unavailable');
-            $('.label-fw-build').text('unavailable');
-            $('.label-fw-config').text('unavailable');
-            $('.label-fw-version').text('unavailable');
-          } else {
-            var engine_version_number = info.version && (info.version.number || (info.version.hash ? info.version.hash.substring(0,8) + '-' + info.version.type : 'unavailable'));
-            $('.label-engine-version').text(engine_version_number || 'unavailable');
-            $('.label-fw-build').text(info.firmware && info.firmware.build || 'unavailable');
-            $('.label-fw-config').text(info.firmware && info.firmware.config || 'unavailable');
-            $('.label-fw-version').text(info.firmware && info.firmware.version ? info.firmware.version.replace('-dirty', '') : 'unavailable');
-          }
+    updater.getEngineInfo(function(err, info) {
+      if (err) {
+        console.error("Error fetching engine info:", err);
+      }
     
-      });
+      info = info || {};  // Ensure info is at least an empty object
+      info.firmware = info.firmware || {};  // Ensure firmware exists
+      info.version = info.version || {};  // Ensure version exists
+    
+      $('.label-fw-version').text(info.firmware.version?.replace('-dirty', '') || 'unavailable');
+      $('.label-fw-build').text(info.firmware.build || 'unavailable');
+      $('.label-fw-config').text(info.firmware.config || 'unavailable');
+      $('.label-engine-version').text(info.version.number || (info.version.hash?.substring(0,8) + '-' + info.version.type) || 'unavailable');
+    });
+
       // Populate the current status of the engine and update last step in the update progress report
       updater.getEngineStatus(function(err, status) {
         if(err) {
