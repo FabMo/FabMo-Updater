@@ -653,21 +653,21 @@ function processExternalLogData(logData) {
   function engineUpdateService() {
     setTimeout(engineUpdateService,5000);
 
-      // Populate the table of engine information
-      updater.getEngineInfo(function(err, info) {
-        if(err) {
-          $('.label-engine-version').text('unavailable');
-          $('.label-fw-build').text('unavailable');
-          $('.label-fw-config').text('unavailable');
-          $('.label-fw-version').text('unavailable');
-
-        } else {
-          var engine_version_number = info.version.number || info.version.hash.substring(0,8) + '-' + info.version.type
-          $('.label-fw-build').text(info.firmware.build || 'unavailable');
-          $('.label-fw-config').text(info.firmware.config || 'unavailable');
-          $('.label-fw-version').text((info.firmware.version).replace('-dirty','') || 'unavailable');
-          $('.label-engine-version').text(engine_version_number || 'unavailable');
-        }
+    updater.getEngineInfo(function(err, info) {
+      if(err) {
+        $('.label-engine-version').text('unavailable');
+        $('.label-fw-build').text('unavailable');
+        $('.label-fw-config').text('unavailable');
+        $('.label-fw-version').text('unavailable');
+      } else {
+        var engine_version_number = info.version && (info.version.number || (info.version.hash ? info.version.hash.substring(0,8) + '-' + info.version.type : 'unavailable'));
+        $('.label-engine-version').text(engine_version_number || 'unavailable');
+        $('.label-fw-build').text(info.firmware && info.firmware.build || 'unavailable');
+        $('.label-fw-config').text(info.firmware && info.firmware.config || 'unavailable');
+        $('.label-fw-version').text(info.firmware && info.firmware.version ? info.firmware.version.replace('-dirty', '') : 'unavailable');
+      }
+    });
+    
       });
       // Populate the current status of the engine and update last step in the update progress report
       updater.getEngineStatus(function(err, status) {
