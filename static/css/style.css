@@ -525,4 +525,26 @@ td {
 	font-size: 14px;
 	color: #555;
   }
+  .console-container {
+    height: 36vh; /* Fixed height to prevent page overflow */
+    width: 100%; /* Ensures it takes the available space */
+    /*border: 1px solid #ccc;*/
+    padding: 1px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .console-content {
+    flex-grow: 1;
+    overflow-y: auto; /* Enables scrolling */
+    max-height: 100%; /* Ensures it doesn't exceed the parent */
+    padding: 1px;
   
+    /*border: 1px solid #ddd;*/
+  }
+
+  /* Ensuring flex sizing is respected */
+  #updater-wrapper, #fabmo-wrapper, #status-wrapper {
+    flex: 1; /* Ensures all sections are evenly spaced */
+    min-width: 30%; /* Prevents sections from collapsing */
+  }

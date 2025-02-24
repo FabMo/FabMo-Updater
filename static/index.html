@@ -178,7 +178,6 @@
 <hr>
 <!-- Wrapper for all consoles -->
 <div style=" overflow: hidden;display: flex; justify-content: space-evenly; align-items: flex-start; gap: 10px;">
-
   <div id="updater-wrapper">
     <h3>Updater Console:</h3>
     <div class="updater console-container"style="max-width: 80vw;">
@@ -187,7 +186,6 @@
       </div>
     </div>
   </div>
-
   <div id="fabmo-wrapper">
     <h3>FabMo Console:</h3>
     <div id="fabmo-console" class="console-container"style="max-width: 80vw;">
@@ -196,7 +194,6 @@
       </div>
     </div>
   </div>
-
   <div id="status-wrapper">
     <h3>Status:</h3>
     <div id="status-console" class="console-container" style="max-width: 80vw;">
@@ -205,34 +202,7 @@
       </div>
     </div>
   </div>
-
 </div>
-
-<style>
-  .console-container {
-    height: 36vh; /* Fixed height to prevent page overflow */
-    width: 100%; /* Ensures it takes the available space */
-    /*border: 1px solid #ccc;*/
-    padding: 1px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .console-content {
-    flex-grow: 1;
-    overflow-y: auto; /* Enables scrolling */
-    max-height: 100%; /* Ensures it doesn't exceed the parent */
-    padding: 1px;
-  
-    /*border: 1px solid #ddd;*/
-  }
-
-  /* Ensuring flex sizing is respected */
-  #updater-wrapper, #fabmo-wrapper, #status-wrapper {
-    flex: 1; /* Ensures all sections are evenly spaced */
-    min-width: 30%; /* Prevents sections from collapsing */
-  }
-</style>
 <script>
   function toggleVisibility(id, wrapperId) {
     document.getElementById(id).addEventListener("change", function() {
