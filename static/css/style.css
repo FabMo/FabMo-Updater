@@ -1,7 +1,7 @@
 /*
  * Default Body Styles
  */
-body {
+ body {
 	margin: 0;
 	color: #222;
 	font-family: Verdana, Geneva, sans-serif;
@@ -9,6 +9,11 @@ body {
 	line-height: 1.25em;
 }
 
+/* Checkbox Group */
+.checkbox-group {
+	display: flex;
+	gap: 10px; /* Adjust spacing between checkboxes */
+}
 p {
 	margin: 0.25em;
 }
@@ -65,45 +70,127 @@ em {
 	display: none;
 }
 
+/* Outer container: entire page is a horizontal flex layout */
 #container {
     display: flex;
-    height: 100vh;
+    flex-direction: row;
+    height: 100vh;  /* Full viewport height */
 }
 
-#content{
-    flex-grow: 1;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
+/* Left menu (fixed width) */
 #menu {
     width: 200px;
-    flex: none;
     background-color: #444444;
-	font-family:  monospace;
+	color: #fff;
+    flex: 0 0 auto;  /* Don’t let it grow/shrink */
+	font-family: monospace;
 	font-size: 12px;
 	font-weight: 100;
 }
 
-.content-pane {
-	display: none;
-	margin: 10px;
+/* Main content area to the right, vertical flex */
+#content {
+    flex: 1 1 auto;          /* Fill remaining space */
+    display: flex;
+    flex-direction: column;  /* Stack content + console vertically */
+    min-height: 0;           /* Important so children can scroll if needed */
 }
 
+/* Content panes occupy the top portion */
+.content-pane {
+	display: none;           /* hidden by default */
+	overflow-y: auto;        /* scroll if content is tall */
+	flex: 1 1 auto;
+	min-height: 0;
+	padding: 10px;
+}
 .content-pane.active {
-	display: block;
+	display: block;          /* only show the active pane */
 }
 
 /*
- * Left side menu
+ * Console Layout
+ */
+
+/* Console area pinned at bottom */
+#console-header {
+    flex: 0 0 250px;         /* Set console height: try 250px, 300px, etc. */
+    display: flex;
+    flex-direction: column;
+    background-color: #222;
+    color: #ccc;
+    overflow: hidden;        /* or auto if you want the entire area to scroll */
+}
+
+/* Top bar with checkboxes and Clear Console button */
+#console-controls {
+    padding: 10px;
+    background-color: #333;
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: space-between; /* Place checkboxes on left, button(s) on right */
+    align-items: center;
+}
+
+/* The row that holds the three consoles side-by-side */
+#console-wrappers {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    padding: 10px;
+    min-height: 0;   /* ensures flex children can scroll if needed */
+}
+
+/* Each console column */
+#updater-wrapper,
+#fabmo-wrapper,
+#status-wrapper {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;   /* needed so text can wrap properly in a flex item */
+}
+
+/* The console container itself: fills vertical space, scrolls if content overflows */
+.console-container {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    background-color: #111;
+    border: 1px solid #333;
+}
+
+/* The text area inside each console */
+.console-content {
+    padding: 10px;
+    white-space: pre-wrap;
+    font-family: "Lucida Console", Monaco, monospace;
+    font-size: 12px;
+    color: #ebebeb;
+    min-height: 0;
+}
+
+/* Just a typical .checkbox-group style */
+.checkbox-group {
+	display: flex;
+	gap: 10px;
+}
+
+/* Example color styles for log levels, etc. */
+.loglevel-info  { color: #B5D837; }
+.loglevel-debug { color: #80CCBA; }
+.loglevel-warn  { color: #E6D369; }
+.loglevel-error { color: #E85169; }
+
+/*
+ * Left side menu Items & Labels
  */
 #menu .items {
     margin: 0;
     padding: 0;
 }
 
-/* Clickable Menu Items */
 .menu-item {
 	width: 100%;
 	line-height: 3em;
@@ -119,7 +206,6 @@ em {
 	cursor: inherit;
 }
 
-/* Menu Labels */
 .menu-title {
 	width: 100%;
 	line-height: 3em;
@@ -147,7 +233,6 @@ em {
 	background-color: #666666;
 }
 
-/* Non-clickable Menu Items */
 .menu-label {
 	width: 100%;
 	border-top: 1px solid #333;
@@ -163,7 +248,6 @@ em {
 	text-decoration: none;
 }
 
-/* The status item */
 .status {
     transition: all 0.5s ease 0s;
     cursor: pointer;
@@ -174,58 +258,27 @@ em {
 }
 
 .status-disconnected {
-	background: #333333; /* For browsers that do not support gradients */
+	background: #333333; 
     background: -webkit-linear-gradient(#333333, #444444);
-    background: -o-linear-gradient(#333333, #444444); /* For Opera 11.1 to 12.0 */
-    background: -moz-linear-gradient(#333333, #444444); /* For Firefox 3.6 to 15 */
-    background: linear-gradient(#333333, #444444); /* Standard syntax */
+    background: -o-linear-gradient(#333333, #444444);
+    background: -moz-linear-gradient(#333333, #444444);
+    background: linear-gradient(#333333, #444444);
 	background-color: #333333;
 }
 
 /*
- * Console Display
+ * Console (Old rules removed in favor of new layout)
  */
-#console {
-	background-color: #222222;
-	color: #ebebeb;
-	font-family: "Lucida Console", Monaco, monospace;
-	font-weight: 100;
-	font-size: x-small;
-	border-left: 1px solid black;
-	flex: 1 1 auto;
-	overflow-y: auto;
-	overflow-x: hidden;
-	min-height: 0px;
-}
 
-#console .content {
-	padding: 10px;
-	white-space: pre;
-	cursor: text;
-}
-
-#console-header {
-	padding: 10px;
-	font-weight: 400;
-	background-color: #222222;
-	color: #cccccc;
-	text-shadow: 1px 1px black;
-}
-
-.loglevel-info { color: #B5D837; }
-.loglevel-debug { color: #80CCBA; }
-.loglevel-error { color: #E85169; }
-.loglevel-warn { color: #E6D369; }
-.loglevel-websocket { color: #E85377; }
-.loglevel-shell { color: #A491FD; }
+/*
+ * Progress Bar, Forms, Table Styles, Modal Dialog, etc.
+ * (Keep these as-is from your existing styles)
+ */
 
 .progressbar {
     border: 1px solid #444;
-    /*font-size: 14px;
-	background-color: #444;*/
     color: white;
     background-color: #aaaaaa;
-   /* padding: 0.5em 1em;*/
     text-align: left;
     text-decoration: none;
     display: inline-block;
@@ -247,14 +300,10 @@ em {
 	position: relative;
 	transition: width 0.3s ease 0s;
 }
-/*
- * Forms
- */
 
 input[type="text"], input[type="password"] {
 	display: inline-block;
 	border-radius: 0.25em;
-    display: inline-block;
 	padding: 0.5em 1em;
 	border: 1px solid #aaa;
 }
@@ -279,7 +328,6 @@ select.disabled {
 	display: none;
 }
 
-
 fieldset {
     min-width: 100px;
     display: inline-block;
@@ -291,11 +339,11 @@ fieldset li {
 	margin-bottom: 0.4em;
 }
 
-fieldset input{
+fieldset input {
 	margin-left: 0.1em;
 }
 
-fieldset label{
+fieldset label {
 	display: inline-block;
 	width: 150px;
 	text-align: right;
@@ -317,7 +365,7 @@ input {
 }
 
 button {
-	font-family:  Verdana, Geneva, sans-serif;
+	font-family: Verdana, Geneva, sans-serif;
     border: none;
     font-size: 14px;
 	background-color: #444;
@@ -370,14 +418,10 @@ button.disabled {
 	cursor: pointer;
 }
 
-#btn-ethernet-network-save{
+#btn-ethernet-network-save {
   float: none;
   margin-top: 1em;
 }
-
-/*
- *  Table Styles
- */
 
 table {
 	width: 100%;
@@ -386,19 +430,13 @@ table {
 	cursor: pointer;
 }
 
-
 tr:nth-child(even) {
 	background-color: #eeeeee;
 }
 
-/*tr:hover {
-	background-color: #dddddd;
-}*/
-
 td {
 	padding: 0.25em;
 }
-
 
 .cell-value {
 	width: 100%;
@@ -406,28 +444,29 @@ td {
 .info-value {
 	font-style: italic;
 }
+
 /*
  * Modal Dialog
  */
 #modal {
-	display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
+	display: none;
+    position: fixed;
+    z-index: 1;
     left: 0;
     top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgb(0,0,0); /* Fallback color */
-    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.6);
 }
 
 #modal-content {
     background-color: #fefefe;
-    margin: 15% auto; /* 15% from the top and centered */
+    margin: 15% auto;
     padding: 15px;
     border: 1px solid #666;
-    width: 50%; /* Could be more or less, depending on screen size */
+    width: 50%;
     min-width: 350px;
     border-radius: 5px;
 }
@@ -445,10 +484,10 @@ td {
 #modal-text {
 	margin: 2em;
 }
+
 /*
  * Misc Body Styles
  */
-
 #message-no-message {
 	text-align: center;
 	padding: 20px;
@@ -460,7 +499,6 @@ td {
 #message-noupdate-ap {
 	color: #e00;
 }
-
 
 #message-console {
 	transition: all 0.3s ease 0s;
@@ -479,7 +517,7 @@ td {
 }
 
 #report-progress {
-    font-family:  Verdana, Geneva, sans-serif;
+    font-family: Verdana, Geneva, sans-serif;
     width: 600px;
     font-size: 14px;
     background-color: #e7820f;
@@ -494,58 +532,3 @@ td {
     -ms-user-select: none;
     user-select: none;
 }
-/* Spinner Styling */
-.spinner {
-	border: 4px solid #f3f3f3; /* Light grey */
-	border-top: 4px solid #3498db; /* Blue */
-	border-radius: 50%;
-	width: 16px;
-	height: 16px;
-	animation: spin 1s linear infinite;
-	display: inline-block;
-	margin-right: 10px; /* Spacing between spinner and text */
-	vertical-align: middle;
-  }
-  
-  /* Spinner Animation */
-  @keyframes spin {
-	0% { transform: rotate(0deg); }
-	100% { transform: rotate(360deg); }
-  }
-  
-  /* Status Container */
-  #update-status {
-	display: flex;
-	align-items: center;
-	margin-top: 10px;
-	font-family: Arial, sans-serif;
-  }
-  
-  #update-status-text {
-	font-size: 14px;
-	color: #555;
-  }
-  .console-container {
-	flex: 1 1 auto;
-	width: 100%;
-	display: flex;
-	flex-direction: column;
-	overflow-y: auto;
-	min-height: 0;
-  }
-  
-
-  .console-content {
-    flex-grow: 1;
-    overflow-y: auto; /* Enables scrolling */
-    max-height: 100%; /* Ensures it doesn't exceed the parent */
-    padding: 1px;
-  
-    /*border: 1px solid #ddd;*/
-  }
-
-  /* Ensuring flex sizing is respected */
-  #updater-wrapper, #fabmo-wrapper, #status-wrapper {
-    flex: 1; /* Ensures all sections are evenly spaced */
-    min-width: 30%; /* Prevents sections from collapsing */
-  }

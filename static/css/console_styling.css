@@ -1,7 +1,7 @@
 html, body {
     margin: 0;
     padding: 0;
-    height: 100%;  /* So flex heights work properly */
+    height: 100%; /* So flex heights work properly */
     font-family: Verdana, Geneva, sans-serif;
     font-size: 14px;
   }
@@ -18,54 +18,56 @@ html, body {
     width: 200px;
     background-color: #444;
     color: #fff;
-    flex: 0 0 auto;  /* Don’t let it grow/shrink */
+    flex: 0 0 auto; /* Don't let it shrink below 200px */
   }
   
   /* Main content area to the right, vertical flex */
   #content {
-    flex: 1 1 auto;          /* Fill remaining space */
+    flex: 1 1 auto;
     display: flex;
-    flex-direction: column;  /* Stack content + console vertically */
-    min-height: 0;           /* Important so children can scroll if needed */
+    flex-direction: column; /* stack content + console vertically */
+    min-height: 0;
   }
   
-  /* Content panes occupy the top portion */
+  /* Content panes at the top */
   .content-pane {
-    display: none;           /* hidden by default */
-    overflow-y: auto;        /* scroll if content is tall */
+    display: none;
+    overflow-y: auto;
     flex: 1 1 auto;
     min-height: 0;
     padding: 10px;
   }
   .content-pane.active {
-    display: block;          /* only show the active pane */
+    display: block;
   }
   
-  /* Console area pinned at bottom, fixed or flexible height */
+  /* Console pinned at bottom */
   #console-header {
-    flex: 0 0 250px;         /* Set console height: try 250px, 300px, etc. */
+    flex: 0 0 250px; /* pinned at bottom, 250px tall */
     display: flex;
     flex-direction: column;
     background-color: #222;
     color: #ccc;
-    overflow: hidden;        /* or auto if you want to scroll the entire console area */
+    overflow: hidden; /* or auto if you want the entire console area scrollable */
   }
   
-  /* The top bar with checkboxes, etc. */
+  /* Top bar for checkboxes + Clear button */
   #console-controls {
     padding: 10px;
     background-color: #333;
-    flex: 0 0 auto;
+    display: flex;
+    justify-content: space-between; /* checkboxes on left, button(s) on right */
+    align-items: center;
   }
   
-  /* The row that holds the three consoles side-by-side */
+  /* The row of three console columns */
   #console-wrappers {
     flex: 1 1 auto;
     display: flex;
     flex-direction: row;
     gap: 10px;
     padding: 10px;
-    min-height: 0;   /* ensures flex children can scroll if needed */
+    min-height: 0;
   }
   
   /* Each console column */
@@ -75,19 +77,19 @@ html, body {
     flex: 1 1 0;
     display: flex;
     flex-direction: column;
-    min-width: 0;   /* needed so text can wrap properly in a flex item */
+    min-width: 0; /* so text can wrap properly */
   }
   
-  /* The console container itself: fill vertical space, scroll if big */
+  /* The container that holds log text */
   .console-container {
     flex: 1 1 auto;
-    overflow-y: auto;
-    min-height: 0;
     background-color: #111;
     border: 1px solid #333;
+    min-height: 0;
+    overflow-y: auto;
   }
   
-  /* The text area inside each console */
+  /* The text area inside each console container */
   .console-content {
     padding: 10px;
     white-space: pre-wrap;
@@ -95,17 +97,24 @@ html, body {
     font-size: 12px;
     color: #ebebeb;
     min-height: 0;
+    overflow-y: auto;
   }
   
-  /* Just a typical .checkbox-group style */
+  /* Basic styling for .checkbox-group */
   .checkbox-group {
     display: flex;
     gap: 10px;
   }
+  
+  /* 
+     Keep your other existing styles for 
+     tables, buttons, modals, etc. 
+     as needed. 
+  */
   
   /* Example color styles for log levels, etc. */
   .loglevel-info  { color: #B5D837; }
   .loglevel-debug { color: #80CCBA; }
   .loglevel-warn  { color: #E6D369; }
   .loglevel-error { color: #E85169; }
-  
+  .loglevel-shell { color: #E851Ba; }  
