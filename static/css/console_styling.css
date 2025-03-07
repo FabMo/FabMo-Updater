@@ -1,0 +1,111 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;  /* So flex heights work properly */
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 14px;
+  }
+  
+  /* Outer container: entire page is a horizontal flex layout */
+  #container {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;  /* Full viewport height */
+  }
+  
+  /* Left menu (fixed width) */
+  #menu {
+    width: 200px;
+    background-color: #444;
+    color: #fff;
+    flex: 0 0 auto;  /* Don’t let it grow/shrink */
+  }
+  
+  /* Main content area to the right, vertical flex */
+  #content {
+    flex: 1 1 auto;          /* Fill remaining space */
+    display: flex;
+    flex-direction: column;  /* Stack content + console vertically */
+    min-height: 0;           /* Important so children can scroll if needed */
+  }
+  
+  /* Content panes occupy the top portion */
+  .content-pane {
+    display: none;           /* hidden by default */
+    overflow-y: auto;        /* scroll if content is tall */
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 10px;
+  }
+  .content-pane.active {
+    display: block;          /* only show the active pane */
+  }
+  
+  /* Console area pinned at bottom, fixed or flexible height */
+  #console-header {
+    flex: 0 0 250px;         /* Set console height: try 250px, 300px, etc. */
+    display: flex;
+    flex-direction: column;
+    background-color: #222;
+    color: #ccc;
+    overflow: hidden;        /* or auto if you want to scroll the entire console area */
+  }
+  
+  /* The top bar with checkboxes, etc. */
+  #console-controls {
+    padding: 10px;
+    background-color: #333;
+    flex: 0 0 auto;
+  }
+  
+  /* The row that holds the three consoles side-by-side */
+  #console-wrappers {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    padding: 10px;
+    min-height: 0;   /* ensures flex children can scroll if needed */
+  }
+  
+  /* Each console column */
+  #updater-wrapper,
+  #fabmo-wrapper,
+  #status-wrapper {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;   /* needed so text can wrap properly in a flex item */
+  }
+  
+  /* The console container itself: fill vertical space, scroll if big */
+  .console-container {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    background-color: #111;
+    border: 1px solid #333;
+  }
+  
+  /* The text area inside each console */
+  .console-content {
+    padding: 10px;
+    white-space: pre-wrap;
+    font-family: "Lucida Console", Monaco, monospace;
+    font-size: 12px;
+    color: #ebebeb;
+    min-height: 0;
+  }
+  
+  /* Just a typical .checkbox-group style */
+  .checkbox-group {
+    display: flex;
+    gap: 10px;
+  }
+  
+  /* Example color styles for log levels, etc. */
+  .loglevel-info  { color: #B5D837; }
+  .loglevel-debug { color: #80CCBA; }
+  .loglevel-warn  { color: #E6D369; }
+  .loglevel-error { color: #E85169; }
+  

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="css/fonts.css">
     <link rel="stylesheet" href="css/font-awesome.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/console_styling.css"
 </head>
 <body>
 
@@ -154,57 +155,62 @@
       <br/>
     </div>
 
-    <!-- Console (Always Visible) -->
+<!-- Console (Always Visible) -->
 <div id="console-header">
-            <!--Set of Checkboxes for selecting what elements are displayed in the console-->
-    <div style="overflow: auto; width: 30%; border: 1px solid #ccc; padding: 10px;">
-      <div class="checkbox-group">
-        <label><input type="checkbox" class="log-filter" value="info:" checked> Info</label>
-        <label><input type="checkbox" class="log-filter" value="debug:" checked > Debug</label>
-        <label><input type="checkbox" class="log-filter" value="warn:" checked> Warn</label>
-        <label><input type="checkbox" class="log-filter" value="error:" checked> Error</label>
-        <label><input type="checkbox" class="log-filter" value="g2:" checked> G2</label>
-        <label><input type="checkbox" class="log-filter" value="shell:"checked> Shell</label>        
-      </div>
-      <hr>
-      <!-- Checkboxes to toggle visibility -->
-      <div style="margin-bottom: 10px;">
-        <label><input type="checkbox" id="toggle-updater" checked> Show Updater Console</label>
-        <label><input type="checkbox" id="toggle-fabmo" checked> Show FabMo Console</label>
-        <label><input type="checkbox" id="toggle-status" checked> Show Status</label>
-      </div>
+  <!--Set of Checkboxes for selecting what elements are displayed in the console-->
+  <div style="overflow: auto; width: 30%; border: 1px solid #ccc; padding: 10px;">
+    <div class="checkbox-group">
+      <label><input type="checkbox" class="log-filter" value="info:" checked> Info</label>
+      <label><input type="checkbox" class="log-filter" value="debug:" checked> Debug</label>
+      <label><input type="checkbox" class="log-filter" value="warn:" checked> Warn</label>
+      <label><input type="checkbox" class="log-filter" value="error:" checked> Error</label>
+      <label><input type="checkbox" class="log-filter" value="g2:" checked> G2</label>
+      <label><input type="checkbox" class="log-filter" value="shell:" checked> Shell</label>
     </div>
-    <i id="btn-console-clear" class="fa fa-md fa-remove" style="border-radius: 1px; fill: #e75c52;">Clear Console</i>&nbsp;
-<hr>
-<!-- Wrapper for all consoles -->
-<div style="display: flex; justify-content: space-evenly; align-items: flex-start; gap: 10px;">
-  <div id="updater-wrapper">
-    <h3>Updater Console:</h3>
-    <div class="updater console-container">
-      <div id="updater-console-content" class="console-content">
-        <div class="content">Updater log content...</div>
-      </div>
+    <hr>
+    <!-- Checkboxes to toggle visibility -->
+    <div style="margin-bottom: 10px;">
+      <label><input type="checkbox" id="toggle-updater" checked> Show Updater Console</label>
+      <label><input type="checkbox" id="toggle-fabmo" checked> Show FabMo Console</label>
+      <label><input type="checkbox" id="toggle-status" checked> Show Status</label>
     </div>
   </div>
+  <i id="btn-console-clear" class="fa fa-md fa-remove">Clear Console</i>&nbsp;
+  <hr>
+  <!-- Wrapper for all consoles -->
+  <div style="display: flex; justify-content: space-evenly; align-items: flex-start; gap: 10px;">
 
-  <div id="fabmo-wrapper">
-    <h3>FabMo Console:</h3>
-    <div class="console-container">
-      <div id="fabmo-console-content" class="console-content">
-        <div id="external-log" class="external-log-content">FabMo log content...</div>
+    <div id="updater-wrapper">
+      <h3>Updater Console:</h3>
+      <div class="updater console-container">
+        <!-- Unique ID for updater console -->
+        <div id="updater-console" class="console-content">
+          <div class="content">Updater log content...</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div id="status-wrapper">
-    <h3>Status:</h3>
-    <div class="console-container">
-      <div id="status-content" class="console-content">
-        Status updates will be displayed here...
+    <div id="fabmo-wrapper">
+      <h3>FabMo Console:</h3>
+      <div class="console-container">
+        <!-- Unique ID for FabMo console -->
+        <div id="fabmo-console" class="console-content">
+          <div id="external-log" class="external-log-content">FabMo log content...</div>
+        </div>
       </div>
     </div>
+
+    <div id="status-wrapper">
+      <h3>Status:</h3>
+      <div id="status-console" class="console-container">
+        <!-- Status console remains the same -->
+        <div id="status-content" class="console-content">
+          Status updates will be displayed here...
+        </div>
+      </div>
+    </div>
+
   </div>
-</div>
 
 <script>
   function toggleVisibility(id, wrapperId) {
@@ -290,14 +296,6 @@
     </div>
   </div>
 </div>
-<style>
-  .loglevel-info { color: #4CAF50; }  /* Green */
-  .loglevel-debug { color: #2196F3; } /* Blue */
-  .loglevel-warn { color: #FFC107; }  /* Yellow */
-  .loglevel-error { color: #F44336; } /* Red */
-  .loglevel-g2 { color: #9C27B0; }    /* Purple */
-  .loglevel-shell { color: #FF5722; } /* Orange */
-  </style>
 <!-- <script src="js/persistance.js"></script> for persistance of checkboxes across mutliple states of the code --> 
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/libs/jquery.min.js"></script>
