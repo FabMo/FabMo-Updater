@@ -108,18 +108,25 @@
       <i class="fa fa-refresh fa-lg"></i> Reinstall Current Version
     </button>
     <!-- Version Selection -->
-<h2>Select a Specific Version to Install</h2>
-<div id="version-chooser">
-  <label for="version-select">Version:</label>
-  <select id="version-select">
-    <option value="">(Select a version)</option>
-    <!-- This list will be populated dynamically by main.js -->
-  </select>
-
-  <button id="btn-install-version" class="btn-green disabled" style="margin-left: 10px;">
-    <i class="fa fa-cloud-upload"></i> Install Selected Version
-  </button>
-</div>
+    <div id="version-controls">
+      <h2>Available Versions</h2>
+      
+      <!-- Dropdown for selecting a version -->
+      <select id="versions-dropdown">
+        <option value="" disabled selected>Loading versions...</option>
+      </select>
+      
+      <!-- Button to install the selected version -->
+      <button id="btn-apply-selected-version" class="btn-blue" style="margin-left: 10px;">
+        <i class="fa fa-arrow-circle-up fa-lg"></i> Install Selected Version
+      </button>
+    
+      <!-- Button to reinstall the current version -->
+      <button id="btn-reinstall-current" class="btn-blue" style="margin-left: 10px;">
+        <i class="fa fa-refresh fa-lg"></i> Reinstall Current Version
+      </button>
+    </div>
+    
 
     <script>
     $("#btn-update-reinstall").click(function(evt) {

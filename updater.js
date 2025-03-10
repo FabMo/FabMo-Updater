@@ -887,5 +887,51 @@ Updater.prototype.start = function(callback) {
         }.bind(this)
     );
 };
+// In updater.js, near the bottom or wherever you keep Updater prototype methods:
+Updater.prototype.updateEngineVersion = function(version, callback) {
+    // Make sure we are idle; if not, refuse
+    if (this.status.state !== 'idle') {
+        return callback(new Error('Cannot update engine when in the ' + this.status.state + ' state.'));
+    }
+
+    // Create a “task” (the same pattern your code uses in applyPreparedUpdates)
+    let key;
+    try {
+        key = this.startTask();    // Assign a new task ID
+        this.setState('updating'); // Switch from 'idle' to 'updating'
+    } catch (err) {
+        return callback(err);
+    }
+
+    // Build a package object that the fmp module can download
+    let pkg = {
+        product: 'FabMo-Engine',
+        version: version
+        // fmp.downloadPackage(...) will figure out the URL if your 'fmp' module
+        // references the standard "packages_url" or manifest, etc.
+    };
+
+    // 1) Download the .fmp
+    // 2) Install the .fmp
+    // 3) Mark task success/failure
+    fmp.downloadPackage(pkg)
+      .then(downloadedPkg => {
+        // The returned object should have downloadedPkg.local_filename set
+        return fmp.installPackage(downloadedPkg);
+      })
+      .then(() => {
+        // Done installing
+        this.passTask(key);   // Mark the task as “success”
+        this.setState('idle'); 
+        callback(null, {message: `Engine update to ${version} started.`});
+      })
+      .catch(err => {
+        // Log & fail
+        log.error(err);
+        this.failTask(key);
+        this.setState('idle');
+        callback(err);
+      });
+};
 
 module.exports = new Updater();

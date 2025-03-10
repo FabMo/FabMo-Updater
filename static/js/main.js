@@ -888,3 +888,61 @@ $('#btn-install-version').click(function(evt) {
     }
   );
 });
+$(document).ready(function() {
+  // 1) Fetch the available versions
+  updater.getVersions(function(err, versionList) {
+    if (err) {
+      console.error("Error retrieving versions:", err);
+      return;
+    }
+
+    // 2) Populate the dropdown with the retrieved versions
+    const versionSelect = $("#version-select");
+    // Clear out any placeholder or previous entries
+    versionSelect.empty();
+    // Optionally re-add a placeholder
+    versionSelect.append('<option value="">(Select a version)</option>');
+
+    // If versionList is just an array of strings, do:
+    versionList.forEach(function(ver) {
+      const opt = `<option value="${ver}">${ver}</option>`;
+      versionSelect.append(opt);
+    });
+  });
+
+  // 3) Enable the install button whenever a valid version is selected
+  $("#version-select").on("change", function() {
+    if ($(this).val()) {
+      $("#btn-install-version").removeClass("disabled");
+    } else {
+      $("#btn-install-version").addClass("disabled");
+    }
+  });
+
+  // 4) Install the selected version on button click
+  $("#btn-install-version").click(function() {
+    // If still disabled, do nothing
+    if ($(this).hasClass("disabled")) {
+      return;
+    }
+
+    // Grab the chosen version from the dropdown
+    const chosenVersion = $("#version-select").val();
+    if (!chosenVersion) {
+      alert("Please select a version first.");
+      return;
+    }
+
+    // Invoke the existing Updater API
+    updater.updateEngine(chosenVersion, function(err, data) {
+      if (err) {
+        console.error("Failed to install version:", err);
+        alert("Error installing version: " + JSON.stringify(err));
+        return;
+      }
+      console.log("Install started for version:", chosenVersion);
+      // Optionally, show a spinner or progress bar here
+      // (Your existing log events and status updates should still apply.)
+    });
+  });
+});
