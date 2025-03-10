@@ -7,7 +7,7 @@
 
 // Create API instance for communicating with the update service
 var updater = new UpdaterAPI();
-require(getVersionList)
+
 // True when there's a modal on screen
 var modalShown = false;
 // True when the updater is awaiting a returned 'idle' from rebooted FabMo; wait til we know it's back up
@@ -819,4 +819,72 @@ function processExternalLogData(logData) {
 
   engineUpdateService();
 
+});
+
+async function fetchEngineVersionsFromGitHub() {
+  // You can adjust this URL to point to your actual engine repo.
+  const url = 'https://api.github.com/repos/FabMo/FabMo-Engine/releases';
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch releases: ${response.status}`);
+    }
+    const releases = await response.json();
+
+    // releases is an array of GitHub release objects
+    // Each release object typically has a "tag_name" you can use.
+    const select = document.getElementById('version-select');
+    
+    // Clear old options first, if any
+    select.innerHTML = '<option value="">(Select a version)</option>';
+
+    releases.forEach(release => {
+      const option = document.createElement('option');
+      option.value = release.tag_name;       // e.g. "v1.7.5"
+      option.textContent = release.tag_name; // Display the same tag name
+      select.appendChild(option);
+    });
+
+    // Enable the dropdown / button now that we have versions
+    select.disabled = false;
+    document.getElementById('btn-install-version').classList.remove('disabled');
+    
+  } catch (error) {
+    console.error("Error fetching versions:", error);
+  }
+}
+
+
+$('#btn-install-version').click(function(evt) {
+  evt.preventDefault();
+  const select = document.getElementById('version-select');
+  const chosenVersion = select.value.trim();
+  if(!chosenVersion) {
+    alert("Please select a version before installing.");
+    return;
+  }
+
+  $('.progressbar').removeClass('hide');
+
+  updater.installSpecificVersion(
+    chosenVersion,
+    function(err, data) {
+      // doneCallback
+      awaitingReboot = false;
+      setTimeout(function() {
+        $('.progressbar').addClass('hide');
+        $('#report-title').removeClass('fa-check')
+                          .addClass('fa-spinner fa-spin');
+        $('#report-message').html(`UPDATE PROGRESS: Installing version ${chosenVersion} ...`);
+        $('#report-progress').css('display', 'block');
+        $('.progressbar .fill').width(0);
+      }, 750);
+    },
+    function(progress) {
+      // progressCallback
+      const pg = (progress * 100).toFixed(0) + '%';
+      $('.progressbar .fill').width(pg);
+    }
+  );
 });
