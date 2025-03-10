@@ -74,54 +74,78 @@
     </div>
 
 
-    <!--
-
-      ENGINE UPDATES
-
-    -->
-    <div class="content-pane" id="view-updates">
-      <h1><span class="fa fa-download"></span> Software Update</h1>
-      <p>FabMo updates will overwrite the current configuration. You will need to re-apply the profile for your machine using the Configuration
-        Manager (left-panel).</p>
-      <p>You may also wish to save your current configuration before proceeding so you can reload it.</p>
-      <br>
-        <div id="check-for-updates-controls">
-          
-          <div id="update-status">
-            <div id="update-loader" class="spinner" style="display: none;"></div>
-            <span id="update-status-text"style="font-weight:bold;">Checking for updates...</span>
-          </div>
-          
-          <button id="btn-check-for-updates" style="display: none;">
-            <i id="check-button-icon" class="fa fa-cloud-download"></i>
-            <span id="check-button-text">Check for Updates</span>
-          </button>
-        </div>
-
-        <div id="message-updates" class="hide">
-          <p>A software update is available!</p>
-          <p><pre id="message-changelog"></pre></p>
-          <button id="btn-update-apply" class="btn-green disabled"><i class="fa fa-tags fa-lg"></i>  <span id="update-button-text">Update</span></button>
-          </div>
-      </p>
-      <h1><i class="fa fa-file"></i> Manual Update</h1>
-      <p>
-        <p>Click the button below to apply an update from an .fmp file.</p>
-        <button id="btn-update-manual" class="btn-blue"><i class="fa fa-file fa-lg"></i>  Update With File...</button>
-        <span class="progressbar hide">
-          <div class="fill"></div>
-        </span>
-      </p>
-      <div id="report-progress" style="display:none">
-        <p><i id="report-title" class="fa fa-spinner fa-spin fa-lg"></i><span id="report-message"> UPDATE PROGRESS: Loaded File! Beginning install ...</span></p>
-      </div>
+<!--
+  ENGINE UPDATES
+-->
+<div class="content-pane" id="view-updates">
+  <h1><span class="fa fa-download"></span> Software Update</h1>
+  <p>FabMo updates will overwrite the current configuration. You will need to re-apply the profile for your machine using the Configuration
+    Manager (left-panel).</p>
+  <p>You may also wish to save your current configuration before proceeding so you can reload it.</p>
+  <br>
+  <div id="check-for-updates-controls">
+    <div id="update-status">
+      <div id="update-loader" class="spinner" style="display: none;"></div>
+      <span id="update-status-text" style="font-weight:bold;">Checking for updates...</span>
     </div>
 
+    <button id="btn-check-for-updates" style="display: none;">
+      <i id="check-button-icon" class="fa fa-cloud-download"></i>
+      <span id="check-button-text">Check for Updates</span>
+    </button>
+  </div>
+
+  <div id="message-updates" class="hide">
+    <p>A software update is available!</p>
+    <p><pre id="message-changelog"></pre></p>
+    <button id="btn-update-apply" class="btn-green disabled">
+      <i class="fa fa-tags fa-lg"></i>
+      <span id="update-button-text">Update</span>
+    </button>
+    
+    <!-- NEW BUTTON STARTS HERE -->
+    <button id="btn-update-reinstall" class="btn-blue" style="margin-left: 10px;">
+      <i class="fa fa-refresh fa-lg"></i> Reinstall Current Update
+    </button>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const reinstallButton = document.getElementById('btn-update-reinstall');
+      
+      reinstallButton.addEventListener('click', function() {
+        // Replace this comment with your reinstall logic:
+        // e.g., calling your update function again, or issuing a request
+        // to the backend that triggers reinstallation.
+    
+        alert('Reinstalling the current update...');
+        // Your reinstall logic goes here.
+      });
+    });
+    </script>
+    <!-- NEW BUTTON ENDS HERE -->
+    
+  </div>
+
+  <h1><i class="fa fa-file"></i> Manual Update</h1>
+  <p>
+    <p>Click the button below to apply an update from an .fmp file.</p>
+    <button id="btn-update-manual" class="btn-blue">
+      <i class="fa fa-file fa-lg"></i>  Update With File...
+    </button>
+    <span class="progressbar hide">
+      <div class="fill"></div>
+    </span>
+  </p>
+  <div id="report-progress" style="display:none">
+    <p>
+      <i id="report-title" class="fa fa-spinner fa-spin fa-lg"></i>
+      <span id="report-message"> UPDATE PROGRESS: Loaded File! Beginning install ...</span>
+    </p>
+  </div>
+</div>
 
     <!--
 
       SYSTEM
-
     -->
     <div class="content-pane" id="view-settings">
       <h1><i class="fa fa-wrench"></i> Settings</h1>
@@ -154,7 +178,6 @@
       <button id="btn-factory-reset" class="btn-red"><i class="fa fa-industry"></i> Re-Start</button>
       <br/>
     </div>
-
         <!-- Console pinned at the bottom (height controlled by CSS) -->
         <div id="console-header">
           
@@ -176,10 +199,8 @@
             <!-- Clear console button -->
             <button id="btn-console-clear">Clear Console</button>
           </div>
-  
           <!-- Three console columns side-by-side -->
           <div id="console-wrappers">
-            
             <!-- Updater Console -->
             <div id="updater-wrapper">
               <h3>Updater Console</h3>
@@ -189,7 +210,6 @@
                 </div>
               </div>
             </div>
-            
             <!-- FabMo Console -->
             <div id="fabmo-wrapper">
               <h3>FabMo Console</h3>
@@ -213,8 +233,6 @@
         </div> <!-- /#console-header -->
       </div> <!-- /#content -->
     </div> <!-- /#container -->
-
-
 <script>
   function toggleVisibility(id, wrapperId) {
     document.getElementById(id).addEventListener("change", function() {

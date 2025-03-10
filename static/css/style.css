@@ -9,11 +9,21 @@
 	line-height: 1.25em;
 }
 
-/* Checkbox Group */
 .checkbox-group {
 	display: flex;
-	gap: 10px; /* Adjust spacing between checkboxes */
-}
+	flex-wrap: wrap;   /* Allows wrapping onto new lines */
+	gap: 10px;
+	align-items: center;
+  }
+  .checkbox-group label {
+	display: flex;
+	align-items: center;
+	margin: 0;
+  }
+  
+  .checkbox-group label input[type="checkbox"] {
+	margin-right: 5px;
+  }
 p {
 	margin: 0.25em;
 }
@@ -88,13 +98,14 @@ em {
 	font-weight: 100;
 }
 
-/* Main content area to the right, vertical flex */
+/* Ensure #content is a vertical flex container */
 #content {
-    flex: 1 1 auto;          /* Fill remaining space */
-    display: flex;
-    flex-direction: column;  /* Stack content + console vertically */
-    min-height: 0;           /* Important so children can scroll if needed */
-}
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+  }
+  
 
 /* Content panes occupy the top portion */
 .content-pane {
@@ -104,24 +115,46 @@ em {
 	min-height: 0;
 	padding: 10px;
 }
+/* Active content pane fills available space above console */
 .content-pane.active {
-	display: block;          /* only show the active pane */
-}
+
+	display: block;
+  }
 
 /*
  * Console Layout
  */
+ /* New console area wrapper */
+#console-area {
+	flex: 0 0 30%;    /* Console area takes 30% of the available vertical space */
+	min-height: 150px; /* Never smaller than 150px */
+	max-height: 50%;   /* And no more than 50% */
+	display: flex;
+	flex-direction: column;
+  }
 
-/* Console area pinned at bottom */
+/* Console header stays at the top of the console area */
 #console-header {
-    flex: 0 0 250px;         /* Set console height: try 250px, 300px, etc. */
-    display: flex;
-    flex-direction: column;
-    background-color: #222;
-    color: #ccc;
-    overflow: hidden;        /* or auto if you want the entire area to scroll */
-}
-
+	flex: 0 0 auto;
+	padding: 10px;
+	background-color: #222;
+	color: #cccccc;
+	text-shadow: 1px 1px black;
+  }  
+/* Console log area fills the remaining space in the console area */
+#console {
+	flex: 1 1 auto;
+	background-color: #222222;
+	color: #ebebeb;
+	font-family: "Lucida Console", Monaco, monospace;
+	font-weight: 100;
+	font-size: x-small;
+	border-left: 1px solid black;
+	overflow-y: auto;
+	overflow-x: hidden;
+	min-height: 0;
+  }
+  
 /* Top bar with checkboxes and Clear Console button */
 #console-controls {
     padding: 10px;
@@ -132,15 +165,17 @@ em {
     align-items: center;
 }
 
-/* The row that holds the three consoles side-by-side */
 #console-wrappers {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    padding: 10px;
-    min-height: 0;   /* ensures flex children can scroll if needed */
-}
+	display: flex;
+	flex-direction: row;
+	/* Try a smaller gap */
+	gap: 5px;
+	padding: 5px;
+	min-height: 0;
+	/* Optionally hide horizontal overflow if needed */
+	overflow-x: hidden;
+  }
+  
 
 /* Each console column */
 #updater-wrapper,
@@ -532,3 +567,57 @@ td {
     -ms-user-select: none;
     user-select: none;
 }
+/* Spinner Styling */
+.spinner {
+	border: 4px solid #f3f3f3; /* Light grey */
+	border-top: 4px solid #3498db; /* Blue */
+	border-radius: 50%;
+	width: 16px;
+	height: 16px;
+	animation: spin 1s linear infinite;
+	display: inline-block;
+	margin-right: 10px; /* Spacing between spinner and text */
+	vertical-align: middle;
+  }
+  
+  /* Spinner Animation */
+  @keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+  }
+  
+  /* Status Container */
+  #update-status {
+	display: flex;
+	align-items: center;
+	margin-top: 10px;
+	font-family: Arial, sans-serif;
+  }
+  
+  #update-status-text {
+	font-size: 14px;
+	color: #555;
+  }
+  .console-container {
+    height: 36vh; /* Fixed height to prevent page overflow */
+    width: 100%; /* Ensures it takes the available space */
+    /*border: 1px solid #ccc;*/
+    padding: 1px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .console-content {
+    flex-grow: 1;
+    overflow-y: auto; /* Enables scrolling */
+    max-height: 100%; /* Ensures it doesn't exceed the parent */
+    padding: 1px;
+  
+    /*border: 1px solid #ddd;*/
+  }
+
+  /* Ensuring flex sizing is respected */
+  #updater-wrapper, #fabmo-wrapper, #status-wrapper {
+    flex: 1; /* Ensures all sections are evenly spaced */
+    min-width: 30%; /* Prevents sections from collapsing */
+  }

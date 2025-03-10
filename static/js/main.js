@@ -150,7 +150,7 @@ function prettify(line) {
 
 
 function updateConsoleDisplay() {
-  var log = $('#console .content');
+  var log = $('#updater-console .content');
   var allLines = log.text().split('\n');
   log.html(''); // Clear console
   allLines.forEach(function(line) {
@@ -170,7 +170,7 @@ function shouldDisplay(line) {
 
 
 function updateConsoleDisplay() {
-  var log = $('#console .content');
+  var log = $('#updater-console .content');
   var allLines = log.text().split('\n'); // Get current logs
   log.html(''); // Clear the console
   
@@ -184,7 +184,7 @@ function updateConsoleDisplay() {
 // Print a line to the "console"
 //   s - The line to print (No \n necessary)
 function printf(s) {
-  var log = $('#console .content');
+  var log = $('#updater-console .content');
   var lines = s.split('\n');
 
   lines.forEach(function(line) {
@@ -193,7 +193,7 @@ function printf(s) {
       }
   });
 
-  var scrollpane = $('#console');
+  var scrollpane = $('#updater-console');
   scrollpane[0].scrollTop = scrollpane[0].scrollHeight;
 }
 
@@ -239,7 +239,7 @@ $(document).ready(function() {
 
 // Clear the contents of the updater console
 function clearConsole() {
-    var log = $('#console .content');
+    var log = $('#updater-console .content');
     log.text('');
 }
 
