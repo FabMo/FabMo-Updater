@@ -107,17 +107,44 @@
     <button id="btn-update-reinstall" class="btn-blue" style="margin-left: 10px;">
       <i class="fa fa-refresh fa-lg"></i> Reinstall Current Update
     </button>
+    <!-- Version Selection -->
+<h2>Select a Specific Version to Install</h2>
+<div id="version-chooser">
+  <label for="version-select">Version:</label>
+  <select id="version-select">
+    <option value="">(Select a version)</option>
+    <!-- This list will be populated dynamically by main.js -->
+  </select>
+
+  <button id="btn-install-version" class="btn-green disabled" style="margin-left: 10px;">
+    <i class="fa fa-cloud-upload"></i> Install Selected Version
+  </button>
+</div>
+
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const reinstallButton = document.getElementById('btn-update-reinstall');
-      
-      reinstallButton.addEventListener('click', function() {
-        // Replace this comment with your reinstall logic:
-        // e.g., calling your update function again, or issuing a request
-        // to the backend that triggers reinstallation.
-    
-        alert('Reinstalling the current update...');
-        // Your reinstall logic goes here.
+    $("#btn-update-reinstall").click(function(evt) {
+      evt.preventDefault();
+      $(".progressbar").removeClass("hide");
+
+      // This calls a hypothetical method on the updater object that:
+      //  1) Retrieves the "current" updater from source
+      //  2) Installs it exactly like a normal update
+      // The code below is parallel to #btn-update-apply
+      updater.reinstallFromSource(function(err, data) {
+        awaitingReboot = false;
+        setTimeout(function() {
+          $(".progressbar").addClass("hide");
+          // Reset & show the progress display
+          $("#report-title")
+            .removeClass("fa-check")
+            .addClass("fa-spinner fa-spin");
+          $("#report-message").html("UPDATE PROGRESS: Reinstalling from source...");
+          $("#report-progress").css("display", "block");
+          $(".progressbar .fill").width(0);
+        }, 750);
+      }, function(progress) {
+        var pg = (progress * 100).toFixed(0) + "%";
+        $(".progressbar .fill").width(pg);
       });
     });
     </script>

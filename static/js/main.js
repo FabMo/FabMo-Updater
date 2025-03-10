@@ -7,7 +7,7 @@
 
 // Create API instance for communicating with the update service
 var updater = new UpdaterAPI();
-
+require(getVersionList)
 // True when there's a modal on screen
 var modalShown = false;
 // True when the updater is awaiting a returned 'idle' from rebooted FabMo; wait til we know it's back up
@@ -343,6 +343,7 @@ function setState(state) {
 }
 // Search for avalible update on page load
 $(document).ready(function() {
+
   console.log("Page loaded, starting update check...");
 
   // Initially hide the update button and spinner
@@ -511,7 +512,7 @@ function dismissModal() {
 }
 
 $(document).ready(function() {
-
+  fetchEngineVersionsFromGitHub();
   // Elements with the .config-input class tie directly to entries in the
   // updater config.  When they are changed, update the config.
   $('.config-input').change(function() {
