@@ -887,51 +887,47 @@ Updater.prototype.start = function(callback) {
         }.bind(this)
     );
 };
-// In updater.js, near the bottom or wherever you keep Updater prototype methods:
+// updater.js
 Updater.prototype.updateEngineVersion = function(version, callback) {
-    // Make sure we are idle; if not, refuse
     if (this.status.state !== 'idle') {
-        return callback(new Error('Cannot update engine when in the ' + this.status.state + ' state.'));
+      return callback(new Error('Cannot update engine when in the ' + this.status.state + ' state.'));
     }
-
-    // Create a “task” (the same pattern your code uses in applyPreparedUpdates)
+  
     let key;
     try {
-        key = this.startTask();    // Assign a new task ID
-        this.setState('updating'); // Switch from 'idle' to 'updating'
+      key = this.startTask();
+      this.setState('updating');
     } catch (err) {
-        return callback(err);
+      return callback(err);
     }
-
-    // Build a package object that the fmp module can download
+  
+    // Build a package object for the specified version
     let pkg = {
-        product: 'FabMo-Engine',
-        version: version
-        // fmp.downloadPackage(...) will figure out the URL if your 'fmp' module
-        // references the standard "packages_url" or manifest, etc.
+      product: 'FabMo-Engine',
+      version: version
+      // The 'fmp' module will figure out the correct URL from your package manifest
     };
-
-    // 1) Download the .fmp
-    // 2) Install the .fmp
-    // 3) Mark task success/failure
+  
+    // Download then install, just like a "prepared update"
     fmp.downloadPackage(pkg)
       .then(downloadedPkg => {
-        // The returned object should have downloadedPkg.local_filename set
+        // downloadedPkg.local_filename should now point to the .fmp
         return fmp.installPackage(downloadedPkg);
       })
       .then(() => {
-        // Done installing
-        this.passTask(key);   // Mark the task as “success”
-        this.setState('idle'); 
-        callback(null, {message: `Engine update to ${version} started.`});
+        // Mark success
+        this.passTask(key);
+        this.setState('idle');
+        callback(null, { message: 'Engine update to ' + version + ' started.' });
       })
       .catch(err => {
-        // Log & fail
+        // Mark fail
         log.error(err);
         this.failTask(key);
         this.setState('idle');
         callback(err);
       });
-};
+  };
+  
 
 module.exports = new Updater();

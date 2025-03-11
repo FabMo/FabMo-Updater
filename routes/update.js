@@ -22,6 +22,20 @@ var getVersions = function(req, res, next) {
 	  }
     });
 };
+
+var updateEngineVersion = function(req, res, next) {
+	var version = req.body.version;
+	if(!version) {
+	  return res.json({ status: 'error', message: 'No version specified.' });
+	}
+	updater.updateEngineVersion(version, function(err, data) {
+	  if(err) {
+		return res.json({ status: 'error', message: err.message || err });
+	  }
+	  // e.g. data might be { message: 'Engine update to X.Y.Z started.' }
+	  return res.json({ status: 'success', data: data });
+	});
+  };
 /*
 var updateEngine = function(req, res, next) {
     updater.updateEngine(req.params.version, function(err, data) {
@@ -178,4 +192,7 @@ module.exports = function(server) {
   server.post('/update/manual', doManualUpdate);
   server.post('/update/apply', applyPreparedUpdates);
   server.post('/update/check', check);
+  // New route to update engine to a chosen version:
+  server.post('/update/engine', updateEngineVersion);
+
 };
