@@ -262,6 +262,7 @@ function setState(state) {
     }
     $('#check-button-text').text(' Download Update');
     $('#btn-download-old-version').removeClass('disabled');
+    $("#btn-check-for-updates").removeClass('disabled');
     $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
 }
 
@@ -522,6 +523,7 @@ $(document).ready(function() {
 
   $("#btn-check-for-updates").click(function() {
     $("#btn-check-for-updates").addClass('disabled');
+    $("#btn-download-old-version").addClass('disabled');
     $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
     $("#check-button-text").text('Checking...');
     clearConsole();
@@ -538,6 +540,7 @@ $(document).ready(function() {
     }
   
     // UI: show downloading state
+    $("#btn-check-for-updates").addClass('disabled');
     $("#btn-download-old-version").addClass('disabled');
     $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
     $("#check-button-text").text('Downloading...');
@@ -587,6 +590,7 @@ $(document).ready(function() {
   
   
   function resetCheckButton() {
+    $("#btn-check-for-updates").removeClass('disabled');
     $("#btn-download-old-version").removeClass('disabled');
     $('#check-button-icon').removeClass('fa-cog fa-spin').addClass('fa-cloud-download');
     $("#check-button-text").text('Download Update');
@@ -596,6 +600,7 @@ $(document).ready(function() {
     console.log("Download success:", result);
     $("#check-button-text").text('Ready to Install');
     $('#check-button-icon').removeClass('fa-cog fa-spin').addClass('fa-check');
+    $("#btn-check-for-updates").removeClass('disabled');
     $("#btn-download-old-version").removeClass('disabled');
     // Optionally, trigger install button enable here
   }
