@@ -15,6 +15,8 @@ var log = require('./log').logger('updater');
 var authentication = require('./authentication');
 
 var fmp = require('./fmp');
+log.info('fmp.fetchPackagesList typeof: ' + typeof fmp.fetchPackagesList);
+log.info(Object.keys(fmp))
 var config = require('./config');
 var util = require('./util');
 var hooks = require('./hooks');
@@ -377,11 +379,47 @@ Updater.prototype.runAllPackageChecks = function() {
         }.bind(this));
 }
 
+Updater.prototype.prepareUpdate = function(version, callback) {
+	log.info(`[prepareUpdate] Preparing update for version: ${version}`);
+
+	const product = 'FabMo-Engine';
+	const OS = config.platform;
+	const PLATFORM = config.updater.get('platform');
+	const url = config.updater.get('packages_url');
+
+	fmp.fetchPackagesList(url)
+		.then(list => {
+			log.info(`[prepareUpdate] Fetched ${list.length} packages from registry.`);
+			const packages = fmp.filterPackages(list, { platform: PLATFORM, os: OS, product });
+			log.info(`[prepareUpdate] Filtered down to ${packages.length} relevant packages.`);
+			return packages.find(pkg => pkg.version === version);
+		})
+		.then(pkg => {
+			if (!pkg) {
+				throw new Error(`[prepareUpdate] Version ${version} not found in filtered package list.`);
+			}
+			log.info(`[prepareUpdate] Found package. Downloading from ${pkg.url}`);
+			return fmp.downloadPackage(pkg);
+		})
+		.then(result => {
+			log.info(`[prepareUpdate] Download complete. Storing in status.updates`);
+			
+			// ✅ Set the downloaded update for later application
+			this.status.updates = [result]; 
+			
+			callback(null, result);
+		})
+		.catch(err => {
+			log.error(`[prepareUpdate] Error during update preparation: ${err.message}`);
+			callback(err);
+		});
+};
+
 // Install the next package that is in the list of available packages to install.
 // Starts a task that completes once the new package is installed
 //   callback - Called with nothing when the update is started or with an error if it fails.
 Updater.prototype.applyPreparedUpdates = function(callback) {
-
+log.info('trying to apply')
     // Bomb out if we're busy doing something else
     if(this.status.state != 'idle') {
         return callback(new Error('Cannot apply updates when in the ' + this.status.state + ' state.'));
@@ -391,6 +429,7 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
         return callback(new Error('No updates to apply.'));
     }
     // Start the task and indicate that we're busy
+    
     var key = this.startTask();
     this.setState('updating');
     var package = this.status.updates[0];
@@ -429,28 +468,28 @@ Updater.prototype.applyPreparedUpdates = function(callback) {
 
             break;
 
-        default:
-            // Any other package can be updated without having to do any tablecloth magic
-            // Just unpack the .fmp and do what it says in the manifest.
-            try {
-                fmp.installPackage(package)
-                    .then(function() {
-                        this.status.updates = [];
-                        this.passTask(key);
-                        this.setState('idle');
-                    }.bind(this))
-                    .catch(function(err) {
-                        log.error(err);
-                        this.status.updates = [];
-                        this.failTask(key);
-                        this.setState('idle');
-                }.bind(this)).done();
-            } catch(err) {
-                return callback(err);
-            }
-            break;
+            default:
+                try {
+                    fmp.installPackage(package)
+                        .then(function(result) {
+                            this.status.updates = [];
+                            this.passTask(key);
+                            this.setState('idle');
+                            callback(null, result); // ✅ Send result back only after success
+                        }.bind(this))
+                        .catch(function(err) {
+                            log.error('[applyPreparedUpdates] Install failed:', err);
+                            this.status.updates = [];
+                            this.failTask(key);
+                            this.setState('idle');
+                            callback(err); // ✅ Send error back
+                        }.bind(this))
+                        .done(); // Optional if you're chaining promises
+                } catch(err) {
+                    callback(err); // In case the promise setup itself fails
+                }
+                break;         
     }
-    callback();
 }
 
 // Set the system time.  This function will NOT set the time if it has been set already (It implicitly trusts the first time it recieves)

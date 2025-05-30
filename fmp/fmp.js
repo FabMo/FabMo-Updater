@@ -417,6 +417,53 @@ function lock(manifest) {
 	}
 }
 
+function downloadPackage(package) {
+    // Deal with insane package
+	log.debug('package object: ' + JSON.stringify(package));
+    if (!package) { return Q(); }
+    if (!package.url) {
+        log.warn('No url specified in download package');
+        return Q();
+    }
+
+    const deferred = Q.defer();
+    const filename = "/opt/fabmo/update.fmp"; // Magic path
+
+    log.info('Starting download of ' + package.url);
+    const file = fs.createWriteStream(filename);
+
+    axios({
+        method: 'get',
+        url: package.url,
+        responseType: 'stream'
+    })
+    .then(response => {
+        if (response.status !== 200) {
+            deferred.reject(new Error(response.status + ' ' + response.statusText));
+            return;
+        }
+        
+        response.data.pipe(file);
+
+        file.on('finish', () => {
+            file.close(err => {
+                if (err) {
+                    deferred.reject(err);
+                } else {
+                    log.info('Download of ' + package.url + ' is complete.');
+                    package.local_filename = filename;
+                    deferred.resolve(package);
+                }
+            });
+        });
+    })
+    .catch(err => {
+        deferred.reject(err);
+    });
+
+    return deferred.promise;
+}
+
 // Install a package from the provided file
 //   package - Path to the package file
 function installPackage(package) {
@@ -531,58 +578,13 @@ return packages;
 // Return a promise that resolves with the package object
 //   package - Package metadata object from the package registry.  (Anything with a 'url' attribute will do)
 // function downloadPackage(package) {
-function downloadPackage(package) {
-    // Deal with insane package
-	log.debug('package object: ' + JSON.stringify(package));
-    if (!package) { return Q(); }
-    if (!package.url) {
-        log.warn('No url specified in download package');
-        return Q();
-    }
 
-    const deferred = Q.defer();
-    const filename = "/opt/fabmo/update.fmp"; // Magic path
-
-    log.info('Starting download of ' + package.url);
-    const file = fs.createWriteStream(filename);
-
-    axios({
-        method: 'get',
-        url: package.url,
-        responseType: 'stream'
-    })
-    .then(response => {
-        if (response.status !== 200) {
-            deferred.reject(new Error(response.status + ' ' + response.statusText));
-            return;
-        }
-        
-        response.data.pipe(file);
-
-        file.on('finish', () => {
-            file.close(err => {
-                if (err) {
-                    deferred.reject(err);
-                } else {
-                    log.info('Download of ' + package.url + ' is complete.');
-                    package.local_filename = filename;
-                    deferred.resolve(package);
-                }
-            });
-        });
-    })
-    .catch(err => {
-        deferred.reject(err);
-    });
-
-    return deferred.promise;
-}
 
 // Check the package source for an available update that is appropriate for the provided constraints
 // This check is constrained to the current platform and OS.
 // Returns a promise that resolves with the next available package to install (or rejects with an error)
 //   product - The product for which updates are being checked.
-function checkForAvailablePackage(product) {
+function checkForAvailablePackage(product, forceVersion) {
 	var updateSource = config.updater.get('packages_url');
 	var OS = config.platform;
 	var PLATFORM = config.updater.get('platform');
@@ -661,6 +663,11 @@ function checkForAvailablePackage(product) {
 					log.warn(e);
 					return deferred.resolve(updates[0]);
 				}
+				// Add before the version comparison logic:
+				if (forceVersion) {
+					const matched = updates.find(pkg => pkg.version === forceVersion);
+					return deferred.resolve(matched);
+  				}
 
 				// If so, return it, or return nothing if not
 				if(newerPackageAvailable) {
@@ -672,7 +679,7 @@ function checkForAvailablePackage(product) {
 			return deferred.promise;
 		});
 }
-
+  
 exports.fetchPackagesList = fetchPackagesList;
 exports.installPackage = installPackage;
 exports.installUnpackedPackage = installUnpackedPackage;
@@ -680,6 +687,6 @@ exports.installPackageFromFile = installPackageFromFile;
 exports.checkForAvailablePackage = checkForAvailablePackage;
 exports.downloadPackage = downloadPackage;
 exports.parseVersion = parseVersion;
-
 exports.executeOperation = executeOperation;
 exports.executeOperations = executeOperations;
+exports.filterPackages = filterPackages;

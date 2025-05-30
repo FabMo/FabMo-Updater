@@ -271,6 +271,13 @@ UpdaterAPI.prototype.checkForUpdates = function(callback) {
 	this._post('/update/check', {}, callback, callback);
 }
 
+// Download a specific version
+UpdaterAPI.prototype.downloadEngineVersion = function(version, callback) {
+    this._post('/update/download', version, callback, callback);
+};
+  
+
+
 // INTERNAL METHODS BELOW HERE
 
 // Function for normalizing form data for file submit

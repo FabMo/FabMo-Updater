@@ -61,6 +61,40 @@ function setOS(os) {
   $("#system-icon").attr('class', iconClass)
 }
 
+function populateVersionDropdown() {
+  fetch('/update/versions')
+    .then(res => res.json())
+    .then(data => {
+      if (data.status !== 'success') {
+        throw new Error("Failed to get version list");
+      }
+
+      const select = document.getElementById('version-select');
+      select.innerHTML = ''; // Clear placeholder
+
+      const versions = data.data.versions;
+
+      // Sort descending by version number (basic semver compare)
+      versions.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true, sensitivity: 'base' }));
+
+      versions.forEach(ver => {
+        const option = document.createElement('option');
+        option.value = ver.version;
+        option.textContent = ver.version;
+        select.appendChild(option);
+      });
+    })
+    .catch(err => {
+      console.error("Failed to load versions:", err);
+      const select = document.getElementById('version-select');
+      select.innerHTML = '<option value="">Error loading versions</option>';
+    });
+}
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', populateVersionDropdown);
+
+
 // Set whether or not this host is online
 // TODO - I think this is old and should be removed
 function setOnline(online) {
@@ -226,7 +260,7 @@ function setState(state) {
             icon.removeClass(classes).addClass('fa-spin fa-spinner');
             break;
     }
-    $('#check-button-text').text(' Check for updates');
+    $('#check-button-text').text(' Download Update');
     $('#btn-check-for-updates').removeClass('disabled');
     $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
 }
@@ -485,6 +519,7 @@ $(document).ready(function() {
   $("#btn-start-engine").click(function() {updater.startEngine()});
   $("#btn-stop-engine").click(function() {updater.stopEngine()});
 
+  /* Old Check for Updates Handler
   $("#btn-check-for-updates").click(function() {
     $("#btn-check-for-updates").addClass('disabled');
     $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
@@ -492,6 +527,86 @@ $(document).ready(function() {
     clearConsole();
     updater.checkForUpdates();
   });
+  */
+
+  $("#btn-check-for-updates").click(function () {
+    const select = document.getElementById('version-select');
+    const version = select.value;
+  
+    if (!version) {
+      return alert("Please select a version to download.");
+    }
+  
+    // UI: show downloading state
+    $("#btn-check-for-updates").addClass('disabled');
+    $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
+    $("#check-button-text").text('Downloading...');
+  
+    updater.downloadEngineVersion({ version }, function (err, result) {
+      if (err) {
+        console.error("Download failed:", err);
+        alert("Download failed: " + err.message);
+        resetCheckButton(); // Re-enable the UI
+        return;
+      }
+  
+      console.log("Download complete:", result);
+  
+      // UI: change to "Apply Update"
+      $("#btn-check-for-updates")
+        .text("Apply Update")
+        .removeClass("disabled")
+        .off("click")
+        .on("click", function (evt) {
+          evt.preventDefault();
+          $('.progressbar').removeClass('hide');
+  
+          updater.applyPreparedUpdates(function (err, data) {
+            if (err) {
+              alert("Failed to apply update: " + err.message);
+              console.error(err);
+              return;
+            }
+  
+            awaitingReboot = false;
+  
+            setTimeout(function () {
+              $('.progressbar').addClass('hide');
+              $('#report-title').removeClass('fa-check').addClass('fa-spinner fa-spin');
+              $('#report-message').html("UPDATE PROGRESS: Applying prepared updates...");
+              $('#report-progress').css("display", "block");
+              $('.progressbar .fill').width(0);
+            }, 750);
+          }, function (progress) {
+            const pg = (progress * 100).toFixed(0) + '%';
+            $('.progressbar .fill').width(pg);
+          });
+        });
+    });
+  });
+  
+  
+  function resetCheckButton() {
+    $("#btn-check-for-updates").removeClass('disabled');
+    $('#check-button-icon').removeClass('fa-cog fa-spin').addClass('fa-cloud-download');
+    $("#check-button-text").text('Download Update');
+  }
+
+  function successCallback(result) {
+    console.log("Download success:", result);
+    $("#check-button-text").text('Ready to Install');
+    $('#check-button-icon').removeClass('fa-cog fa-spin').addClass('fa-check');
+    $("#btn-check-for-updates").removeClass('disabled');
+    // Optionally, trigger install button enable here
+  }
+  
+  function errorCallback(error) {
+    console.error("Download failed:", error);
+    alert("Download failed: " + error.message);
+    resetCheckButton();
+  }
+  
+  
 
   // Console clear button
   $('#btn-console-clear').click(function() {clearConsole()});
@@ -577,7 +692,7 @@ $(document).ready(function() {
           var engine_version_number = info.version.number || info.version.hash.substring(0,8) + '-' + info.version.type
           $('.label-fw-build').text(info.firmware.build || 'unavailable');
           $('.label-fw-config').text(info.firmware.config || 'unavailable');
-          $('.label-fw-version').text((info.firmware.version).replace('-dirty','') || 'unavailable');
+          $('.label-fw-version').text((info.firmware.version || '').replace('-dirty','') || 'unavailable');
           $('.label-engine-version').text(engine_version_number || 'unavailable');
         }
       });
