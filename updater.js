@@ -396,7 +396,8 @@ Updater.prototype.prepareUpdate = function(version, callback) {
 		})
 		.then(pkg => {
 			if (!pkg) {
-				throw new Error(`[prepareUpdate] Version ${version} not found in filtered package list.`);
+			throw new Error(`[prepareUpdate] Version ${version} not found in filtered package list.`);
+            return;
 			}
 			log.info(`[prepareUpdate] Found package. Downloading from ${pkg.url}`);
 			return fmp.downloadPackage(pkg);

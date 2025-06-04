@@ -545,13 +545,14 @@ $(document).ready(function() {
     $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
     $("#check-button-text").text('Downloading...');
   
-    updater.downloadEngineVersion({ version }, function (err, result) {
-      if (err) {
+    updater.downloadEngineVersion({ version }, 
+      function (err){
         console.error("Download failed:", err);
         alert("Download failed: " + err.message);
         resetCheckButton(); // Re-enable the UI
         return;
-      }
+      }, 
+      function(result) {
   
       console.log("Download complete:", result);
   
@@ -590,6 +591,7 @@ $(document).ready(function() {
   
   
   function resetCheckButton() {
+    console.log('resetting buttons')
     $("#btn-check-for-updates").removeClass('disabled');
     $("#btn-download-old-version").removeClass('disabled');
     $('#check-button-icon').removeClass('fa-cog fa-spin').addClass('fa-cloud-download');

@@ -3,7 +3,7 @@
  * 
  * Application entry point.
  */
-
+console.log("🚨 Running from: " + __dirname);
 var log = require('./log').logger('server');
 var updater = require('./updater');
 

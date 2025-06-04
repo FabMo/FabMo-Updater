@@ -467,6 +467,7 @@ UpdaterAPI.prototype._post = function(url, data, errback, callback, key) {
 	}
 
 	xhr.onload = function() {
+		try {
 		switch(xhr.status) {
 			case 200:
 				var response = JSON.parse(xhr.responseText);
@@ -501,12 +502,17 @@ UpdaterAPI.prototype._post = function(url, data, errback, callback, key) {
 
 			default:
 				console.error("Got a bad response from server: " + xhr.status);
+				errback(new Error("Server error " + xhr.status));
 				break;
+			} catch (ex) {
+				console.error("Unhandled error in xhr.onload:", ex);
+				errback(ex);
+			}
 		}
 ////## engine version has added bind
 //    }.bind(this);
     }
-console.log("at send point .....")
+//console.log("at send point .....")
 console.log(data,xhr.status)
     xhr.send(data);
 	return xhr;
