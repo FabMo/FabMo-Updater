@@ -83,7 +83,7 @@ sync
 echo "Reload Systemd Services..."
 systemctl daemon-reload
 
-echo "Restarting the engine..."
+echo "Configuring and Restarting FabMo ..."
 systemctl start fabmo
 
 sleep 15

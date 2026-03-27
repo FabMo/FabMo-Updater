@@ -23,6 +23,6 @@ bossac -R
 
 if [ $ENGINE_RUNNING ]
 then
-	echo "Restarting the engine..."
+	echo "Restarting FabMo ..."
 	systemctl start fabmo
 fi

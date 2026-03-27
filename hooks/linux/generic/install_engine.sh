@@ -26,5 +26,5 @@ echo "Enabling network manager for new installation..."
 echo '{"wifi_manager":true}' > /opt/fabmo/config/engine.json
 sync
 
-echo "Restarting the engine..."
+echo "Restarting FabMo ..."
 systemctl start fabmo

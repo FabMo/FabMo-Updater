@@ -157,13 +157,13 @@ var applyPreparedUpdates = function(req, res, next) {
 
 // Trigger a check for new updates
 var check = function(req, res, next) {
-	updater.runAllPackageChecks();
-	res.json( {
-		status : 'success',
-		data : {
-			status : 'complete'
-		}
-	});
+	updater.runAllPackageChecks()
+		.then(function() {
+			res.json({ status : 'success', data : { status : 'complete' }});
+		})
+		.catch(function(err) {
+			res.json({ status : 'success', data : { status : 'complete' }});
+		});
 }
 
 module.exports = function(server) {

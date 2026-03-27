@@ -42,5 +42,5 @@ mount -r -o remount /
 #sleep 1
 #mount -w -o remount /home
 
-echo "Restarting the engine..."
+echo "Configuring and Restarting FabMo ..."
 systemctl start fabmo

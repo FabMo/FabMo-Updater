@@ -1,75 +1,75 @@
-#!/bin/sh
-set -e
-if systemctl status fabmo | grep -q "Active: active"
-then
-	echo "Stopping the engine..."
-	systemctl stop fabmo
-	ENGINE_RUNNING=true
+#!/usr/bin/env bash
+set -u
+
+# Firmware update script for Raspberry Pi
+# Aligned with FabMo Engine firmware loading approach.
+# Tries multiple ports to handle VFD or other devices claiming ttyACM0.
+#
+# Usage: update_firmware.sh <path-to-firmware.bin>
+
+BIN="$1"
+PORTS=(/dev/fabmo_g2_motion /dev/ttyACM0 /dev/ttyACM1 /dev/ttyACM2)
+PER_PORT_SECONDS="${PER_PORT_SECONDS:-5}"
+POLL_INTERVAL="${POLL_INTERVAL:-0.5}"
+
+# Step 1: Stop engine if running
+if systemctl status fabmo 2>/dev/null | grep -q "Active: active"; then
+    echo "Stopping the engine..."
+    systemctl stop fabmo
+    ENGINE_RUNNING=true
 else
-	echo "Engine is already stopped."
-	ENGINE_RUNNING=false
+    echo "Engine is already stopped."
+    ENGINE_RUNNING=false
 fi
 
-echo "Putting G2 in firmware-reloadable state..."
-stty -F /dev/ttyACM0 1200
+# Step 2: Trigger bootloader entry via 1200-baud touch
+if [[ -e /dev/fabmo_g2_motion ]]; then
+    echo "Device found at /dev/fabmo_g2_motion — triggering bootloader ..."
+    stty -F /dev/fabmo_g2_motion 1200 2>/dev/null || true
+elif [[ -e /dev/ttyACM0 ]]; then
+    echo "Triggering bootloader via /dev/ttyACM0 ..."
+    stty -F /dev/ttyACM0 1200 2>/dev/null || true
+else
+    echo "Warning: No G2 device found for bootloader trigger, proceeding anyway..."
+fi
 
-# Wait for the device to disconnect and reconnect in bootloader mode
+# Wait for USB re-enumeration into SAM-BA mode
 echo "Waiting for bootloader mode..."
-BOOTLOADER_TIMEOUT=30
-BOOTLOADER_FOUND=false
+sleep 3
 
-for i in $(seq 1 $BOOTLOADER_TIMEOUT); do
-    # Check if the device has disconnected (normal operation port gone)
-    if ! ls /dev/ttyACM0 >/dev/null 2>&1; then
-        echo "Device disconnected, waiting for bootloader..."
-        # Wait a bit more for bootloader to appear
-        sleep 2
-        
-        # Look for bootloader device (usually appears as different device)
-        # SAM3X8E bootloader typically appears as a different USB device
-        if ls /dev/ttyACM* >/dev/null 2>&1 || lsusb | grep -q "03eb:"; then
-            echo "Bootloader detected after ${i} seconds"
-            BOOTLOADER_FOUND=true
-            break
-        fi
-    fi
-    sleep 1
-done
-
-if [ "$BOOTLOADER_FOUND" = false ]; then
-    echo "Warning: Bootloader detection timeout, proceeding anyway..."
-fi
-
-# Additional safety: ensure any previous bossac processes are terminated
+# Kill any stale bossac processes
 killall bossac 2>/dev/null || true
 
-echo "Flashing/verifying $1..."
-# Use more reliable bossac options with retries
-FLASH_ATTEMPTS=3
-FLASH_SUCCESS=false
+# Step 3: Try each port in sequence until bossac succeeds
+for port in "${PORTS[@]}"; do
+    echo "Trying $port"
+    deadline=$((SECONDS + PER_PORT_SECONDS))
 
-for attempt in $(seq 1 $FLASH_ATTEMPTS); do
-    echo "Flash attempt $attempt of $FLASH_ATTEMPTS..."
-    if bossac -p ttyACM0 -e -w -v -b $1; then
-        FLASH_SUCCESS=true
-        break
-    else
-        echo "Flash attempt $attempt failed, retrying..."
-        sleep 2
-    fi
+    while (( SECONDS < deadline )); do
+        if [[ -e "$port" ]]; then
+            if bossac -e -w -v --port="$port" "$BIN"; then
+                echo "Success on $port"
+                sleep 2
+                bossac -b --port="$port"
+                sleep 2
+                bossac -R --port="$port"
+                echo "Firmware loaded."
+
+                if [[ "$ENGINE_RUNNING" = true ]]; then
+                    echo "Restarting FabMo..."
+                    systemctl start fabmo
+                fi
+                exit 0
+            fi
+        fi
+        sleep "$POLL_INTERVAL"
+    done
 done
 
-if [ "$FLASH_SUCCESS" = false ]; then
-    echo "ERROR: All flash attempts failed!"
-    exit 1
-fi
+echo "ERROR: bossac could not find a usable device at fabmo_g2_motion or on ttyACM0..2" >&2
 
-echo "Setting the boot flag and rbooting G2..."
-bossac -b
-bossac -R
-
-if [ $ENGINE_RUNNING ]
-then
-	echo "Restarting the engine..."
-	systemctl start fabmo
+if [[ "$ENGINE_RUNNING" = true ]]; then
+    echo "Restarting FabMo ..."
+    systemctl start fabmo
 fi
+exit 1
