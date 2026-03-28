@@ -147,7 +147,7 @@ function fetchPackagesList(url) {
             if (response.status === 200) {
                 try {
                     const p = response.data;
-                    log.debug('Packages list: ' + JSON.stringify(p));
+                    // log.debug('Packages list: ' + JSON.stringify(p));
                     deferred.resolve(p);
                 } catch (err) {
                     log.error('Error parsing packages list: ' + err);
@@ -510,7 +510,7 @@ function filterPackages(registry, options) {
 		return true;
 	});
 
-	log.debug('Filtered packages: ' + JSON.stringify(packages));
+	// log.debug('Filtered packages: ' + JSON.stringify(packages));
 
 	packages = packages
 	.sort(function(a, b) {
@@ -521,7 +521,7 @@ function filterPackages(registry, options) {
 	})
 	.reverse();
 
-log.debug('Filtered packages after sorting and reversing: ' + JSON.stringify(packages));
+// log.debug('Filtered packages after sorting and reversing: ' + JSON.stringify(packages));
 
 return packages;
 }

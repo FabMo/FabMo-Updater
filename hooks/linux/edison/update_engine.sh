@@ -75,7 +75,7 @@ echo "Clearing the approot..."
 rm -rf /opt/fabmo/approot
 sync
 
-echo "Restarting the engine..."
+echo "Restarting FabMo..."
 systemctl start fabmo
 
 sleep 15

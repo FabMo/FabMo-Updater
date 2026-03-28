@@ -24,6 +24,7 @@ var logs = {};
 var LOG_BUFFER_SIZE = 5000;
 
 // String versions of the allowable log levels
+// Level set in config file, currently "shell"
 LEVELS = {
 	'shell' : 0,
 	'debug' : 1,

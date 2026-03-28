@@ -15,6 +15,9 @@
 <form style="display:none;" id="fileform">
   <input type="file" id="file" multiple>
 </form>
+<form style="display:none;" id="firmwarefileform">
+  <input type="file" id="firmware-file" accept=".bin">
+</form>
 
 <div id="container">
   <div id="menu">
@@ -27,12 +30,12 @@
           </a>
       </li>
 -->
-      <li class="menu-item active" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> FabMo System Info</a></li>
+      <li class="menu-item" data-id="view-info"><a href="#"><i class="fa fa-info-circle"></i> FabMo System Info</a></li>
 <!--
       <li class="menu-item" data-id="view-wireless"><a href="#"><i class="fa fa-wifi"></i> Wireless</a></li>
       <li class="menu-item" data-id="view-network"><a href="#"><i class="fa fa-plug"></i> Network</a></li>
 -->
-      <li class="menu-item" data-id="view-updates"><a href="#"><i class="fa fa-download update-indicator"></i><span class="update-indicator"> FabMo Software Updates</span></a></li>
+      <li class="menu-item active" data-id="view-updates"><a href="#"><i class="fa fa-download update-indicator"></i><span class="update-indicator"> FabMo Software Updates</span></a></li>
       <li class="menu-item" data-id="view-settings"><a href="#"><i class="fa fa-wrench"></i> Settings</a></li>
 <!--
       <li class="menu-item" data-id="simple-updater"><a href="#"><i class="fa fa-user"></i> Simple Updater</a></li>
@@ -57,7 +60,7 @@
       SYSTEM info
 
     -->
-    <div class="content-pane active" id="view-info">
+    <div class="content-pane" id="view-info">
     <h1>&nbsp;<span class="fa fa-info-circle"></span> FabMo System Information</h1>
     <table>
       <tbody>
@@ -76,7 +79,7 @@
         <tr><td class="info-key">Engine State:</td> <td><span class="info-value label-engine-status"/></td></tr>
 
         <tr class="info-header-row"><td class="info-key-header">Firmware</td><td>&nbsp;</td></tr>
-        <tr><td class="info-key">forked at Synthetos-G2:</td> <td><span class="info-value label-fw-build"/></td></tr>
+        <tr><td class="info-key">(forked at Synthetos-G2:</td> <td><span class="info-value label-fw-build"/></td></tr>
         <tr><td class="info-key">Firmware Version:</td> <td><span class="info-value label-fw-version"/></td></tr>
         <tr><td class="info-key">Firmware Default Settings:</td> <td><span class="info-value label-fw-config"/></td></tr>
       </tbody>
@@ -89,31 +92,39 @@
       ENGINE UPDATES
 
     -->
-    <div class="content-pane" id="view-updates">
+    <div class="content-pane active" id="view-updates">
       <h1><span class="fa fa-download"></span> Software Update</h1>
-      <p>FabMo updates will overwrite the current configuration. You will need to re-apply the profile for your machine using the Configuration
-        Manager (left-panel).</p>
-      <p>You may also wish to save your current configuration before proceeding so you can reload it.</p>
-      <br>
+      <p>FabMo automatically checks for updates and displays them here. You can install the latest version<br>
+        of Fabmo, including any firmware updates, by clicking the button below.  (Updates may take several minutes.)</p>
         <div id="check-for-updates-controls">
-        <p id="message-noupdates">There are no software updates available for automatic download. </p>
-        <button id="btn-check-for-updates" class="btn"><i class="fa fa-cloud-download fa-lg" id="check-button-icon"></i> <span id="check-button-text"> Check for Updates</span></button>
+          <p id="message-noupdates" class="hide"><i class="fa fa-cog fa-spin"></i> Checking for updates ...</p>
+          <button id="btn-check-for-updates" class="btn"><i class="fa fa-cloud-download fa-lg" id="check-button-icon"></i> <span id="check-button-text"> Check again for Updates</span></button>
         </div>
 
         <div id="message-updates" class="hide">
-          <p>A software update is available!</p>
+          <p><u>A software update is available!</u></p>
           <p><pre id="message-changelog"></pre></p>
           <button id="btn-update-apply" class="btn-green disabled"><i class="fa fa-tags fa-lg"></i>  <span id="update-button-text">Update</span></button>
-          </div>
-      </p>
-      <h1><i class="fa fa-file"></i> Manual Update</h1>
-      <p>
-        <p>Click the button below to apply an update from an .fmp file.</p>
-        <button id="btn-update-manual" class="btn-blue"><i class="fa fa-file fa-lg"></i>  Update With File...</button>
+        </div>
+      
+        <br>
+        <h1><i class="fa fa-file"></i> Manual Software Update</h1>
+     
+        <p>Click the button below to apply an update from an .fmp file.<br>
+           You would typically use this option if you have downloaded an update manually from Github because<br>
+           your tool is not on the internet. Firmware will be included in the update. [https://github.com/FabMo/FabMo-Engine/releases] </p>
+        <button id="btn-update-manual" class="btn-blue"><i class="fa fa-file fa-lg"></i>  Update FabMo with File ...</button>
         <span class="progressbar hide">
           <div class="fill"></div>
         </span>
-      </p>
+      <br><br>
+      <p> <strong>Firmware Update</strong></p>
+        <p>Flash a new G2-motion-system firmware .bin file, or reload the current firmware already on disk.</p>
+        <p>Firmware updates are included with FabMo updates. These functions are only for special cases.</p>
+        <button id="btn-firmware-upload" class="btn-blue"><i class="fa fa-microchip fa-lg"></i>  Update Firmware with File...</button>
+        <button id="btn-firmware-reload" class="btn-purple"><i class="fa fa-refresh fa-lg"></i>  Update Firmware from Current Version</button>
+        <p> </p>  
+      
       <div id="report-progress" style="display:none">
         <p><i id="report-title" class="fa fa-spinner fa-spin fa-lg"></i><span id="report-message"> UPDATE PROGRESS: Loaded File! Beginning install ...</span></p>
       </div>

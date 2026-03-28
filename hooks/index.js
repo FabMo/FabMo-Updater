@@ -23,7 +23,6 @@ var cp = require('child_process');
 var byline = require('byline');
 var fs = require('fs');
 var Q = require('q');
-var updater = require('../updater');
 
 // Task keys
 var keys = {};
@@ -177,13 +176,12 @@ exports.getEngineState = function(callback) {
 
 // TODO Obsolete?
 exports.installEngine = function(version, callback) {
-	var updater = require('./updater');
-
+	var updater = require('../updater');
 	callback = callback || function() {};
 	var key = updater.startTask();
 	updater.setState('updating');
 	callback(null, key);
-	var cp = execute('install_engine', config.updater.get('engine_git_repos') + ' ' + version, function(err,stdout) {
+	execute('install_engine', config.updater.get('engine_git_repos') + ' ' + version, function(err,stdout) {
 		if(err) {
 			updater.failTask(key);
 			log.error("Did not update to " + version + " successfully.");
@@ -192,28 +190,17 @@ exports.installEngine = function(version, callback) {
 			log.info("Updated to " + version + " successfully.");
 		}
 		updater.setState('idle');
-	});
-
-	var stdout = byline(cp.stdout);
-	var stderr = byline(cp.stderr);
-
-	stdout.on('data', function(line) {
-		log.shell(line);
-	});
-
-	stderr.on('data', function(line) {
-		log.shell(line);
 	});
 }
 
 // TODO Obsolete?
 exports.updateEngine = function(version, callback) {
-
+	var updater = require('../updater');
 	callback = callback || function() {};
 	var key = updater.startTask();
 	updater.setState('updating');
 	callback(null, key);
-	var cp = execute('update_engine', version, function(err,stdout) {
+	execute('update_engine', version, function(err,stdout) {
 		if(err) {
 			updater.failTask(key);
 			log.error("Did not update to " + version + " successfully.");
@@ -221,22 +208,8 @@ exports.updateEngine = function(version, callback) {
 			updater.passTask(key);
 			log.info("Updated to " + version + " successfully.");
 		}
-
 		updater.setState('idle');
-
 	});
-
-	var stdout = byline(cp.stdout);
-	var stderr = byline(cp.stderr);
-
-	stdout.on('data', function(line) {
-		log.shell(line);
-	});
-
-	stderr.on('data', function(line) {
-		log.shell(line);
-	});
-
 }
 
 // TODO Obsolete?
@@ -272,12 +245,12 @@ exports.doFMU = function(filename, callback) {
 // Update the G2 firmware specified by filename
 //   filename - Full path to firmware file to apply
 exports.updateFirmware = function(filename, callback) {
-	var updater = require('./updater');
+	var updater = require('../updater');
 	callback = callback || function() {};
 	var key = updater.startTask();
 	updater.setState('updating');
 	callback(null, key);
-	var cp = execute('update_firmware', filename, function(err, stdout) {
+	execute('update_firmware', filename, function(err, stdout) {
 		if(err) {
 			updater.failTask(key);
 			log.error("Did not update firmware successfully.");
@@ -286,17 +259,6 @@ exports.updateFirmware = function(filename, callback) {
 			log.info("Updated firmware successfully.");
 		}
 		updater.setState('idle');
-	});
-
-	var stdout = byline(cp.stdout);
-	var stderr = byline(cp.stderr);
-
-	stdout.on('data', function(line) {
-		log.shell(line);
-	});
-
-	stderr.on('data', function(line) {
-		log.shell(line);
 	});
 }
 
@@ -308,7 +270,7 @@ exports.factoryReset = function(callback) {
 
 // Initiate an updater self-update
 exports.updateUpdater = function(callback) {
-	var updater = require('./updater');
+	var updater = require('../updater');
 	updater.setState('updating');
 	spawn('update_updater');
 }

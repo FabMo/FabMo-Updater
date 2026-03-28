@@ -11,7 +11,9 @@ var updater = new UpdaterAPI();
 // True when there's a modal on screen
 var modalShown = false;
 // True when the updater is awaiting a returned 'idle' from rebooted FabMo; wait til we know it's back up
-var awaitingReboot = false; 
+var awaitingReboot = false;
+// True while an update check is in progress
+var checkInProgress = false;
 
 // Left side menu.  Mostly changes the content pane, but
 // jumps out of the updater altogether for a few items (dashboard, simple updater, logout)
@@ -226,9 +228,11 @@ function setState(state) {
             icon.removeClass(classes).addClass('fa-spin fa-spinner');
             break;
     }
-    $('#check-button-text').text(' Check for updates');
-    $('#btn-check-for-updates').removeClass('disabled');
-    $('#check-button-icon').removeClass('fa-spin fa-gear').addClass('fa-cloud-download');
+    $('#check-button-text').text(' Check again for updates');
+    if(!checkInProgress) {
+      $('#btn-check-for-updates').removeClass('disabled');
+      $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
+    }
 }
 
 // Show the modal dialog with the provided options
@@ -318,6 +322,22 @@ $(document).ready(function() {
   clearConsole();
   awaitingReboot = false;
 
+  // Auto-check for updates on startup
+  checkInProgress = true;
+  $('#btn-check-for-updates').addClass('disabled');
+  $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
+  $('#check-button-text').text('Checking...');
+  updater.checkForUpdates(function() {
+    // If checkInProgress is still true, the status event didn't find updates
+    if (checkInProgress) {
+      checkInProgress = false;
+      $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
+      $('#btn-check-for-updates').removeClass('disabled');
+      $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
+      $('#check-button-text').text(' Check again for Updates');
+    }
+  });
+
   // Updater log event - append new log messages to console and update PROGRESS report display depending on content
   updater.on('log', function(msg) {
 
@@ -336,9 +356,37 @@ $(document).ready(function() {
         $('#report-message').text(" UPDATE PROGRESS: Updating real-time motion firmware ...");
     }   
     if (msg.indexOf("Starting services") > -1) {
-        $('#report-message').text(" UPDATE PROGRESS: Re-starting Fabmo ...");
+        $('#report-message').text(" UPDATE PROGRESS: Re-starting and Configuring FabMo ...");
         awaitingReboot = true;
-    }   
+    }
+    // Firmware flash progress messages from update_firmware.sh
+    if (msg.indexOf("Stopping the engine") > -1) {
+        $('#report-message').text(" FIRMWARE UPDATE: Stopping the engine ...");
+    }
+    if (msg.indexOf("triggering bootloader") > -1 || msg.indexOf("Triggering bootloader") > -1) {
+        $('#report-message').text(" FIRMWARE UPDATE: Triggering bootloader mode ...");
+    }
+    if (msg.indexOf("Waiting for bootloader") > -1) {
+        $('#report-message').text(" FIRMWARE UPDATE: Waiting for bootloader mode ...");
+    }
+    if (msg.indexOf("Trying") > -1 && msg.indexOf("/dev/") > -1) {
+        $('#report-message').text(" FIRMWARE UPDATE: " + msg.trim() + " ...");
+    }
+    if (msg.indexOf("Success on") > -1) {
+        $('#report-message').text(" FIRMWARE UPDATE: Flash succeeded! Setting boot flag ...");
+    }
+    if (msg.indexOf("Firmware loaded") > -1) {
+        $('#report-message').text(" FIRMWARE UPDATE: Firmware loaded. Restarting FabMo ...");
+        awaitingReboot = true;
+    }
+    if (msg.indexOf("Updated firmware successfully") > -1) {
+        awaitingReboot = true;
+    }
+    if (msg.indexOf("Did not update firmware") > -1 || msg.indexOf("ERROR: bossac") > -1) {
+        $('#report-title').removeClass('fa-spinner').removeClass('fa-spin').addClass('fa-exclamation-triangle');
+        $('#report-message').html(" FIRMWARE UPDATE FAILED: " + msg.trim());
+        awaitingReboot = false;
+    }
     // If message contains items that start with "pages)" then this is a firmware update progress report;
     // Do not display the message (it is designed for a terminal and very messy without some special handling) 
     if (($('#report-progress').css("display") == "block") && (msg.indexOf("pages)")) > -1) {
@@ -360,17 +408,25 @@ $(document).ready(function() {
     if(status.updates && status.updates.length > 0) {
       var update = status.updates[0];
       $('#message-changelog').text(update.changelog);
-      $('#update-button-text').text('Update ' + update.product + ' to ' + update.version);
+      if (update.product === 'FabMo-Engine') {
+        var tempName = 'FabMo';
+      } else {
+        var tempName = update.product;
+      }
+      $('#update-button-text').text('Click to Update ' + tempName + ' to ' + update.version);
       $('#message-updates').removeClass('hide');
       $('#message-noupdates').addClass('hide');
       $('.update-indicator').addClass('updates-available')
       $('#check-for-updates-controls').addClass('hide');
-    } else {
+      checkInProgress = false;
+    } else if (!checkInProgress) {
       $('#check-for-updates-controls').removeClass('hide');
       $('#message-updates').addClass('hide');
-      $('#message-noupdates').removeClass('hide');
-      $('.update-indicator').removeClass('updates-available')
-
+      $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
+      $('.update-indicator').removeClass('updates-available');
+      $('#btn-check-for-updates').removeClass('disabled');
+      $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
+      $('#check-button-text').text(' Check again for Updates');
     }
 
     // TODO - why do we dismiss the modal here?
@@ -392,6 +448,7 @@ $(document).ready(function() {
   // Additional button to return to the FabMo dashboard after uploading an update from progress report
   $('#report-progress').click(function() {
     if (updater.status.state === 'idle') {
+        $('#report-progress').css('display', 'none');
         console.log("launching dashboard-2");
         var hardReload = true;
         launchDashboard(hardReload);
@@ -443,22 +500,19 @@ $(document).ready(function() {
   // Apply prepared updates
   $("#btn-update-apply").click(function(evt) {
     evt.preventDefault();
-    $('.progressbar').removeClass('hide');
+    $('#message-noupdates').addClass('hide');
+    $('#btn-update-apply').addClass('disabled');
+
+    // Show progress bar immediately
+    $('#report-title').removeClass('fa-check fa-exclamation-triangle').addClass('fa-spinner fa-spin');
+    $('#report-message').html(" UPDATE PROGRESS: Applying prepared updates...");
+    $('#report-progress').css("display", "block");
 
     updater.applyPreparedUpdates(function(err, data) {
-        awaitingReboot = false;
-        setTimeout(function() {
-            $('.progressbar').addClass('hide');
-            // just to prevent display of leftover progress bar; reset
-            $('#report-title').removeClass('fa-check').addClass('fa-spinner').addClass('fa-spin');
-            $('#report-message').html("UPDATE PROGRESS: Applying prepared updates...");
-            // now display it again
-            $('#report-progress').css("display", "block");
-            $('.progressbar .fill').width(0);
-        }, 750);
+        // Upload complete - server is now processing
     }, function(progress) {
         var pg = (progress * 100).toFixed(0) + '%';
-        $('.progressbar .fill').width(pg);
+        $('#report-message').html(" UPDATE PROGRESS: Uploading ... " + pg);
     });
   });
 
@@ -486,11 +540,21 @@ $(document).ready(function() {
   $("#btn-stop-engine").click(function() {updater.stopEngine()});
 
   $("#btn-check-for-updates").click(function() {
+    checkInProgress = true;
     $("#btn-check-for-updates").addClass('disabled');
     $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
     $("#check-button-text").text('Checking...');
+    $('#message-noupdates').html('<i class="fa fa-cog fa-spin"></i> Checking for updates ...');
     clearConsole();
-    updater.checkForUpdates();
+    updater.checkForUpdates(function() {
+      if (checkInProgress) {
+        checkInProgress = false;
+        $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
+        $('#btn-check-for-updates').removeClass('disabled');
+        $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
+        $('#check-button-text').text(' Check again for Updates');
+      }
+    });
   });
 
   // Console clear button
@@ -498,13 +562,76 @@ $(document).ready(function() {
 
   // Button to browse for a manual update
   $('#btn-update-manual').click(function() {
+    $('#message-noupdates').addClass('hide');
     jQuery('#file').trigger('click');
     clearConsole();
+  });
+
+  // Button to browse for a firmware .bin file
+  $('#btn-firmware-upload').click(function() {
+    jQuery('#firmware-file').trigger('click');
+    clearConsole();
+  });
+
+  // Upload a firmware .bin file
+  $('#firmware-file').change(function(evt) {
+    var files = [];
+    for(var i=0; i<evt.target.files.length; i++) {
+      files.push({file:evt.target.files[i]});
+    }
+    clearConsole();
+    $('#report-progress').css('display', 'block');
+    $('#report-title').removeClass('fa-check fa-exclamation-triangle').addClass('fa-spinner fa-spin');
+    $('#report-message').html(' FIRMWARE UPDATE: Uploading firmware file ...');
+    updater.submitFirmwareUpdate(files, {}, function(err, data) {
+      $('#report-message').html(' FIRMWARE UPDATE: Firmware file uploaded! Flashing ...');
+      awaitingReboot = true;
+      $('#firmware-file').val(null);
+    }, function(progress) {
+      var pg = (progress*100).toFixed(0) + '%';
+      $('#report-message').html(' FIRMWARE UPDATE: Uploading firmware file ... ' + pg);
+    });
+  });
+
+  // Button to reload current firmware from disk
+  $('#btn-firmware-reload').click(function(evt) {
+    evt.preventDefault();
+    showModal({
+      title : 'Reload Firmware?',
+      message : 'This will re-flash the G2 motion controller with the current firmware file on disk (/fabmo/firmware/g2.bin). The engine will be stopped during flashing. Continue?',
+      icon : 'fa-microchip',
+      okText : 'Yes, Reload',
+      cancelText : 'Cancel',
+      ok : function() {
+        // Close the modal without a full page reload
+        $('#btn-modal-ok').off('click');
+        $('#btn-modal-cancel').off('click');
+        modalShown = false;
+        $('#modal').hide();
+
+        clearConsole();
+        $('#report-progress').css('display', 'block');
+        $('#report-title').removeClass('fa-check').addClass('fa-spinner').addClass('fa-spin');
+        $('#report-message').html(' UPDATE PROGRESS: Reloading firmware from disk ...');
+        awaitingReboot = true;
+        updater.reloadFirmware(function(err, data) {
+          if(err) {
+            awaitingReboot = false;
+            $('#report-title').removeClass('fa-spinner').removeClass('fa-spin').addClass('fa-exclamation-triangle');
+            $('#report-message').html(' Firmware reload failed: ' + (err.message || err));
+          }
+        });
+      },
+      cancel : function() {
+        dismissModal();
+      }
+    });
   });
 
   // Upload a package file manually
   $('#file').change(function(evt) {
     $('.progressbar').removeClass('hide');
+    $('#btn-update-manual').addClass('disabled');
     var files = [];
     for(var i=0; i<evt.target.files.length; i++) {
       files.push({file:evt.target.files[i]});
@@ -569,13 +696,13 @@ $(document).ready(function() {
       updater.getEngineInfo(function(err, info) {
         if(err) {
           $('.label-engine-version').text('unavailable');
-          $('.label-fw-build').text('unavailable');
+          $('.label-fw-build').text('unavailable )');
           $('.label-fw-config').text('unavailable');
           $('.label-fw-version').text('unavailable');
 
         } else {
           var engine_version_number = info.version.number || info.version.hash.substring(0,8) + '-' + info.version.type
-          $('.label-fw-build').text(info.firmware.build || 'unavailable');
+          $('.label-fw-build').text(info.firmware.build + ')' || 'unavailable )');
           $('.label-fw-config').text(info.firmware.config || 'unavailable');
           $('.label-fw-version').text((info.firmware.version).replace('-dirty','') || 'unavailable');
           $('.label-engine-version').text(engine_version_number || 'unavailable');

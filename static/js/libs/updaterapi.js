@@ -257,6 +257,14 @@ UpdaterAPI.prototype.getEthernetConfig = function(callback) {
 	this._get('/network/ethernet/config', callback, callback);
 }
 
+// Firmware
+UpdaterAPI.prototype.submitFirmwareUpdate = function(fmu, options, callback, progress) {
+	this._postUpload('/firmware/update', fmu, {}, callback, callback, null, progress);
+}
+UpdaterAPI.prototype.reloadFirmware = function(callback) {
+	this._post('/firmware/reload', {}, callback, callback);
+}
+
 // Factory Reset
 UpdaterAPI.prototype.factoryReset = function(callback) {
 	this._post('/update/factory', {}, callback, callback);

@@ -461,6 +461,10 @@ td {
 	color: #e00;
 }
 
+#message-noupdates {
+	color: #dd8728;
+}
+
 
 #message-console {
 	transition: all 0.3s ease 0s;
