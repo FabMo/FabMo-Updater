@@ -38,8 +38,6 @@ $('.menu-item').click(function() {
         }})
 
       default:
-        // Hide the progress report bar when switching views
-        $('#report-progress').css('display', 'none');
         $('.content-pane').removeClass('active');
         $('#' + this.dataset.id).addClass('active');
         $('.menu-item').removeClass('active');
@@ -230,7 +228,7 @@ function setState(state) {
             icon.removeClass(classes).addClass('fa-spin fa-spinner');
             break;
     }
-    $('#check-button-text').text(' Check for updates');
+    $('#check-button-text').text(' Check again for updates');
     if(!checkInProgress) {
       $('#btn-check-for-updates').removeClass('disabled');
       $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
@@ -333,10 +331,10 @@ $(document).ready(function() {
     // If checkInProgress is still true, the status event didn't find updates
     if (checkInProgress) {
       checkInProgress = false;
-      $('#message-noupdates').html('There are no software updates available for automatic download.').removeClass('hide');
+      $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
       $('#btn-check-for-updates').removeClass('disabled');
       $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
-      $('#check-button-text').text(' Check for Updates');
+      $('#check-button-text').text(' Check again for Updates');
     }
   });
 
@@ -358,7 +356,7 @@ $(document).ready(function() {
         $('#report-message').text(" UPDATE PROGRESS: Updating real-time motion firmware ...");
     }   
     if (msg.indexOf("Starting services") > -1) {
-        $('#report-message').text(" UPDATE PROGRESS: Re-starting Fabmo ...");
+        $('#report-message').text(" UPDATE PROGRESS: Re-starting and Configuring FabMo ...");
         awaitingReboot = true;
     }
     // Firmware flash progress messages from update_firmware.sh
@@ -424,11 +422,11 @@ $(document).ready(function() {
     } else if (!checkInProgress) {
       $('#check-for-updates-controls').removeClass('hide');
       $('#message-updates').addClass('hide');
-      $('#message-noupdates').html('There are no software updates available for automatic download.').removeClass('hide');
+      $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
       $('.update-indicator').removeClass('updates-available');
       $('#btn-check-for-updates').removeClass('disabled');
       $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
-      $('#check-button-text').text(' Check for Updates');
+      $('#check-button-text').text(' Check again for Updates');
     }
 
     // TODO - why do we dismiss the modal here?
@@ -503,23 +501,18 @@ $(document).ready(function() {
   $("#btn-update-apply").click(function(evt) {
     evt.preventDefault();
     $('#message-noupdates').addClass('hide');
-    $('#message-updates').addClass('hide');
-    $('.progressbar').removeClass('hide');
+    $('#btn-update-apply').addClass('disabled');
+
+    // Show progress bar immediately
+    $('#report-title').removeClass('fa-check fa-exclamation-triangle').addClass('fa-spinner fa-spin');
+    $('#report-message').html(" UPDATE PROGRESS: Applying prepared updates...");
+    $('#report-progress').css("display", "block");
 
     updater.applyPreparedUpdates(function(err, data) {
-        awaitingReboot = false;
-        setTimeout(function() {
-            $('.progressbar').addClass('hide');
-            // just to prevent display of leftover progress bar; reset
-            $('#report-title').removeClass('fa-check').addClass('fa-spinner').addClass('fa-spin');
-            $('#report-message').html("UPDATE PROGRESS: Applying prepared updates...");
-            // now display it again
-            $('#report-progress').css("display", "block");
-            $('.progressbar .fill').width(0);
-        }, 750);
+        // Upload complete - server is now processing
     }, function(progress) {
         var pg = (progress * 100).toFixed(0) + '%';
-        $('.progressbar .fill').width(pg);
+        $('#report-message').html(" UPDATE PROGRESS: Uploading ... " + pg);
     });
   });
 
@@ -556,10 +549,10 @@ $(document).ready(function() {
     updater.checkForUpdates(function() {
       if (checkInProgress) {
         checkInProgress = false;
-        $('#message-noupdates').html('There are no software updates available for automatic download.').removeClass('hide');
+        $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
         $('#btn-check-for-updates').removeClass('disabled');
         $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
-        $('#check-button-text').text(' Check for Updates');
+        $('#check-button-text').text(' Check again for Updates');
       }
     });
   });
@@ -638,6 +631,7 @@ $(document).ready(function() {
   // Upload a package file manually
   $('#file').change(function(evt) {
     $('.progressbar').removeClass('hide');
+    $('#btn-update-manual').addClass('disabled');
     var files = [];
     for(var i=0; i<evt.target.files.length; i++) {
       files.push({file:evt.target.files[i]});
