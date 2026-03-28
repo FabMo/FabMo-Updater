@@ -5,6 +5,9 @@
  *
  */
 
+// Polling interval for FabMo engine console log and status (ms)
+var FABMO_POLL_INTERVAL_MS = 2000;
+
 // Create API instance for communicating with the update service
 var updater = new UpdaterAPI();
 
@@ -121,22 +124,19 @@ function setConfig(id, value) {
 
 var lastLevel = ''
 // Prettify a line for "console" output
-// Returns HTML that colorizes the log level
+// Returns HTML that colorizes the log level and wraps the line in a
+// filterable block element.
 //   line - The line to format
 function prettify(line) {
   var line_re = /^(\w*)\:(.*)/i;
   var match = line_re.exec(line);
   if(match) {
-    var level = match[1];
+    var level = match[1].toLowerCase();
     var msg = match[2];
     lastLevel = level;
-    return '<span class="loglevel-' + level + '">' + level + ':</span>' + msg + '\n'
+    return '<div class="log-line level-' + level + '"><span class="loglevel-' + level + '">' + level + ':</span>' + msg + '</div>'
   } else {
-    blank = [];
-    for(var i=0; i<lastLevel.length; i++) {
-      blank = blank + ' ';
-    }
-    return blank + '  ' + line + '\n'
+    return '<div class="log-line level-' + lastLevel + '">' + line + '</div>'
   }
 }
 
@@ -157,6 +157,146 @@ function clearConsole() {
     var log = $('#console .content');
     log.text('');
 }
+
+// ---------------------------------------------------------------------------
+// Log-level filter (CSS-based)
+// ---------------------------------------------------------------------------
+// Checkbox values match CSS class suffixes: info, debug, warn, error, g2, shell
+// Unchecking a level adds 'filter-hide-{level}' to #console; matching
+// .log-line elements are hidden via CSS without re-rendering the log.
+
+function applyStoredFilters() {
+  $('.log-filter').each(function() {
+    var level = this.value;
+    var hidden = localStorage.getItem('filter-hide-' + level) === '1';
+    if (hidden) {
+      $('#console').addClass('filter-hide-' + level);
+      $(this).prop('checked', false);
+    } else {
+      $('#console').removeClass('filter-hide-' + level);
+      $(this).prop('checked', true);
+    }
+  });
+}
+
+$(document).on('change', '.log-filter', function() {
+  var level = this.value;
+  if (this.checked) {
+    $('#console').removeClass('filter-hide-' + level);
+    localStorage.removeItem('filter-hide-' + level);
+  } else {
+    $('#console').addClass('filter-hide-' + level);
+    localStorage.setItem('filter-hide-' + level, '1');
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Panel toggle (Updater / FabMo / Status)
+// ---------------------------------------------------------------------------
+function initPanelToggles() {
+  var toggles = [
+    { checkboxId: 'toggle-updater', wrapperId: 'updater-wrapper' },
+    { checkboxId: 'toggle-fabmo',   wrapperId: 'fabmo-wrapper'   },
+    { checkboxId: 'toggle-status',  wrapperId: 'status-wrapper'  }
+  ];
+  toggles.forEach(function(t) {
+    var stored = localStorage.getItem(t.checkboxId);
+    if (stored === '0') {
+      $('#' + t.wrapperId).hide();
+      $('#' + t.checkboxId).prop('checked', false);
+    }
+    $('#' + t.checkboxId).on('change', function() {
+      if (this.checked) {
+        $('#' + t.wrapperId).show();
+        localStorage.setItem(t.checkboxId, '1');
+      } else {
+        $('#' + t.wrapperId).hide();
+        localStorage.setItem(t.checkboxId, '0');
+      }
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// FabMo Console – poll the engine's /log endpoint
+// ---------------------------------------------------------------------------
+var fabmoLogLastIndex = 0;
+
+function fetchExternalLogs() {
+  fetch(updater.engine_url + '/log')
+    .then(function(response) {
+      if (!response.ok) { return; }
+      return response.text();
+    })
+    .then(function(data) {
+      if (data) { processExternalLogData(data); }
+    })
+    .catch(function() {
+      // Silently ignore – engine may not be running
+    });
+}
+
+function processExternalLogData(logData) {
+  var logContainer = document.getElementById('external-log');
+  if (!logContainer) { return; }
+
+  var lines = logData.split(/\r?\n/).filter(function(l) { return l.trim().length > 0; });
+
+  // Reset the index if the log was truncated or rotated
+  if (lines.length < fabmoLogLastIndex) {
+    fabmoLogLastIndex = 0;
+  }
+
+  var newLines = lines.slice(fabmoLogLastIndex);
+  fabmoLogLastIndex = lines.length;
+
+  newLines.forEach(function(line) {
+    logContainer.insertAdjacentHTML('beforeend', prettify(line));
+  });
+
+  logContainer.parentElement.scrollTop = logContainer.parentElement.scrollHeight;
+}
+
+// ---------------------------------------------------------------------------
+// Status panel – poll the engine's /status endpoint
+// ---------------------------------------------------------------------------
+function fetchStatusData() {
+  fetch(updater.engine_url + '/status')
+    .then(function(response) {
+      if (!response.ok) { return; }
+      return response.json();
+    })
+    .then(function(data) {
+      if (data) { updateStatusConsole(data); }
+    })
+    .catch(function() {
+      // Silently ignore – engine may not be running
+    });
+}
+
+function updateStatusConsole(statusData) {
+  var container = document.getElementById('status-content');
+  if (!container) { return; }
+
+  // Extract the relevant data object (the engine wraps data in { status:'success', data:{...} })
+  var payload = (statusData && statusData.data) ? statusData.data : statusData;
+
+  container.innerHTML = '';
+  Object.entries(payload).sort(function(a, b) {
+    return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0;
+  }).forEach(function(entry) {
+    var key = entry[0];
+    var value = entry[1];
+    var el = document.createElement('div');
+    el.className = 'log-line';
+    el.innerHTML = '<strong>' + key + ':</strong> ' + (
+      typeof value === 'object' ? JSON.stringify(value) : value
+    );
+    container.appendChild(el);
+  });
+}
+
+
 
 // Launch the "simple updater" which just applies any prepared updates with a full page spinner
 // Confirm with a modal before launching
@@ -321,6 +461,14 @@ $(document).ready(function() {
   // Clear the console at startup
   clearConsole();
   awaitingReboot = false;
+
+  // Restore saved log-filter and panel-toggle states
+  applyStoredFilters();
+  initPanelToggles();
+
+  // Start polling the FabMo engine for its console log and status
+  setInterval(fetchExternalLogs, FABMO_POLL_INTERVAL_MS);
+  setInterval(fetchStatusData,   FABMO_POLL_INTERVAL_MS);
 
   // Auto-check for updates on startup
   checkInProgress = true;
@@ -696,13 +844,13 @@ $(document).ready(function() {
       updater.getEngineInfo(function(err, info) {
         if(err) {
           $('.label-engine-version').text('unavailable');
-          $('.label-fw-build').text('unavailable )');
+          $('.label-fw-build').text('unavailable');
           $('.label-fw-config').text('unavailable');
           $('.label-fw-version').text('unavailable');
 
         } else {
           var engine_version_number = info.version.number || info.version.hash.substring(0,8) + '-' + info.version.type
-          $('.label-fw-build').text(info.firmware.build + ')' || 'unavailable )');
+          $('.label-fw-build').text(info.firmware.build || 'unavailable');
           $('.label-fw-config').text(info.firmware.config || 'unavailable');
           $('.label-fw-version').text((info.firmware.version).replace('-dirty','') || 'unavailable');
           $('.label-engine-version').text(engine_version_number || 'unavailable');
