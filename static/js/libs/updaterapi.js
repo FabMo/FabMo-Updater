@@ -279,6 +279,14 @@ UpdaterAPI.prototype.checkForUpdates = function(callback) {
 	this._post('/update/check', {}, callback, callback);
 }
 
+// Download a specific engine version
+// data - Object with version property, e.g. {version: 'v4.0.50'}
+// errback - Called on error with (errorData)
+// callback - Called on success with (null, resultData)
+UpdaterAPI.prototype.downloadEngineVersion = function(data, errback, callback) {
+	this._post('/update/download', data, errback, callback);
+}
+
 // INTERNAL METHODS BELOW HERE
 
 // Function for normalizing form data for file submit

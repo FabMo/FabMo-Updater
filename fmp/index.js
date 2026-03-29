@@ -12,3 +12,5 @@ exports.downloadPackage = fmp.downloadPackage;
 exports.installUnpackedPackage = fmp.installUnpackedPackage;
 exports.installPackageFromFile = fmp.installPackageFromFile;
 exports.parseVersion = fmp.parseVersion;
+exports.fetchPackagesList = fmp.fetchPackagesList;
+exports.filterPackages = fmp.filterPackages;

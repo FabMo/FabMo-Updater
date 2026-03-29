@@ -680,6 +680,7 @@ exports.installPackageFromFile = installPackageFromFile;
 exports.checkForAvailablePackage = checkForAvailablePackage;
 exports.downloadPackage = downloadPackage;
 exports.parseVersion = parseVersion;
+exports.filterPackages = filterPackages;
 
 exports.executeOperation = executeOperation;
 exports.executeOperations = executeOperations;
