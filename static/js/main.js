@@ -548,11 +548,11 @@ $(document).ready(function() {
     updater.downloadEngineVersion({ version }, 
       function (err){
         console.error("Download failed:", err);
-        alert("Download failed: " + err.message);
+        alert("Download failed: " + (err.message || err));
         resetCheckButton(); // Re-enable the UI
         return;
       }, 
-      function(result) {
+      function(err, result) {
   
       console.log("Download complete:", result);
   
