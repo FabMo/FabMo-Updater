@@ -133,6 +133,10 @@ function prettify(line) {
   if(match) {
     var level = match[1].toLowerCase();
     var msg = match[2];
+    // Detect [g2] logger-name suffix and override the level so the G2 filter works
+    if (/\[g2\]/i.test(msg)) {
+      level = 'g2';
+    }
     lastLevel = level;
     return '<div class="log-line level-' + level + '"><span class="loglevel-' + level + '">' + level + ':</span>' + msg + '</div>'
   } else {
@@ -152,10 +156,14 @@ function printf(s) {
     scrollpane[0].scrollTop = scrollpane[0].scrollHeight;
 }
 
-// Clear the contents of the updater console
+// Clear the contents of the active console panel
 function clearConsole() {
-    var log = $('#console .content');
-    log.text('');
+    var activePanel = localStorage.getItem('active-console-panel') || 'updater-wrapper';
+    if (activePanel === 'updater-wrapper') {
+        $('#console .content').text('');
+    } else if (activePanel === 'fabmo-wrapper') {
+        $('#external-log').text('');
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -171,9 +179,11 @@ function applyStoredFilters() {
     var hidden = localStorage.getItem('filter-hide-' + level) === '1';
     if (hidden) {
       $('#console').addClass('filter-hide-' + level);
+      $('#fabmo-console').addClass('filter-hide-' + level);
       $(this).prop('checked', false);
     } else {
       $('#console').removeClass('filter-hide-' + level);
+      $('#fabmo-console').removeClass('filter-hide-' + level);
       $(this).prop('checked', true);
     }
   });
@@ -183,37 +193,37 @@ $(document).on('change', '.log-filter', function() {
   var level = this.value;
   if (this.checked) {
     $('#console').removeClass('filter-hide-' + level);
+    $('#fabmo-console').removeClass('filter-hide-' + level);
     localStorage.removeItem('filter-hide-' + level);
   } else {
     $('#console').addClass('filter-hide-' + level);
+    $('#fabmo-console').addClass('filter-hide-' + level);
     localStorage.setItem('filter-hide-' + level, '1');
   }
 });
 
 // ---------------------------------------------------------------------------
-// Panel toggle (Updater / FabMo / Status)
+// Panel tabs (Updater / FabMo / Status) – single selection
 // ---------------------------------------------------------------------------
-function initPanelToggles() {
-  var toggles = [
-    { checkboxId: 'toggle-updater', wrapperId: 'updater-wrapper' },
-    { checkboxId: 'toggle-fabmo',   wrapperId: 'fabmo-wrapper'   },
-    { checkboxId: 'toggle-status',  wrapperId: 'status-wrapper'  }
-  ];
-  toggles.forEach(function(t) {
-    var stored = localStorage.getItem(t.checkboxId);
-    if (stored === '0') {
-      $('#' + t.wrapperId).hide();
-      $('#' + t.checkboxId).prop('checked', false);
-    }
-    $('#' + t.checkboxId).on('change', function() {
-      if (this.checked) {
-        $('#' + t.wrapperId).show();
-        localStorage.setItem(t.checkboxId, '1');
-      } else {
-        $('#' + t.wrapperId).hide();
-        localStorage.setItem(t.checkboxId, '0');
-      }
-    });
+function initPanelTabs() {
+  var panels = ['updater-wrapper', 'fabmo-wrapper', 'status-wrapper'];
+  var stored = localStorage.getItem('active-console-panel');
+  if (!stored || panels.indexOf(stored) === -1) { stored = 'updater-wrapper'; }
+
+  // Activate the stored (or default) panel
+  panels.forEach(function(p) { $('#' + p).removeClass('panel-active'); });
+  $('#' + stored).addClass('panel-active');
+  $('.console-tab').removeClass('active');
+  $('.console-tab[data-panel="' + stored + '"]').addClass('active');
+
+  // Tab click handler
+  $(document).on('click', '.console-tab', function() {
+    var target = $(this).data('panel');
+    panels.forEach(function(p) { $('#' + p).removeClass('panel-active'); });
+    $('#' + target).addClass('panel-active');
+    $('.console-tab').removeClass('active');
+    $(this).addClass('active');
+    localStorage.setItem('active-console-panel', target);
   });
 }
 
@@ -250,11 +260,17 @@ function processExternalLogData(logData) {
   var newLines = lines.slice(fabmoLogLastIndex);
   fabmoLogLastIndex = lines.length;
 
+  // Only auto-scroll if the user is already near the bottom
+  var scrollPane = logContainer.parentElement;
+  var atBottom = (scrollPane.scrollHeight - scrollPane.scrollTop - scrollPane.clientHeight) < 40;
+
   newLines.forEach(function(line) {
     logContainer.insertAdjacentHTML('beforeend', prettify(line));
   });
 
-  logContainer.parentElement.scrollTop = logContainer.parentElement.scrollHeight;
+  if (atBottom) {
+    scrollPane.scrollTop = scrollPane.scrollHeight;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -281,19 +297,34 @@ function updateStatusConsole(statusData) {
   // Extract the relevant data object (the engine wraps data in { status:'success', data:{...} })
   var payload = (statusData && statusData.data) ? statusData.data : statusData;
 
-  container.innerHTML = '';
-  Object.entries(payload).sort(function(a, b) {
-    return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0;
-  }).forEach(function(entry) {
-    var key = entry[0];
-    var value = entry[1];
-    var el = document.createElement('div');
-    el.className = 'log-line';
-    el.innerHTML = '<strong>' + key + ':</strong> ' + (
-      typeof value === 'object' ? JSON.stringify(value) : value
-    );
-    container.appendChild(el);
-  });
+  // Render as prettified, syntax-highlighted JSON
+  container.innerHTML = '<pre class="json-pretty">' + syntaxHighlightJSON(payload) + '</pre>';
+}
+
+// Syntax-highlight a JSON object for display in the status panel
+function syntaxHighlightJSON(obj) {
+  var json = JSON.stringify(obj, null, 2);
+  // Escape HTML entities
+  json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Wrap tokens in spans for colouring
+  return json.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    function(match) {
+      var cls = 'json-number';
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) {
+          cls = 'json-key';
+        } else {
+          cls = 'json-string';
+        }
+      } else if (/true|false/.test(match)) {
+        cls = 'json-boolean';
+      } else if (/null/.test(match)) {
+        cls = 'json-null';
+      }
+      return '<span class="' + cls + '">' + match + '</span>';
+    }
+  );
 }
 
 
@@ -462,9 +493,9 @@ $(document).ready(function() {
   clearConsole();
   awaitingReboot = false;
 
-  // Restore saved log-filter and panel-toggle states
+  // Restore saved log-filter and panel-tab states
   applyStoredFilters();
-  initPanelToggles();
+  initPanelTabs();
 
   // Start polling the FabMo engine for its console log and status
   setInterval(fetchExternalLogs, FABMO_POLL_INTERVAL_MS);
@@ -844,13 +875,13 @@ $(document).ready(function() {
       updater.getEngineInfo(function(err, info) {
         if(err) {
           $('.label-engine-version').text('unavailable');
-          $('.label-fw-build').text('unavailable');
+          $('.label-fw-build').text('unavailable)');
           $('.label-fw-config').text('unavailable');
           $('.label-fw-version').text('unavailable');
 
         } else {
           var engine_version_number = info.version.number || info.version.hash.substring(0,8) + '-' + info.version.type
-          $('.label-fw-build').text(info.firmware.build || 'unavailable');
+          $('.label-fw-build').text(info.firmware.build + ')' || 'unavailable)');
           $('.label-fw-config').text(info.firmware.config || 'unavailable');
           $('.label-fw-version').text((info.firmware.version).replace('-dirty','') || 'unavailable');
           $('.label-engine-version').text(engine_version_number || 'unavailable');

@@ -812,7 +812,15 @@ Updater.prototype.start = function(callback) {
             server.use(authentication.passport.session());
 
             log.info('Enabling gzip for transport...');
-            server.use(restify.plugins.gzipResponse());
+            var gzipHandler = restify.plugins.gzipResponse();
+            var skipGzipRE = /\.(woff2?|ttf|eot|otf|png|jpe?g|gif|ico)(\?.*)?$/i;
+            server.use(function conditionalGzip(req, res, next) {
+                // Skip gzip for font files and other already-compressed static assets
+                if (skipGzipRE.test(req.path())) {
+                    return next();
+                }
+                return gzipHandler(req, res, next);
+            });
 
             log.info('Configuring websocket...');
             
