@@ -166,8 +166,21 @@ var check = function(req, res, next) {
 		});
 }
 
+var download = function(req, res, next) {
+	var version = req.body.version;
+	log.info('Received request to download version ' + version);
+
+	updater.prepareUpdate(version, function(err, result) {
+		if (err) {
+			log.error('Update prep failed: ' + err.message);
+			return res.json({ status: 'error', message: err.message });
+		}
+		log.info('Update package downloaded.');
+		return res.json({ status: 'success', data: result });
+	});
+};
+
 module.exports = function(server) {
-  // TODO - See above
   server.get('/update/versions', getVersions);
   server.get('/tasks', getTasks);
   //server.post('/update/engine', updateEngine);
@@ -178,4 +191,5 @@ module.exports = function(server) {
   server.post('/update/manual', doManualUpdate);
   server.post('/update/apply', applyPreparedUpdates);
   server.post('/update/check', check);
+  server.post('/update/download', download);
 };

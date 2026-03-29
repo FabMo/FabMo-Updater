@@ -236,9 +236,41 @@ Updater.prototype.updateUpdater = function(version, callback) {
 }
 
 // Get the list of versions available to install
-// TODO - This is legacy code that should no longer be used.  The update process is done with .fmp files now.
 Updater.prototype.getVersions = function(callback) {
     hooks.getVersions(callback);
+}
+
+// Prepare an update for a specific version by downloading the matching package from the registry
+Updater.prototype.prepareUpdate = function(version, callback) {
+	log.info('[prepareUpdate] Preparing update for version: ' + version);
+
+	var product = 'FabMo-Engine';
+	var OS = config.platform;
+	var PLATFORM = config.updater.get('platform');
+	var url = config.updater.get('packages_url');
+	var self = this;
+
+	fmp.fetchPackagesList(url)
+		.then(function(list) {
+			log.info('[prepareUpdate] Fetched ' + list.length + ' packages from registry.');
+			var packages = fmp.filterPackages(list, { platform: PLATFORM, os: OS, product: product });
+			log.info('[prepareUpdate] Filtered down to ' + packages.length + ' relevant packages.');
+			var pkg = packages.find(function(p) { return p.version === version; });
+			if (!pkg) {
+				throw new Error('[prepareUpdate] Version ' + version + ' not found in filtered package list.');
+			}
+			log.info('[prepareUpdate] Found package. Downloading from ' + pkg.url);
+			return fmp.downloadPackage(pkg);
+		})
+		.then(function(result) {
+			log.info('[prepareUpdate] Download complete. Storing in status.updates');
+			self.status.updates = [result];
+			callback(null, result);
+		})
+		.catch(function(err) {
+			log.error('[prepareUpdate] Error during update preparation: ' + err.message);
+			callback(err);
+		});
 }
 
 // Initiate a firmware update

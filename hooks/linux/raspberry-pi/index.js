@@ -1,14 +1,24 @@
+// Minimum version to offer in the version selector dropdown
+var MIN_VERSION = [4, 0, 50];
+
 exports.get_versions = function(err, stdout, stderr, callback) {
 	if(err) {
 		return callback(err, new Error(stderr));
 	} 
-	var tag_re = /^([0-9a-f]+)\s+refs\/tags\/(v\d\.\d\.\d)$/i
+	var tag_re = /^([0-9a-f]+)\s+refs\/tags\/(v\d\.\d\.\d+)$/i
 	var lines = stdout.split('\n');
 	var retval = [];
 	lines.forEach(function(line) {
 		var match = tag_re.exec(line);
 		if(match) {
-			retval.push({'version' : match[2], 'hash' : match[1]})
+			var version = match[2];
+			var parts = version.replace(/^v/i, '').split('.').map(Number);
+			if (parts.length === 3 &&
+				(parts[0] > MIN_VERSION[0] ||
+				(parts[0] === MIN_VERSION[0] && parts[1] > MIN_VERSION[1]) ||
+				(parts[0] === MIN_VERSION[0] && parts[1] === MIN_VERSION[1] && parts[2] >= MIN_VERSION[2]))) {
+				retval.push({'version' : version, 'hash' : match[1]})
+			}
 		}
 	});
 	callback(null, retval);

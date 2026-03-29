@@ -78,6 +78,42 @@ function setOnline(online) {
   }
 }
 
+// Populate the version selector dropdown from the server's list of available git tags
+function populateVersionDropdown() {
+  fetch('/update/versions')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.status !== 'success') {
+        throw new Error('Failed to get version list');
+      }
+
+      var select = document.getElementById('version-select');
+      select.innerHTML = '';
+
+      var versions = data.data.versions;
+
+      // Sort descending by version number
+      versions.sort(function(a, b) {
+        return b.version.localeCompare(a.version, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
+      versions.forEach(function(ver) {
+        var option = document.createElement('option');
+        option.value = ver.version;
+        option.textContent = ver.version;
+        select.appendChild(option);
+      });
+    })
+    .catch(function(err) {
+      console.error('Failed to load versions:', err);
+      var select = document.getElementById('version-select');
+      select.innerHTML = '<option value="">Error loading versions</option>';
+    });
+}
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', populateVersionDropdown);
+
 // Flatten an object:
 // Example: flattenObject({a : { b : {c : { d: 2}}}}) -> {a-b-c-d : 2}
 var flattenObject = function(ob) {
@@ -734,6 +770,59 @@ $(document).ready(function() {
         $('#check-button-text').text(' Check again for Updates');
       }
     });
+  });
+
+  // Download and apply a specific version from the version selector dropdown
+  $("#btn-download-version").click(function() {
+    var select = document.getElementById('version-select');
+    var version = select.value;
+
+    if (!version) {
+      return alert('Please select a version to download.');
+    }
+
+    // UI: show downloading state
+    $("#btn-download-version").addClass('disabled');
+    $("#btn-check-for-updates").addClass('disabled');
+    $('#version-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
+    $("#version-button-text").text('Downloading ' + version + ' ...');
+
+    updater.downloadEngineVersion({ version: version },
+      function(err) {
+        console.error('Download failed:', err);
+        alert('Download failed: ' + (err.message || err));
+        // Reset UI
+        $("#btn-download-version").removeClass('disabled');
+        $("#btn-check-for-updates").removeClass('disabled');
+        $('#version-button-icon').removeClass('fa-cog fa-spin').addClass('fa-cloud-download');
+        $("#version-button-text").text(' Download Selected Version: ');
+      },
+      function(err, result) {
+        console.log('Download complete:', result);
+
+        // UI: change to "Apply Update"
+        $('#version-button-icon').removeClass('fa-cog fa-spin').addClass('fa-check');
+        $("#version-button-text").text(' Apply Update ' + version);
+        $("#btn-download-version")
+          .removeClass('btn disabled').addClass('btn-green')
+          .off('click')
+          .on('click', function(evt) {
+            evt.preventDefault();
+
+            // Show progress bar immediately
+            $('#report-title').removeClass('fa-check fa-exclamation-triangle').addClass('fa-spinner fa-spin');
+            $('#report-message').html(' UPDATE PROGRESS: Applying prepared updates...');
+            $('#report-progress').css('display', 'block');
+
+            updater.applyPreparedUpdates(function(err, data) {
+              // Upload complete - server is now processing
+            }, function(progress) {
+              var pg = (progress * 100).toFixed(0) + '%';
+              $('#report-message').html(' UPDATE PROGRESS: Uploading ... ' + pg);
+            });
+          });
+      }
+    );
   });
 
   // Console clear button
