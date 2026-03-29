@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Command console for performing updates to the FabMo engine and dashboard">
     <title>FabMo Update Console</title>
+    <link rel="preload" href="fonts/fontawesome-webfont.woff2?v=4.5.0" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="css/fonts.css">
     <link rel="stylesheet" href="css/font-awesome.min.css">
     <link rel="stylesheet" href="css/style.css">
@@ -79,7 +80,7 @@
         <tr><td class="info-key">Engine State:</td> <td><span class="info-value label-engine-status"/></td></tr>
 
         <tr class="info-header-row"><td class="info-key-header">Firmware</td><td>&nbsp;</td></tr>
-        <tr><td class="info-key">forked at Synthetos-G2:</td> <td><span class="info-value label-fw-build"/></td></tr>
+        <tr><td class="info-key">(forked at Synthetos-G2:</td> <td><span class="info-value label-fw-build"/></td></tr>
         <tr><td class="info-key">Firmware Version:</td> <td><span class="info-value label-fw-version"/></td></tr>
         <tr><td class="info-key">Firmware Default Settings:</td> <td><span class="info-value label-fw-config"/></td></tr>
       </tbody>
@@ -195,19 +196,22 @@
 
     <!-- Console (Always Visible) -->
     <div id="console-header">
-      <span>Log Filter:</span>
-      <label><input type="checkbox" class="log-filter" value="info"  checked> Info</label>
-      <label><input type="checkbox" class="log-filter" value="debug" checked> Debug</label>
-      <label><input type="checkbox" class="log-filter" value="warn"  checked> Warn</label>
-      <label><input type="checkbox" class="log-filter" value="error" checked> Error</label>
-      <label><input type="checkbox" class="log-filter" value="g2"    checked> G2</label>
-      <label><input type="checkbox" class="log-filter" value="shell" checked> Shell</label>
-      <span class="console-filter-sep">|</span>
-      <label><input type="checkbox" id="toggle-updater" checked> Updater</label>
-      <label><input type="checkbox" id="toggle-fabmo"   checked> FabMo</label>
-      <label><input type="checkbox" id="toggle-status"  checked> Status</label>
-      <span class="console-filter-sep">|</span>
-      <i id="btn-console-clear" class="fa fa-md fa-remove"></i>
+      <span style="color:rgba(244, 244, 10, 0.856)">View: </span>
+      <span class="console-tab active" data-panel="updater-wrapper">Updater</span>
+      <span class="console-tab" data-panel="fabmo-wrapper">FabMo</span>
+      <span class="console-tab" data-panel="status-wrapper">Status</span>
+      <span class="console-header-spacer"></span>
+      <span class="console-filter-group">
+        <span style="color:rgba(244, 244, 10, 0.856)">Filter:</span>
+        <label><input type="checkbox" class="log-filter" value="info"  checked> Info</label>
+        <label><input type="checkbox" class="log-filter" value="debug" checked> Debug</label>
+        <label><input type="checkbox" class="log-filter" value="warn"  checked> Warn</label>
+        <label><input type="checkbox" class="log-filter" value="error" checked> Error</label>
+        <label><input type="checkbox" class="log-filter" value="g2"    checked> G2</label>
+        <label><input type="checkbox" class="log-filter" value="shell" checked> Shell</label>
+        <span class="console-filter-sep">|</span>
+        <i id="btn-console-clear" class="fa fa-md fa-remove" title="Clear active console"></i>
+      </span>
       <span id="message-console"></span>
     </div>
     <div id="console-panels">

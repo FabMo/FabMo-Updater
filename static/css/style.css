@@ -194,15 +194,40 @@ em {
 	background-color: #222222;
 }
 
-/* Each panel wrapper fills equal width */
+/* Each panel wrapper fills the full width; only one visible at a time */
 #updater-wrapper,
 #fabmo-wrapper,
 #status-wrapper {
 	flex: 1;
-	display: flex;
+	display: none;
 	flex-direction: column;
 	min-width: 0;
 	border-left: 1px solid #333;
+}
+
+#updater-wrapper.panel-active,
+#fabmo-wrapper.panel-active,
+#status-wrapper.panel-active {
+	display: flex;
+}
+
+/* Tab styling for panel selection */
+.console-tab {
+	padding: 3px 10px;
+	cursor: pointer;
+	border-radius: 3px 3px 0 0;
+	color: #888;
+	transition: all 0.2s ease;
+}
+
+.console-tab:hover {
+	color: #ddd;
+	background-color: #333;
+}
+
+.console-tab.active {
+	color: #fff;
+	background-color: #444;
 }
 
 /* Small header row for each panel */
@@ -250,21 +275,49 @@ em {
 .console-panel .content {
 	padding: 10px;
 	white-space: pre-wrap;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
 	cursor: text;
 }
+
+/* Prettified JSON in status panel */
+#status-content pre.json-pretty {
+	margin: 0;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	color: #ebebeb;
+	font-family: "Lucida Console", Monaco, monospace;
+	font-size: x-small;
+	line-height: 1.4;
+}
+
+#status-content .json-key { color: #82AAFF; }
+#status-content .json-string { color: #C3E88D; }
+#status-content .json-number { color: #F78C6C; }
+#status-content .json-boolean { color: #C792EA; }
+#status-content .json-null { color: #888; }
 
 /* Each log line is a block element so CSS filters can hide it */
 .log-line {
 	display: block;
 }
 
-/* CSS-based log-level filter: adding filter-hide-XXX to #console hides matching lines */
+/* CSS-based log-level filter: adding filter-hide-XXX hides matching lines */
 #console.filter-hide-info    .log-line.level-info    { display: none; }
 #console.filter-hide-debug   .log-line.level-debug   { display: none; }
 #console.filter-hide-warn    .log-line.level-warn    { display: none; }
 #console.filter-hide-error   .log-line.level-error   { display: none; }
 #console.filter-hide-g2      .log-line.level-g2      { display: none; }
 #console.filter-hide-shell   .log-line.level-shell   { display: none; }
+
+/* Same filters for the FabMo console panel */
+#fabmo-console.filter-hide-info    .log-line.level-info    { display: none; }
+#fabmo-console.filter-hide-debug   .log-line.level-debug   { display: none; }
+#fabmo-console.filter-hide-warn    .log-line.level-warn    { display: none; }
+#fabmo-console.filter-hide-error   .log-line.level-error   { display: none; }
+#fabmo-console.filter-hide-g2      .log-line.level-g2      { display: none; }
+#fabmo-console.filter-hide-shell   .log-line.level-shell   { display: none; }
 
 #console-header {
 	padding: 6px 10px;
@@ -278,6 +331,17 @@ em {
 	gap: 6px;
 	font-size: 11px;
 	font-family: monospace;
+}
+
+/* Spacer pushes the filter group to the right */
+.console-header-spacer {
+	flex: 1 1 auto;
+}
+
+.console-filter-group {
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 
 #console-header label {
@@ -444,6 +508,9 @@ button.disabled {
 #btn-console-clear {
 	color: #9c210c;
 	cursor: pointer;
+	margin-left: 8px;
+	padding: 2px 6px;
+	font-size: 13px;
 }
 #btn-console-copy {
 	cursor: pointer;
