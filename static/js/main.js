@@ -199,6 +199,8 @@ function clearConsole() {
         $('#console .content').text('');
     } else if (activePanel === 'fabmo-wrapper') {
         $('#external-log').text('');
+    } else if (activePanel === 'terminal-wrapper') {
+        if (typeof xterm !== 'undefined' && xterm) { xterm.clear(); }
     }
 }
 
@@ -239,10 +241,10 @@ $(document).on('change', '.log-filter', function() {
 });
 
 // ---------------------------------------------------------------------------
-// Panel tabs (Updater / FabMo / Status) – single selection
+// Panel tabs (Updater / FabMo / Status / Terminal) – single selection
 // ---------------------------------------------------------------------------
 function initPanelTabs() {
-  var panels = ['updater-wrapper', 'fabmo-wrapper', 'status-wrapper'];
+  var panels = ['updater-wrapper', 'fabmo-wrapper', 'status-wrapper', 'terminal-wrapper'];
   var stored = localStorage.getItem('active-console-panel');
   if (!stored || panels.indexOf(stored) === -1) { stored = 'updater-wrapper'; }
 
@@ -252,6 +254,14 @@ function initPanelTabs() {
   $('.console-tab').removeClass('active');
   $('.console-tab[data-panel="' + stored + '"]').addClass('active');
 
+  // Show/hide log filter controls based on which panel is active
+  if (stored === 'terminal-wrapper' || stored === 'status-wrapper') {
+    $('.console-filter-group').hide();
+  }
+
+  // If restored panel is Terminal, initialize it
+  if (stored === 'terminal-wrapper') { initTerminal(); }
+
   // Tab click handler
   $(document).on('click', '.console-tab', function() {
     var target = $(this).data('panel');
@@ -260,6 +270,114 @@ function initPanelTabs() {
     $('.console-tab').removeClass('active');
     $(this).addClass('active');
     localStorage.setItem('active-console-panel', target);
+
+    // Hide log filters for panels that don't use them
+    if (target === 'terminal-wrapper' || target === 'status-wrapper') {
+      $('.console-filter-group').hide();
+    } else {
+      $('.console-filter-group').show();
+    }
+
+    // Lazy-init the terminal on first switch; re-fit on every switch
+    if (target === 'terminal-wrapper') {
+      initTerminal();
+      if (termFitAddon) {
+        setTimeout(function() { termFitAddon.fit(); }, 50);
+      }
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Interactive Terminal – xterm.js + Socket.IO PTY
+// ---------------------------------------------------------------------------
+var terminalInitialized = false;
+var terminalSocket = null;
+var xterm = null;
+var termFitAddon = null;
+var terminalSessionDead = false;
+
+function initTerminal() {
+  if (terminalInitialized) { return; }
+  if (typeof Terminal === 'undefined') {
+    $('#terminal-container').html(
+      '<p style="color:#e85169; padding:10px; font-family:monospace;">' +
+      'xterm.js not loaded — terminal is unavailable.</p>'
+    );
+    return;
+  }
+  terminalInitialized = true;
+
+  xterm = new Terminal({
+    cursorBlink: true,
+    fontSize: 12,
+    fontFamily: '"Lucida Console", Monaco, monospace',
+    theme: {
+      background: '#222222',
+      foreground: '#ebebeb'
+    }
+  });
+
+  if (typeof FitAddon !== 'undefined') {
+    termFitAddon = new FitAddon.FitAddon();
+    xterm.loadAddon(termFitAddon);
+  }
+
+  var container = document.getElementById('terminal-container');
+  xterm.open(container);
+  if (termFitAddon) { termFitAddon.fit(); }
+
+  // Connect to the /terminal Socket.IO namespace
+  var url = window.location.origin;
+  terminalSocket = io(url + '/terminal');
+
+  terminalSocket.on('connect', function() {
+    var dims = termFitAddon
+      ? { cols: xterm.cols, rows: xterm.rows }
+      : { cols: 80, rows: 24 };
+    terminalSocket.emit('terminal:start', dims);
+  });
+
+  terminalSocket.on('terminal:output', function(data) {
+    xterm.write(data);
+  });
+
+  terminalSocket.on('terminal:exit', function() {
+    xterm.write('\r\n\x1b[33m[Session ended — press any key to reconnect]\x1b[0m\r\n');
+    terminalSessionDead = true;
+  });
+
+  terminalSocket.on('terminal:error', function(msg) {
+    xterm.write('\r\n\x1b[31m[Error: ' + msg + ']\x1b[0m\r\n');
+  });
+
+  // User keystrokes → server PTY
+  xterm.onData(function(data) {
+    if (!terminalSocket || !terminalSocket.connected) { return; }
+    if (terminalSessionDead) {
+      terminalSessionDead = false;
+      xterm.clear();
+      var dims = termFitAddon
+        ? { cols: xterm.cols, rows: xterm.rows }
+        : { cols: 80, rows: 24 };
+      terminalSocket.emit('terminal:start', dims);
+      return;
+    }
+    terminalSocket.emit('terminal:input', data);
+  });
+
+  // Re-fit and notify server when the browser window resizes
+  var resizeTimeout;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+      if (termFitAddon && document.getElementById('terminal-wrapper').classList.contains('panel-active')) {
+        termFitAddon.fit();
+        if (terminalSocket && terminalSocket.connected) {
+          terminalSocket.emit('terminal:resize', { cols: xterm.cols, rows: xterm.rows });
+        }
+      }
+    }, 150);
   });
 }
 
