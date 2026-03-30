@@ -264,7 +264,7 @@ function webpack() {
 
 function stageRepos() {
 	log.info('Copying repository into staging area')
-	doshell('git archive --format=tar HEAD | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
+	return doshell('git archive --format=tar HEAD | tar -x -C ' + stagingDirectory, {cwd : reposDirectory})
 	.then(function() {
 		if(product === 'engine') {
 			var profilesDir = path.resolve(reposDirectory, 'profiles')
