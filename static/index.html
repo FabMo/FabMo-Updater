@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="css/fonts.css">
     <link rel="stylesheet" href="css/font-awesome.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="/xterm/xterm.css">
 </head>
 <body>
 
@@ -208,6 +209,7 @@
       <span class="console-tab active" data-panel="updater-wrapper">Updater</span>
       <span class="console-tab" data-panel="fabmo-wrapper">FabMo</span>
       <span class="console-tab" data-panel="status-wrapper">Status</span>
+      <span class="console-tab" data-panel="terminal-wrapper"><i class="fa fa-keyboard-o"></i> Terminal</span>
       <span class="console-header-spacer"></span>
       <span class="console-filter-group">
         <span style="color:rgba(244, 244, 10, 0.856)">Filter:</span>
@@ -241,6 +243,10 @@
           <div id="status-content" class="content"></div>
         </div>
       </div>
+      <div id="terminal-wrapper">
+        <div class="console-panel-title">Interactive Terminal</div>
+        <div id="terminal-container"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -259,6 +265,8 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="/xterm/xterm.js"></script>
+<script src="/xterm/xterm-addon-fit.js"></script>
 <script src="js/libs/jquery.min.js"></script>
 <script src="js/libs/updaterapi.js"></script>
 <script src="js/main.js"></script>

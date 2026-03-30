@@ -197,7 +197,8 @@ em {
 /* Each panel wrapper fills the full width; only one visible at a time */
 #updater-wrapper,
 #fabmo-wrapper,
-#status-wrapper {
+#status-wrapper,
+#terminal-wrapper {
 	flex: 1;
 	display: none;
 	flex-direction: column;
@@ -207,7 +208,8 @@ em {
 
 #updater-wrapper.panel-active,
 #fabmo-wrapper.panel-active,
-#status-wrapper.panel-active {
+#status-wrapper.panel-active,
+#terminal-wrapper.panel-active {
 	display: flex;
 }
 
@@ -318,6 +320,17 @@ em {
 #fabmo-console.filter-hide-error   .log-line.level-error   { display: none; }
 #fabmo-console.filter-hide-g2      .log-line.level-g2      { display: none; }
 #fabmo-console.filter-hide-shell   .log-line.level-shell   { display: none; }
+
+/* Interactive terminal panel (xterm.js mount point) */
+#terminal-container {
+	flex: 1 1 auto;
+	min-height: 0;
+	padding: 4px;
+	background-color: #222222;
+}
+#terminal-container .xterm {
+	height: 100%;
+}
 
 #console-header {
 	padding: 6px 10px;
