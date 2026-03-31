@@ -308,6 +308,29 @@ function initTerminal() {
   }
   terminalInitialized = true;
 
+  // Check if the server-side PTY backend is available before proceeding
+  var container = document.getElementById('terminal-container');
+  fetch('/terminal/status')
+    .then(function(r) { return r.json(); })
+    .then(function(info) {
+      if (!info.available) {
+        container.innerHTML =
+          '<p style="color:#e6d369; padding:10px; font-family:monospace;">' +
+          'Interactive terminal is not available on this system.<br>' +
+          '<span style="color:#888; font-size:11px;">The <code>node-pty</code> native module is not installed. ' +
+          'See the updater log for details.</span></p>';
+        return;
+      }
+      startTerminalSession(container);
+    })
+    .catch(function() {
+      container.innerHTML =
+        '<p style="color:#e85169; padding:10px; font-family:monospace;">' +
+        'Could not reach terminal backend.</p>';
+    });
+}
+
+function startTerminalSession(container) {
   xterm = new Terminal({
     cursorBlink: true,
     fontSize: 12,
@@ -323,7 +346,6 @@ function initTerminal() {
     xterm.loadAddon(termFitAddon);
   }
 
-  var container = document.getElementById('terminal-container');
   xterm.open(container);
   if (termFitAddon) { termFitAddon.fit(); }
 
@@ -553,7 +575,7 @@ function setState(state) {
             icon.removeClass(classes).addClass('fa-spin fa-spinner');
             break;
     }
-    $('#check-button-text').text(' Check again for updates');
+    $('#check-button-text').text(' Check again for new Updates');
     if(!checkInProgress) {
       $('#btn-check-for-updates').removeClass('disabled');
       $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
@@ -667,7 +689,7 @@ $(document).ready(function() {
       $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
       $('#btn-check-for-updates').removeClass('disabled');
       $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
-      $('#check-button-text').text(' Check again for Updates');
+      $('#check-button-text').text(' Check again for new Updates');
     }
   });
 
@@ -759,7 +781,7 @@ $(document).ready(function() {
       $('.update-indicator').removeClass('updates-available');
       $('#btn-check-for-updates').removeClass('disabled');
       $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
-      $('#check-button-text').text(' Check again for Updates');
+      $('#check-button-text').text(' Check again for new Updates');
     }
 
     // TODO - why do we dismiss the modal here?
@@ -885,7 +907,7 @@ $(document).ready(function() {
         $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
         $('#btn-check-for-updates').removeClass('disabled');
         $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
-        $('#check-button-text').text(' Check again for Updates');
+        $('#check-button-text').text(' Check again for new Updates');
       }
     });
   });
