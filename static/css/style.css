@@ -67,7 +67,7 @@ em {
 
 #container {
     display: flex;
-    /* height: 100vh; */
+    height: 100vh;
 }
 
 #content{
@@ -191,6 +191,8 @@ em {
 	display: flex;
 	flex: 1 1 auto;
 	min-height: 0;
+	min-width: 0;
+	overflow: hidden;
 	background-color: #222222;
 }
 
@@ -257,6 +259,7 @@ em {
 	overflow-x: hidden;
 	overflow-wrap: break-word;
 	min-height: 0;
+	min-width: 0;
 }
 
 /* Backwards-compat: #console is now inside #updater-wrapper */
@@ -279,6 +282,7 @@ em {
 	white-space: pre-wrap;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+	word-break: break-all;
 	cursor: text;
 }
 
@@ -303,6 +307,10 @@ em {
 /* Each log line is a block element so CSS filters can hide it */
 .log-line {
 	display: block;
+	max-width: 100%;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	word-break: break-all;
 }
 
 /* CSS-based log-level filter: adding filter-hide-XXX hides matching lines */
