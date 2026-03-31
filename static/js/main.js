@@ -406,7 +406,11 @@ function startTerminalSession(container) {
 // ---------------------------------------------------------------------------
 // FabMo Console – poll the engine's /log endpoint
 // ---------------------------------------------------------------------------
-var fabmoLogLastIndex = 0;
+// Track the last line we displayed so we can find new content in the
+// engine's circular buffer.  Index-based tracking breaks when the buffer
+// is full (always 5000 lines) because the count never increases.
+var fabmoLastLine = '';
+var fabmoFirstLoad = true;
 
 function fetchExternalLogs() {
   fetch(updater.engine_url + '/log')
@@ -428,13 +432,36 @@ function processExternalLogData(logData) {
 
   var lines = logData.split(/\r?\n/).filter(function(l) { return l.trim().length > 0; });
 
-  // Reset the index if the log was truncated or rotated
-  if (lines.length < fabmoLogLastIndex) {
-    fabmoLogLastIndex = 0;
+  if (lines.length === 0) { return; }
+
+  var newLines;
+
+  if (fabmoFirstLoad || !fabmoLastLine) {
+    // First load — render the entire buffer
+    newLines = lines;
+    fabmoFirstLoad = false;
+  } else {
+    // Find the last line we displayed in the new buffer
+    var matchIdx = -1;
+    // Search from the end since our last line should be near the tail
+    for (var i = lines.length - 1; i >= 0; i--) {
+      if (lines[i] === fabmoLastLine) {
+        matchIdx = i;
+        break;
+      }
+    }
+    if (matchIdx === -1) {
+      // Last line is gone (buffer has fully cycled) — show everything
+      newLines = lines;
+    } else {
+      newLines = lines.slice(matchIdx + 1);
+    }
   }
 
-  var newLines = lines.slice(fabmoLogLastIndex);
-  fabmoLogLastIndex = lines.length;
+  if (newLines.length === 0) { return; }
+
+  // Remember the last line for next comparison
+  fabmoLastLine = lines[lines.length - 1];
 
   // Only auto-scroll if the user is already near the bottom
   var scrollPane = logContainer.parentElement;
@@ -443,6 +470,12 @@ function processExternalLogData(logData) {
   newLines.forEach(function(line) {
     logContainer.insertAdjacentHTML('beforeend', prettify(line));
   });
+
+  // Cap displayed lines so the DOM doesn't grow unbounded
+  var maxDisplayed = 8000;
+  while (logContainer.children.length > maxDisplayed) {
+    logContainer.removeChild(logContainer.firstChild);
+  }
 
   if (atBottom) {
     scrollPane.scrollTop = scrollPane.scrollHeight;
