@@ -18,6 +18,19 @@ var awaitingReboot = false;
 // True while an update check is in progress
 var checkInProgress = false;
 
+// On page load, check if a specific pane was requested via URL hash
+if (window.location.hash) {
+    var targetPane = window.location.hash.substring(1);
+    if ($('#' + targetPane).length) {
+        $('.content-pane').removeClass('active');
+        $('#' + targetPane).addClass('active');
+        $('.menu-item').removeClass('active');
+        $('.menu-item[data-id="' + targetPane + '"]').addClass('active');
+    }
+    // Clear the hash so a normal refresh goes back to default
+    history.replaceState(null, null, window.location.pathname);
+}
+
 // Left side menu.  Mostly changes the content pane, but
 // jumps out of the updater altogether for a few items (dashboard, simple updater, logout)
 $('.menu-item').click(function() {
@@ -911,8 +924,9 @@ $(document).ready(function() {
       evt.preventDefault();
           clearConsole();
           updater.factoryReset();
-          // delay 10 sec and then do a reload/refresh
+          // delay 10 sec and then reload, landing on System Info pane
           setTimeout(function() {
+            window.location.hash = 'view-info';
             window.location.reload();
           }, 10000);
           clearConsole();
@@ -973,27 +987,19 @@ $(document).ready(function() {
       function(err, result) {
         console.log('Download complete:', result);
 
-        // UI: change to "Apply Update"
-        $('#version-button-icon').removeClass('fa-cog fa-spin').addClass('fa-check');
-        $("#version-button-text").text(' Apply Update ' + version);
-        $("#btn-download-version")
-          .removeClass('btn disabled').addClass('btn-green')
-          .off('click')
-          .on('click', function(evt) {
-            evt.preventDefault();
+        // Show progress and auto-apply the downloaded update
+        $('#version-button-icon').removeClass('fa-cog fa-spin').addClass('fa-spinner fa-spin');
+        $("#version-button-text").text(' Applying Update ' + version + ' ...');
+        $('#report-title').removeClass('fa-check fa-exclamation-triangle').addClass('fa-spinner fa-spin');
+        $('#report-message').html(' UPDATE PROGRESS: Applying downloaded update...');
+        $('#report-progress').css('display', 'block');
 
-            // Show progress bar immediately
-            $('#report-title').removeClass('fa-check fa-exclamation-triangle').addClass('fa-spinner fa-spin');
-            $('#report-message').html(' UPDATE PROGRESS: Applying prepared updates...');
-            $('#report-progress').css('display', 'block');
-
-            updater.applyPreparedUpdates(function(err, data) {
-              // Upload complete - server is now processing
-            }, function(progress) {
-              var pg = (progress * 100).toFixed(0) + '%';
-              $('#report-message').html(' UPDATE PROGRESS: Uploading ... ' + pg);
-            });
-          });
+        updater.applyPreparedUpdates(function(err, data) {
+          // Apply started - server is now processing
+        }, function(progress) {
+          var pg = (progress * 100).toFixed(0) + '%';
+          $('#report-message').html(' UPDATE PROGRESS: Installing ... ' + pg);
+        });
       }
     );
   });

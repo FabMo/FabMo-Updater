@@ -235,9 +235,24 @@ Updater.prototype.updateUpdater = function(version, callback) {
     }
 }
 
-// Get the list of versions available to install
+// Get the list of versions available to install from the package registry
 Updater.prototype.getVersions = function(callback) {
-    hooks.getVersions(callback);
+    var OS = config.platform;
+    var PLATFORM = config.updater.get('platform');
+    var url = config.updater.get('packages_url');
+
+    fmp.fetchPackagesList(url)
+        .then(function(list) {
+            var packages = fmp.filterPackages(list, { platform: PLATFORM, os: OS, product: 'FabMo-Engine' });
+            var versions = packages.map(function(pkg) {
+                return { version: pkg.version };
+            });
+            callback(null, versions);
+        })
+        .catch(function(err) {
+            log.error('Error fetching versions from package registry: ' + err.message);
+            callback(err);
+        });
 }
 
 // Prepare an update for a specific version by downloading the matching package from the registry
@@ -252,7 +267,8 @@ Updater.prototype.prepareUpdate = function(version, callback) {
 
 	fmp.fetchPackagesList(url)
 		.then(function(list) {
-			log.info('[prepareUpdate] Fetched ' + list.length + ' packages from registry.');
+			var packageCount = (list && list.packages) ? list.packages.length : 0;
+			log.info('[prepareUpdate] Fetched ' + packageCount + ' packages from registry.');
 			var packages = fmp.filterPackages(list, { platform: PLATFORM, os: OS, product: product });
 			log.info('[prepareUpdate] Filtered down to ' + packages.length + ' relevant packages.');
 			var pkg = packages.find(function(p) { return p.version === version; });
