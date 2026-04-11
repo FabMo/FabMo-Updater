@@ -313,25 +313,61 @@ Updater.prototype.doFMU = function(filename, callback) {
 
 // Execute the FMP (FabMo Package) specified by the provided filename
 // This function starts a task, and returns a promise that resolves when the task is complete (or rejects if it fails)
+// For FabMo-Updater packages, the shadow-copy strategy is used (same as applyPreparedUpdates)
+// because the updater cannot install over itself while running.
 //   filename - Full path to the .fmp file to execute
 Updater.prototype.doFMP = function(filename) {
         var key;
+        var self = this;
         return Q.fcall(function() {
-                key = this.startTask();
-                this.setState('updating');
-            }.bind(this))
-            .then(function() {
-                return fmp.installPackageFromFile(filename)
+                key = self.startTask();
+                self.setState('updating');
             })
             .then(function() {
-                this.passTask(key);
-                this.setState('idle');
-            }.bind(this))
+                // Peek at the manifest inside the .fmp to check the product
+                var deferred = Q.defer();
+                var child_process = require('child_process');
+                child_process.exec('tar -xzf ' + filename + ' -O ./manifest.json', function(err, stdout) {
+                    if (err) { return deferred.resolve(null); }
+                    try { deferred.resolve(JSON.parse(stdout)); }
+                    catch(e) { deferred.resolve(null); }
+                });
+                return deferred.promise;
+            })
+            .then(function(manifest) {
+                if (manifest && manifest.product === 'FabMo-Updater') {
+                    // Self-update: use shadow copy strategy so we don't delete ourselves mid-execution
+                    log.info('Manual FMP is a self-update package. Using shadow copy strategy.');
+                    log.info('Making shadow copy of updater');
+                    fs.removeSync('/tmp/temp-updater');
+                    var deferred = Q.defer();
+                    fs.copy(__dirname, '/tmp/temp-updater', function(err) {
+                        if (err) { return deferred.reject(err); }
+                        log.info('Updater cloned, handing update off to clone');
+                        log.info('The updater is going away for awhile.  Do not despair.');
+                        log.info('See you, space cowboy.');
+                        setTimeout(function() {
+                            require('./util').eject(
+                                process.argv[0],
+                                ['/tmp/temp-updater/server.js', '--selfupdate', filename, '--task', key]);
+                        }, 1000);
+                        deferred.resolve();
+                    });
+                    return deferred.promise;
+                } else {
+                    // Normal package: install directly
+                    return fmp.installPackageFromFile(filename)
+                        .then(function() {
+                            self.passTask(key);
+                            self.setState('idle');
+                        });
+                }
+            })
             .catch(function(err) {
                 log.error(err);
-                this.failTask(key)
-                this.setState('idle');
-            }.bind(this));
+                self.failTask(key);
+                self.setState('idle');
+            });
 }
 
 // Run the package check on the specified product
