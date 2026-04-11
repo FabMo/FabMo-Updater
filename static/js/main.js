@@ -982,7 +982,7 @@ $(document).ready(function() {
         $("#btn-download-version").removeClass('disabled');
         $("#btn-check-for-updates").removeClass('disabled');
         $('#version-button-icon').removeClass('fa-cog fa-spin').addClass('fa-cloud-download');
-        $("#version-button-text").text(' Download Selected Version: ');
+        $("#version-button-text").text(' Load a Selected FabMo Version: ');
       },
       function(err, result) {
         console.log('Download complete:', result);
