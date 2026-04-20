@@ -11,16 +11,21 @@ const log = require('../log').logger('fmp');
 const ensureDir = Q.nfbind(fs.ensureDir);
 
 // Return the expand command that is appropriate for the provided file, based on its file extension
+// The -m (--touch) flag prevents tar from setting file timestamps from the archive.
+// This is critical on systems without a battery-backed RTC (like Raspberry Pi) where the
+// system clock may be behind — without -m, tar emits a warning per file with a "future"
+// timestamp, which can overflow child_process.exec's maxBuffer and kill the extraction
+// mid-way, leaving a half-installed update.
 //   path - Full path to the file to check
 const getExpandCommand = function(path) {
     if (path.match(/.tar$/i)) {
-        return 'tar -xf ';
+        return 'tar -xmf ';
     }
     if (path.match(/.tar.gz$/i) || path.match(/.tgz$/i)) {
-        return 'tar -xzf ';
+        return 'tar -xzmf ';
     }
     if (path.match(/.tar.bz2?$/i)) {
-        return 'tar -xjf ';
+        return 'tar -xjmf ';
     }
     throw new Error(path + ' is an unknown archive type.');
 };
@@ -98,7 +103,7 @@ async function expandArchive(operation) {
     const sourceFile = resolveCwdPath(operation.cwd, operation.src);
 
     log.info('Expanding archive ' + sourceFile + ' to ' + operation.dest);
-    await Q.nfcall(child_process.exec, expandCommand + sourceFile, { cwd: operation.dest });
+    await Q.nfcall(child_process.exec, expandCommand + sourceFile, { cwd: operation.dest, maxBuffer: 10 * 1024 * 1024 });
 }
 
 // Install the firmware specified by `src`

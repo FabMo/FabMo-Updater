@@ -229,7 +229,8 @@ function unpackPackage(filename) {
 			fs.mkdir(updateDir, function(err) {
 				if(err) { return deferred.reject(err); }
 				// Unpack the actual file into the newly created directory
-				child_process.exec('tar -xzf ' + path.resolve(filename), {cwd : updateDir}, function(err, stdout, stderr) {
+				// -m (--touch) prevents future-timestamp warnings that can overflow maxBuffer on clock-skewed systems
+				child_process.exec('tar -xzmf ' + path.resolve(filename), {cwd : updateDir, maxBuffer: 10 * 1024 * 1024}, function(err, stdout, stderr) {
 					if(err) { return deferred.reject(err); }
 					deferred.resolve(path.resolve(updateDir, 'manifest.json'));
 				});
