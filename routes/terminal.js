@@ -6,7 +6,9 @@
  */
 var fs = require('fs');
 var path = require('path');
+var childProcess = require('child_process');
 var log = require('../log').logger('terminal');
+var authentication = require('../authentication');
 
 // Resolve paths to xterm assets in node_modules
 var XTERM_CSS = path.join(__dirname, '..', 'node_modules', 'xterm', 'css', 'xterm.css');
@@ -37,6 +39,60 @@ try {
 } catch(e) {
     log.warn('node-pty not available: ' + e.message);
     log.warn('Interactive terminal will be disabled.');
+}
+
+function isSafeUsername(username) {
+    return /^[a-z_][a-z0-9_-]*[$]?$/i.test(username || '');
+}
+
+function getAccountFromPasswd(username) {
+    if (!isSafeUsername(username)) { return null; }
+    try {
+        var line = childProcess.execSync('getent passwd ' + username, { encoding: 'utf8' }).trim();
+        if (!line) { return null; }
+        var parts = line.split(':');
+        if (parts.length < 7) { return null; }
+        return {
+            username: parts[0],
+            uid: parseInt(parts[2], 10),
+            gid: parseInt(parts[3], 10),
+            home: parts[5] || '/root',
+            shell: parts[6] || '/bin/bash'
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
+function resolveTerminalAccount() {
+    var current = authentication.getCurrentUser && authentication.getCurrentUser();
+    var candidates = [];
+
+    // Prefer non-root identities first.
+    if (current && current.username && current.username !== 'root') { candidates.push(current.username); }
+    candidates.push('pi');
+    if (process.env.SUDO_USER && process.env.SUDO_USER !== 'root') { candidates.push(process.env.SUDO_USER); }
+    if (process.env.USER && process.env.USER !== 'root') { candidates.push(process.env.USER); }
+
+    // Root is a final fallback only.
+    if (current && current.username === 'root') { candidates.push(current.username); }
+    if (process.env.SUDO_USER === 'root') { candidates.push(process.env.SUDO_USER); }
+    if (process.env.USER === 'root') { candidates.push(process.env.USER); }
+
+    for (var i = 0; i < candidates.length; i++) {
+        var acct = getAccountFromPasswd(candidates[i]);
+        if (acct) {
+            return acct;
+        }
+    }
+
+    return {
+        username: 'root',
+        uid: 0,
+        gid: 0,
+        home: '/root',
+        shell: process.env.SHELL || '/bin/bash'
+    };
 }
 
 module.exports = function(server) {
@@ -80,23 +136,38 @@ module.exports = function(server) {
 
             var cols  = (data && data.cols)  || 80;
             var rows  = (data && data.rows)  || 24;
-            var shell = process.env.SHELL || '/bin/bash';
+            var account = resolveTerminalAccount();
+            var shell = account.shell || process.env.SHELL || '/bin/bash';
+            var env = Object.assign({}, process.env, {
+                TERM: 'xterm-256color',
+                HOME: account.home,
+                USER: account.username,
+                LOGNAME: account.username,
+                SHELL: shell
+            });
+            var spawnOpts = {
+                name: 'xterm-256color',
+                cols: cols,
+                rows: rows,
+                cwd: account.home || process.env.HOME || '/root',
+                env: env
+            };
+
+            var processUid = (typeof process.getuid === 'function') ? process.getuid() : null;
+            if (processUid === 0 || processUid === account.uid) {
+                spawnOpts.uid = account.uid;
+                spawnOpts.gid = account.gid;
+            }
 
             try {
-                term = pty.spawn(shell, [], {
-                    name: 'xterm-256color',
-                    cols: cols,
-                    rows: rows,
-                    cwd: process.env.HOME || '/root',
-                    env: Object.assign({}, process.env, { TERM: 'xterm-256color' })
-                });
+                term = pty.spawn(shell, [], spawnOpts);
             } catch(e) {
                 log.error('Failed to spawn PTY: ' + e.message);
                 socket.emit('terminal:error', 'Failed to start terminal: ' + e.message);
                 return;
             }
 
-            log.info('PTY spawned (pid ' + term.pid + ') for ' + socket.id);
+            log.info('PTY spawned (pid ' + term.pid + ', user ' + account.username + ') for ' + socket.id);
 
             term.onData(function(data) {
                 socket.emit('terminal:output', data);

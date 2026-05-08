@@ -58,6 +58,9 @@ $('.menu-item').click(function() {
         $('#' + this.dataset.id).addClass('active');
         $('.menu-item').removeClass('active');
         $(this).addClass('active');
+        // Console height changes when content panes change; refresh active console layout.
+        setTimeout(refreshActiveConsolePanelLayout, 0);
+        setTimeout(refreshActiveConsolePanelLayout, 120);
         break;
     }
 });
@@ -217,6 +220,78 @@ function clearConsole() {
     }
 }
 
+function setConsoleMessage(text, isError) {
+  var el = $('#message-console');
+  el.stop(true, true);
+  el.css('color', isError ? '#e85169' : '#80CCBA');
+  el.text(text);
+  el.fadeIn(80).delay(1800).fadeOut(250, function() {
+    el.text('').show();
+  });
+}
+
+function copyTextToClipboard(text, done) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() { done(null); }).catch(function(err) { done(err); });
+    return;
+  }
+
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '-1000px';
+  ta.style.left = '-1000px';
+  document.body.appendChild(ta);
+  ta.select();
+
+  try {
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    done(null);
+  } catch (e) {
+    document.body.removeChild(ta);
+    done(e);
+  }
+}
+
+function copyActiveConsole() {
+  var activePanel = localStorage.getItem('active-console-panel') || 'updater-wrapper';
+  var selectedText = '';
+
+  if (window.getSelection) {
+    selectedText = String(window.getSelection()).trim();
+  }
+
+  var text = selectedText;
+  if (!text) {
+    if (activePanel === 'updater-wrapper') {
+      text = $('#console .content').text().trim();
+    } else if (activePanel === 'fabmo-wrapper') {
+      text = $('#external-log').text().trim();
+    } else if (activePanel === 'status-wrapper') {
+      text = $('#status-content').text().trim();
+    } else if (activePanel === 'terminal-wrapper' && xterm) {
+      text = (typeof xterm.hasSelection === 'function' && xterm.hasSelection())
+        ? xterm.getSelection().trim()
+        : '';
+    }
+  }
+
+  if (!text) {
+    setConsoleMessage('Nothing to copy (select text first).', true);
+    return;
+  }
+
+  copyTextToClipboard(text, function(err) {
+    if (err) {
+      setConsoleMessage('Copy failed.', true);
+      return;
+    }
+    setConsoleMessage('Copied to clipboard.', false);
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Log-level filter (CSS-based)
 // ---------------------------------------------------------------------------
@@ -272,8 +347,11 @@ function initPanelTabs() {
     $('.console-filter-group').hide();
   }
 
-  // If restored panel is Terminal, initialize it
-  if (stored === 'terminal-wrapper') { initTerminal(); }
+  // If restored panel is Terminal, initialize and fit it.
+  if (stored === 'terminal-wrapper') {
+    initTerminal();
+    scheduleTerminalRefit();
+  }
 
   // Tab click handler
   $(document).on('click', '.console-tab', function() {
@@ -294,9 +372,7 @@ function initPanelTabs() {
     // Lazy-init the terminal on first switch; re-fit on every switch
     if (target === 'terminal-wrapper') {
       initTerminal();
-      if (termFitAddon) {
-        setTimeout(function() { termFitAddon.fit(); }, 50);
-      }
+      scheduleTerminalRefit();
     }
   });
 }
@@ -309,6 +385,31 @@ var terminalSocket = null;
 var xterm = null;
 var termFitAddon = null;
 var terminalSessionDead = false;
+
+function isTerminalPanelActive() {
+  return document.getElementById('terminal-wrapper').classList.contains('panel-active');
+}
+
+function refitTerminalNow() {
+  if (!termFitAddon || !xterm || !isTerminalPanelActive()) { return; }
+  termFitAddon.fit();
+  if (terminalSocket && terminalSocket.connected) {
+    terminalSocket.emit('terminal:resize', { cols: xterm.cols, rows: xterm.rows });
+  }
+}
+
+function scheduleTerminalRefit() {
+  setTimeout(refitTerminalNow, 0);
+  setTimeout(refitTerminalNow, 80);
+  setTimeout(refitTerminalNow, 240);
+}
+
+function refreshActiveConsolePanelLayout() {
+  var activePanel = localStorage.getItem('active-console-panel') || 'updater-wrapper';
+  if (activePanel === 'terminal-wrapper') {
+    scheduleTerminalRefit();
+  }
+}
 
 function initTerminal() {
   if (terminalInitialized) { return; }
@@ -360,7 +461,29 @@ function startTerminalSession(container) {
   }
 
   xterm.open(container);
-  if (termFitAddon) { termFitAddon.fit(); }
+  if (termFitAddon) { scheduleTerminalRefit(); }
+
+  // In terminal view, Ctrl/Cmd+C should copy selected text; otherwise pass through as normal.
+  if (typeof xterm.attachCustomKeyEventHandler === 'function') {
+    xterm.attachCustomKeyEventHandler(function(ev) {
+      if (ev.type !== 'keydown') { return true; }
+      var isCopyKey = (ev.ctrlKey || ev.metaKey) && !ev.altKey && (ev.key === 'c' || ev.key === 'C');
+      if (!isCopyKey) { return true; }
+
+      if (typeof xterm.hasSelection === 'function' && xterm.hasSelection()) {
+        copyTextToClipboard(xterm.getSelection(), function(err) {
+          if (err) {
+            setConsoleMessage('Copy failed.', true);
+          } else {
+            setConsoleMessage('Copied to clipboard.', false);
+          }
+        });
+        ev.preventDefault();
+        return false;
+      }
+      return true;
+    });
+  }
 
   // Connect to the /terminal Socket.IO namespace
   var url = window.location.origin;
@@ -371,6 +494,7 @@ function startTerminalSession(container) {
       ? { cols: xterm.cols, rows: xterm.rows }
       : { cols: 80, rows: 24 };
     terminalSocket.emit('terminal:start', dims);
+    scheduleTerminalRefit();
   });
 
   terminalSocket.on('terminal:output', function(data) {
@@ -407,10 +531,7 @@ function startTerminalSession(container) {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(function() {
       if (termFitAddon && document.getElementById('terminal-wrapper').classList.contains('panel-active')) {
-        termFitAddon.fit();
-        if (terminalSocket && terminalSocket.connected) {
-          terminalSocket.emit('terminal:resize', { cols: xterm.cols, rows: xterm.rows });
-        }
+        refitTerminalNow();
       }
     }, 150);
   });
@@ -1006,6 +1127,7 @@ $(document).ready(function() {
 
   // Console clear button
   $('#btn-console-clear').click(function() {clearConsole()});
+  $('#btn-console-copy').click(function() {copyActiveConsole()});
 
   // Button to browse for a manual update
   $('#btn-update-manual').click(function() {
@@ -1119,6 +1241,9 @@ $(document).ready(function() {
     $('.label-platform').text(config.os + '/' + config.platform);
     $('.label-os-version').text(config.os_version);
     $('.label-machine-id').text(config.id);
+    $('.label-sd-card-version').text(config.sd_card_version || 'unavailable');
+    $('.label-rpi-type').text(config.rpi_type || 'unavailable');
+    $('.label-rpi-temp-c').text(config.rpi_temp_c || 'unavailable');
 
     // Set the OS from the updater config
     setOS(config.os);
