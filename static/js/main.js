@@ -6,7 +6,8 @@
  */
 
 // Polling interval for FabMo engine console log and status (ms)
-var FABMO_POLL_INTERVAL_MS = 2000;
+var FABMO_POLL_INTERVAL_MS = 15000;   // 2000 way to short; interfering with fabmo
+var FABMO_STATUS_INTERVAL_MS = 2000;   // 2000 ok
 
 // Create API instance for communicating with the update service
 var updater = new UpdaterAPI();
@@ -58,6 +59,9 @@ $('.menu-item').click(function() {
         $('#' + this.dataset.id).addClass('active');
         $('.menu-item').removeClass('active');
         $(this).addClass('active');
+        // Console height changes when content panes change; refresh active console layout.
+        setTimeout(refreshActiveConsolePanelLayout, 0);
+        setTimeout(refreshActiveConsolePanelLayout, 120);
         // Console height changes when content panes change; refresh active console layout.
         setTimeout(refreshActiveConsolePanelLayout, 0);
         setTimeout(refreshActiveConsolePanelLayout, 120);
@@ -292,6 +296,78 @@ function copyActiveConsole() {
   });
 }
 
+function setConsoleMessage(text, isError) {
+  var el = $('#message-console');
+  el.stop(true, true);
+  el.css('color', isError ? '#e85169' : '#80CCBA');
+  el.text(text);
+  el.fadeIn(80).delay(1800).fadeOut(250, function() {
+    el.text('').show();
+  });
+}
+
+function copyTextToClipboard(text, done) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() { done(null); }).catch(function(err) { done(err); });
+    return;
+  }
+
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '-1000px';
+  ta.style.left = '-1000px';
+  document.body.appendChild(ta);
+  ta.select();
+
+  try {
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    done(null);
+  } catch (e) {
+    document.body.removeChild(ta);
+    done(e);
+  }
+}
+
+function copyActiveConsole() {
+  var activePanel = localStorage.getItem('active-console-panel') || 'updater-wrapper';
+  var selectedText = '';
+
+  if (window.getSelection) {
+    selectedText = String(window.getSelection()).trim();
+  }
+
+  var text = selectedText;
+  if (!text) {
+    if (activePanel === 'updater-wrapper') {
+      text = $('#console .content').text().trim();
+    } else if (activePanel === 'fabmo-wrapper') {
+      text = $('#external-log').text().trim();
+    } else if (activePanel === 'status-wrapper') {
+      text = $('#status-content').text().trim();
+    } else if (activePanel === 'terminal-wrapper' && xterm) {
+      text = (typeof xterm.hasSelection === 'function' && xterm.hasSelection())
+        ? xterm.getSelection().trim()
+        : '';
+    }
+  }
+
+  if (!text) {
+    setConsoleMessage('Nothing to copy (select text first).', true);
+    return;
+  }
+
+  copyTextToClipboard(text, function(err) {
+    if (err) {
+      setConsoleMessage('Copy failed.', true);
+      return;
+    }
+    setConsoleMessage('Copied to clipboard.', false);
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Log-level filter (CSS-based)
 // ---------------------------------------------------------------------------
@@ -351,6 +427,8 @@ function initPanelTabs() {
   if (stored === 'terminal-wrapper') {
     initTerminal();
     scheduleTerminalRefit();
+  } else if (stored === 'fabmo-wrapper') {
+    fetchExternalLogs();
   }
 
   // Tab click handler
@@ -373,6 +451,8 @@ function initPanelTabs() {
     if (target === 'terminal-wrapper') {
       initTerminal();
       scheduleTerminalRefit();
+    } else if (target === 'fabmo-wrapper') {
+      fetchExternalLogs();
     }
   });
 }
@@ -545,9 +625,12 @@ function startTerminalSession(container) {
 // is full (always 5000 lines) because the count never increases.
 var fabmoLastLine = '';
 var fabmoFirstLoad = true;
+var fabmoLogFetchInProgress = false;
 
 function fetchExternalLogs() {
-  fetch(updater.engine_url + '/log')
+  if (fabmoLogFetchInProgress) { return; }
+  fabmoLogFetchInProgress = true;
+  fetch(updater.engine_url + '/log?nosave=1')
     .then(function(response) {
       if (!response.ok) { return; }
       return response.text();
@@ -557,6 +640,9 @@ function fetchExternalLogs() {
     })
     .catch(function() {
       // Silently ignore – engine may not be running
+    })
+    .finally(function() {
+      fabmoLogFetchInProgress = false;
     });
 }
 
@@ -840,9 +926,8 @@ $(document).ready(function() {
   applyStoredFilters();
   initPanelTabs();
 
-  // Start polling the FabMo engine for its console log and status
-  setInterval(fetchExternalLogs, FABMO_POLL_INTERVAL_MS);
-  setInterval(fetchStatusData,   FABMO_POLL_INTERVAL_MS);
+  // Start polling the FabMo engine for status only; FabMo logs are fetched on demand.
+  setInterval(fetchStatusData,   FABMO_STATUS_INTERVAL_MS);
 
   // Auto-check for updates on startup
   checkInProgress = true;
@@ -1128,6 +1213,7 @@ $(document).ready(function() {
   // Console clear button
   $('#btn-console-clear').click(function() {clearConsole()});
   $('#btn-console-copy').click(function() {copyActiveConsole()});
+  $('#btn-fabmo-refresh').click(function() {fetchExternalLogs()});
 
   // Button to browse for a manual update
   $('#btn-update-manual').click(function() {
