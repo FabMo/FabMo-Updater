@@ -219,6 +219,8 @@ function clearConsole() {
         $('#console .content').text('');
     } else if (activePanel === 'fabmo-wrapper') {
         $('#external-log').text('');
+    fabmoLastLine = '';
+    fabmoFirstLoad = true;
     } else if (activePanel === 'terminal-wrapper') {
         if (typeof xterm !== 'undefined' && xterm) { xterm.clear(); }
     }
@@ -428,7 +430,7 @@ function initPanelTabs() {
     initTerminal();
     scheduleTerminalRefit();
   } else if (stored === 'fabmo-wrapper') {
-    fetchExternalLogs();
+    fetchExternalLogs(true);
   }
 
   // Tab click handler
@@ -452,7 +454,7 @@ function initPanelTabs() {
       initTerminal();
       scheduleTerminalRefit();
     } else if (target === 'fabmo-wrapper') {
-      fetchExternalLogs();
+      fetchExternalLogs(true);
     }
   });
 }
@@ -627,26 +629,33 @@ var fabmoLastLine = '';
 var fabmoFirstLoad = true;
 var fabmoLogFetchInProgress = false;
 
-function fetchExternalLogs() {
+function fetchExternalLogs(forceFullReload) {
+  forceFullReload = !!forceFullReload;
   if (fabmoLogFetchInProgress) { return; }
   fabmoLogFetchInProgress = true;
+
+  function done() {
+    fabmoLogFetchInProgress = false;
+  }
+
+  // Use then/catch completion handlers instead of Promise.finally for broader browser compatibility.
+  // This guarantees the refresh guard is released even if the request errors.
   fetch(updater.engine_url + '/log?nosave=1')
     .then(function(response) {
       if (!response.ok) { return; }
       return response.text();
     })
     .then(function(data) {
-      if (data) { processExternalLogData(data); }
+      if (data) { processExternalLogData(data, forceFullReload); }
+      done();
     })
     .catch(function() {
-      // Silently ignore – engine may not be running
-    })
-    .finally(function() {
-      fabmoLogFetchInProgress = false;
+      done();
     });
 }
 
-function processExternalLogData(logData) {
+function processExternalLogData(logData, forceFullReload) {
+  forceFullReload = !!forceFullReload;
   var logContainer = document.getElementById('external-log');
   if (!logContainer) { return; }
 
@@ -656,7 +665,11 @@ function processExternalLogData(logData) {
 
   var newLines;
 
-  if (fabmoFirstLoad || !fabmoLastLine) {
+  if (forceFullReload) {
+    logContainer.innerHTML = '';
+    newLines = lines;
+    fabmoFirstLoad = false;
+  } else if (fabmoFirstLoad || !fabmoLastLine) {
     // First load — render the entire buffer
     newLines = lines;
     fabmoFirstLoad = false;
@@ -1213,7 +1226,7 @@ $(document).ready(function() {
   // Console clear button
   $('#btn-console-clear').click(function() {clearConsole()});
   $('#btn-console-copy').click(function() {copyActiveConsole()});
-  $('#btn-fabmo-refresh').click(function() {fetchExternalLogs()});
+  $('#btn-fabmo-refresh').click(function() {fetchExternalLogs(true)});
 
   // Button to browse for a manual update
   $('#btn-update-manual').click(function() {
