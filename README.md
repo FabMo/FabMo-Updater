@@ -51,6 +51,7 @@ Major packages and their function are listed below.  More detailed documentation
  * `/files` - Supplemental files for installation.  No code here.
  * `/fmp` - Updater packaging module.  Defines how the updater downloads, prioritizes and installs update packages.
  * `/hooks` - Hooks module.  Hooks are functions that call external, platform-specific scripts.  See `hooks/index.js` for a detailed description of how hooks work.
+ * `/patches` - System patches module.  Allows for OS-level fixes and configuration updates without requiring new SD card images.  See `/patches/README.md` for detailed documentation.
  * `/routes` - HTTP Routes.  Defines the endpoints for the web interface and the websocket.
  * `/scripts` - Build and deployment scripts for the engine and updater.  See `/scripts/README.md` for information.  There is no code for the updater itself in this directory.
  * `/static` - Static files for the web frontend.
