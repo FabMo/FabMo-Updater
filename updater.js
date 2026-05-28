@@ -766,6 +766,15 @@ Updater.prototype.start = function(callback) {
           });
         }.bind(this),
 
+        // Run system patches (OS-level fixes and configuration updates)
+        // This allows small fixes that would otherwise require a new SD card image
+        function run_system_patches(callback) {
+            if(selfUpdateFile) { return callback(); }
+            log.info('Running system patches...');
+            var patches = require('./patches');
+            patches.runPatches(callback);
+        }.bind(this),
+
         // Run any FMUS that are in the configuration fmus directory, in alphabetical order.
         // The FMU used to be the way that packages were updated, but because they weren't very
         // flexible, and allowed for arbitrary code execution, we started to phase them out.

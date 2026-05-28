@@ -7,6 +7,7 @@
  */
 var log = require('../log').logger('routes');
 var hooks = require('../hooks');
+var patches = require('../patches');
 
 var reboot = function(req, res, next) {
   var answer = {
@@ -38,7 +39,27 @@ var shutdown = function(req, res, next) {
     });
 };
 
+var getPatchStatus = function(req, res, next) {
+  try {
+    var status = patches.getPatchStatus();
+    var answer = {
+      status: "success",
+      data: {
+        patches: status
+      }
+    };
+    res.json(answer);
+  } catch(err) {
+    log.error('Error getting patch status: ' + err.message);
+    res.json({
+      status: "error",
+      message: err.message
+    });
+  }
+};
+
 module.exports = function(server) {
   server.post('/system/reboot', reboot);
   server.post('/system/shutdown', shutdown);
+  server.get('/system/patches', getPatchStatus);
 };
