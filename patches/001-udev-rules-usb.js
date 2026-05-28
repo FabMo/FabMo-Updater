@@ -54,7 +54,7 @@ function check() {
     try {
         // If the file doesn't exist, we definitely need to apply
         if (!fs.existsSync(TARGET_FILE)) {
-            log.info('Target file ' + TARGET_FILE + ' does not exist');
+            log.info('  Target file ' + TARGET_FILE + ' does not exist');
             return true;
         }
         
@@ -66,15 +66,17 @@ function check() {
         var newHash = getHash(NEW_UDEV_RULES);
         
         if (existingHash !== newHash) {
-            log.info('Target file exists but has different content');
+            log.info('  Target file exists but has different content');
+            log.info('  Current hash: ' + existingHash.substring(0, 16) + '...');
+            log.info('  Expected hash: ' + newHash.substring(0, 16) + '...');
             return true;
         }
         
-        log.debug('Target file already has correct content');
+        log.debug('  Target file already has correct content (hash: ' + existingHash.substring(0, 16) + '...)');
         return false;
         
     } catch (err) {
-        log.warn('Error checking patch status: ' + err.message);
+        log.warn('  Error checking patch status: ' + err.message);
         // If we can't read the file, assume we need to apply
         return true;
     }
@@ -89,32 +91,32 @@ function apply() {
         // Backup existing file if it exists
         if (fs.existsSync(TARGET_FILE)) {
             var backupFile = TARGET_FILE + '.backup-' + Date.now();
-            log.info('Backing up existing file to ' + backupFile);
+            log.info('  Creating backup: ' + backupFile);
             fs.copySync(TARGET_FILE, backupFile);
         }
         
         // Write new content
-        log.info('Writing new udev rules to ' + TARGET_FILE);
+        log.info('  Writing new udev rules to ' + TARGET_FILE);
         fs.writeFileSync(TARGET_FILE, NEW_UDEV_RULES);
         
         // Reload udev rules
-        log.info('Reloading udev rules...');
+        log.info('  Reloading udev rules...');
         var exec = require('child_process').execSync;
         try {
             exec('udevadm control --reload-rules');
             exec('udevadm trigger');
-            log.info('udev rules reloaded successfully');
-            log.info('Note: A system reboot is recommended to ensure all USB devices are properly re-enumerated');
+            log.info('  udev rules reloaded successfully');
+            log.info('  Note: A system reboot is recommended to ensure all USB devices are properly re-enumerated');
         } catch (err) {
-            log.warn('Could not reload udev rules: ' + err.message);
-            log.warn('A system reboot will be required for rules to take effect');
+            log.warn('  Could not reload udev rules: ' + err.message);
+            log.warn('  A system reboot will be required for rules to take effect');
         }
         
-        log.info('Patch applied successfully');
+        log.info('  Patch applied successfully');
         return Promise.resolve();
         
     } catch (err) {
-        log.error('Error applying patch: ' + err.message);
+        log.error('  Error applying patch: ' + err.message);
         return Promise.reject(err);
     }
 }

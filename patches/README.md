@@ -100,7 +100,9 @@ See [001-udev-rules-usb.js](./001-udev-rules-usb.js) for a complete working exam
 1. Add your patch file to the `/patches` directory
 2. Restart the updater
 3. Check logs for patch execution: `tail -f /var/log/fabmo.log | grep patches`
-4. Verify the patch was applied: `curl http://localhost:9876/system/patches`3. Check tracking file: `cat /opt/patches/patches-applied.json`
+4. Verify the patch was applied: `curl http://localhost:9876/system/patches`
+5. Check tracking file: `cat /opt/patches/patches-applied.json`
+
 ### Manual Execution
 
 You can test a patch module directly in Node.js:
@@ -214,6 +216,46 @@ To remove a patch:
 - Log all actions for auditing
 
 ## Troubleshooting
+
+### Understanding Patch Behavior
+
+**Patches are idempotent** - they check whether they need to run before applying. This means:
+
+- **First startup after adding patch**: Patch applies (if needed)
+- **Subsequent startups**: Patch checks and skips if already applied
+- **After deleting tracking file** (`/opt/patches/patches-applied.json`): Patch still skips if target is already correct
+
+Example: The udev rules patch checks if `/etc/udev/rules.d/99-fabmo-usb.rules` has the correct content. If it does, the patch skips even if you delete the tracking file.
+
+**To force a patch to re-run**, you need to:
+1. Delete or modify the target file (e.g., `/etc/udev/rules.d/99-fabmo-usb.rules`)
+2. OR delete the tracking file AND the target file
+3. Then restart the updater
+
+**To see what patches are doing**:
+```bash
+# Watch updater logs during startup
+sudo journalctl -u fabmo-updater -f
+
+# Or check the log file
+tail -f /var/log/fabmo.log | grep -A 5 "SYSTEM PATCHES"
+
+# Check current patch status via API
+curl http://localhost:9876/system/patches
+```
+
+### Patches Run Every Startup
+
+Patches run every time the updater starts, including:
+- After system reboot
+- After updater service restart
+- After updater software update
+
+The difference is whether they **apply** or **skip**:
+- **Apply**: When check() returns true (target needs updating)
+- **Skip**: When check() returns false (target already correct)
+
+Both cases are logged with clear status messages.
 
 ### Patch Isn't Running
 
