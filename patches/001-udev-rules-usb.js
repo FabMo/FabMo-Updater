@@ -104,9 +104,10 @@ function apply() {
             exec('udevadm control --reload-rules');
             exec('udevadm trigger');
             log.info('udev rules reloaded successfully');
+            log.info('Note: A system reboot is recommended to ensure all USB devices are properly re-enumerated');
         } catch (err) {
             log.warn('Could not reload udev rules: ' + err.message);
-            log.warn('Rules will take effect after reboot');
+            log.warn('A system reboot will be required for rules to take effect');
         }
         
         log.info('Patch applied successfully');
@@ -122,6 +123,7 @@ module.exports = {
     id: PATCH_ID,
     description: 'Update udev rules for USB device management (Control Card, VFD controllers)',
     version: '2026-05-27',
+    requiresReboot: true,  // udev rules are reloaded, but a reboot ensures all devices are re-enumerated
     check: check,
     apply: apply
 };

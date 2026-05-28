@@ -42,10 +42,17 @@ var shutdown = function(req, res, next) {
 var getPatchStatus = function(req, res, next) {
   try {
     var status = patches.getPatchStatus();
+    
+    // Check if any applied patches require a reboot
+    var rebootRequired = status.some(function(patch) {
+      return patch.applied && patch.requiresReboot;
+    });
+    
     var answer = {
       status: "success",
       data: {
-        patches: status
+        patches: status,
+        rebootRequired: rebootRequired
       }
     };
     res.json(answer);

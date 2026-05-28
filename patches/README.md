@@ -38,6 +38,9 @@ module.exports = {
     // Version/date when this patch was added (for documentation)
     version: '2026-05-27',
     
+    // Optional: Set to true if this patch requires a system reboot to take full effect
+    requiresReboot: true,
+    
     // Function that checks if the patch needs to be applied
     // Returns: true if patch should be applied, false if already applied
     check: function() {
@@ -70,6 +73,12 @@ module.exports = {
 - Use detailed logging (`log.info()`, `log.error()`, etc.)
 - Handle errors gracefully and return rejected promises on failure
 - Consider whether the system needs a reboot/restart
+
+**Reboot Flag:**
+- Set `requiresReboot: true` if changes require a system restart to take full effect
+- Examples: udev rules, kernel modules, system services, network configuration
+- The system will log a prominent warning and set a status flag
+- The UI can use this to prompt the user for a reboot
 
 **Error Handling:**
 - If a patch fails, other patches will still run
@@ -129,12 +138,34 @@ Returns:
         "id": "001-udev-rules-usb",
         "description": "Update udev rules for USB device management",
         "version": "2026-05-27",
-        "applied": "2026-05-27T10:30:45.123Z"
+        "applied": "2026-05-27T10:30:45.123Z",
+        "requiresReboot": true
       }
-    ]
+    ],
+    "rebootRequired": true
   }
 }
 ```
+
+The `rebootRequired` field at the top level indicates whether any applied patches require a system reboot.
+
+### Using Reboot Status in the UI
+
+The updater's frontend can check for reboot requirements and prompt the user:
+
+```javascript
+// Check patch status
+fetch('/system/patches')
+  .then(res => res.json())
+  .then(data => {
+    if (data.data.rebootRequired) {
+      // Show a notification or modal prompting the user to reboot
+      showRebootPrompt();
+    }
+  });
+```
+
+You can also check the updater's status object which includes the `rebootRequired` flag after patches are applied during startup.
 
 ## Patch Lifecycle
 
@@ -145,6 +176,20 @@ Returns:
 - Networking or hardware configuration changes
 - Security updates to system files
 - udev rules, systemd services, or other system modifications
+
+### Reboot Requirements
+
+Some patches require a system reboot to take full effect:
+- **udev rules**: While rules can be reloaded, a reboot ensures all USB devices are properly re-enumerated
+- **Kernel modules**: Loading new modules or module parameters
+- **System services**: Some systemd service changes
+- **Network configuration**: Major networking stack changes
+
+When a patch with `requiresReboot: true` is applied:
+1. A prominent warning is logged to the console
+2. The updater status includes `rebootRequired: true`
+3. The API endpoint shows which patches require reboots
+4. The UI should prompt the user to reboot when convenient
 
 ### When to Remove a Patch
 

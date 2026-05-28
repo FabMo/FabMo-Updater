@@ -15,6 +15,7 @@ var exec = require('child_process').execSync;
 var PATCH_ID = 'XXX-description';  // Should match filename without .js
 var PATCH_DESCRIPTION = 'Description of what this patch does';
 var PATCH_VERSION = '2026-XX-XX';  // Date when patch was created
+var REQUIRES_REBOOT = false;  // Set to true if this patch requires a system reboot
 
 /**
  * Check if this patch needs to be applied
@@ -127,6 +128,7 @@ module.exports = {
     id: PATCH_ID,
     description: PATCH_DESCRIPTION,
     version: PATCH_VERSION,
+    requiresReboot: REQUIRES_REBOOT,
     check: check,
     apply: apply
 };

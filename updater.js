@@ -772,7 +772,12 @@ Updater.prototype.start = function(callback) {
             if(selfUpdateFile) { return callback(); }
             log.info('Running system patches...');
             var patches = require('./patches');
-            patches.runPatches(callback);
+            patches.runPatches(function(err, result) {
+                if (!err && result && result.rebootRequired) {
+                    this.status.rebootRequired = true;
+                }
+                callback(err);
+            }.bind(this));
         }.bind(this),
 
         // Run any FMUS that are in the configuration fmus directory, in alphabetical order.

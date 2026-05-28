@@ -97,7 +97,7 @@ function loadPatchModules() {
 
 /**
  * Apply a single patch
- * Returns a promise that resolves when the patch is applied
+ * Returns a promise that resolves with an object: { wasApplied: boolean, requiresReboot: boolean }
  */
 function applyPatch(patch) {
     return Q.fcall(function() {
@@ -106,13 +106,17 @@ function applyPatch(patch) {
     }).then(function(needsApplying) {
         if (!needsApplying) {
             log.info('Patch ' + patch.id + ' does not need to be applied (already applied or not applicable)');
-            return false;
+            return { wasApplied: false, requiresReboot: false };
         }
         
         log.info('Applying patch: ' + patch.id);
         return Q(patch.apply()).then(function() {
             log.info('Successfully applied patch: ' + patch.id);
-            return true;
+            var requiresReboot = patch.requiresReboot === true;
+            if (requiresReboot) {
+                log.warn('Patch ' + patch.id + ' requires a system reboot to take full effect');
+            }
+            return { wasApplied: true, requiresReboot: requiresReboot };
         });
     });
 }
@@ -127,6 +131,7 @@ function runPatches(callback) {
     
     var appliedPatches = loadTrackingFile();
     var patches = loadPatchModules();
+    var rebootRequired = false;
     
     if (patches.length === 0) {
         log.info('No patches to apply');
@@ -145,10 +150,13 @@ function runPatches(callback) {
                 // (e.g., if someone manually reverted it)
             }
             
-            return applyPatch(patch).then(function(wasApplied) {
-                if (wasApplied) {
+            return applyPatch(patch).then(function(result) {
+                if (result.wasApplied) {
                     appliedPatches[patch.id] = new Date().toISOString();
                     saveTrackingFile(appliedPatches);
+                    if (result.requiresReboot) {
+                        rebootRequired = true;
+                    }
                 }
             });
         }).catch(function(err) {
@@ -160,7 +168,13 @@ function runPatches(callback) {
     
     return result.then(function() {
         log.info('Patch check complete');
-        if (callback) { callback(); }
+        if (rebootRequired) {
+            log.warn('========================================');
+            log.warn('ONE OR MORE PATCHES REQUIRE A REBOOT');
+            log.warn('System restart recommended to fully apply changes');
+            log.warn('========================================');
+        }
+        if (callback) { callback(null, { rebootRequired: rebootRequired }); }
     }).catch(function(err) {
         log.error('Error during patch process: ' + err.message);
         if (callback) { callback(err); }
@@ -179,7 +193,8 @@ function getPatchStatus() {
             id: patch.id,
             description: patch.description,
             version: patch.version || 'unknown',
-            applied: appliedPatches[patch.id] || null
+            applied: appliedPatches[patch.id] || null,
+            requiresReboot: patch.requiresReboot === true
         };
     });
 }
