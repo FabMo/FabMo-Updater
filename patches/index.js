@@ -101,20 +101,21 @@ function loadPatchModules() {
  */
 function applyPatch(patch) {
     return Q.fcall(function() {
-        log.info('Checking patch: ' + patch.id + ' - ' + patch.description);
+        log.info('→ Checking: ' + patch.id);
+        log.info('  Description: ' + patch.description);
         return patch.check();
     }).then(function(needsApplying) {
         if (!needsApplying) {
-            log.info('Patch ' + patch.id + ' does not need to be applied (already applied or not applicable)');
+            log.info('  ✓ Already applied or not needed');
             return { wasApplied: false, requiresReboot: false };
         }
         
-        log.info('Applying patch: ' + patch.id);
+        log.info('  ⟳ Applying patch...');
         return Q(patch.apply()).then(function() {
-            log.info('Successfully applied patch: ' + patch.id);
+            log.info('  ✓ Successfully applied');
             var requiresReboot = patch.requiresReboot === true;
             if (requiresReboot) {
-                log.warn('Patch ' + patch.id + ' requires a system reboot to take full effect');
+                log.warn('  ⚠️  Requires system reboot');
             }
             return { wasApplied: true, requiresReboot: requiresReboot };
         });
@@ -127,18 +128,23 @@ function applyPatch(patch) {
  * Returns a promise that resolves when all patches have been processed
  */
 function runPatches(callback) {
-    log.info('Starting system patch check...');
+    log.info('========================================');
+    log.info('SYSTEM PATCHES: Starting patch check...');
+    log.info('========================================');
     
     var appliedPatches = loadTrackingFile();
     var patches = loadPatchModules();
     var rebootRequired = false;
+    var patchesApplied = 0;
+    var patchesSkipped = 0;
     
     if (patches.length === 0) {
-        log.info('No patches to apply');
+        log.info('No patches available');
+        log.info('========================================');
         return callback ? callback() : Q();
     }
     
-    log.info('Found ' + patches.length + ' patch(es) to process');
+    log.info('Found ' + patches.length + ' patch(es) to check');
     
     // Process patches sequentially
     var result = patches.reduce(function(prev, patch) {
@@ -152,11 +158,14 @@ function runPatches(callback) {
             
             return applyPatch(patch).then(function(result) {
                 if (result.wasApplied) {
+                    patchesApplied++;
                     appliedPatches[patch.id] = new Date().toISOString();
                     saveTrackingFile(appliedPatches);
                     if (result.requiresReboot) {
                         rebootRequired = true;
                     }
+                } else {
+                    patchesSkipped++;
                 }
             });
         }).catch(function(err) {
@@ -167,13 +176,19 @@ function runPatches(callback) {
     }, Q());
     
     return result.then(function() {
-        log.info('Patch check complete');
+        log.info('========================================');
+        log.info('SYSTEM PATCHES: Check complete');
+        log.info('Patches applied: ' + patchesApplied);
+        log.info('Patches skipped (already applied): ' + patchesSkipped);
         if (rebootRequired) {
-            log.warn('========================================');
-            log.warn('ONE OR MORE PATCHES REQUIRE A REBOOT');
-            log.warn('System restart recommended to fully apply changes');
-            log.warn('========================================');
+            log.warn('----------------------------------------');
+            log.warn('⚠️  REBOOT REQUIRED');
+            log.warn('One or more patches require a system');
+            log.warn('restart to fully apply changes.');
+            log.warn('Please reboot at your convenience.');
+            log.warn('----------------------------------------');
         }
+        log.info('========================================');
         if (callback) { callback(null, { rebootRequired: rebootRequired }); }
     }).catch(function(err) {
         log.error('Error during patch process: ' + err.message);
