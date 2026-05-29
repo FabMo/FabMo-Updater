@@ -935,6 +935,18 @@ $(document).ready(function() {
   clearConsole();
   awaitingReboot = false;
 
+  // Check for reboot notification on page load
+  fetch('/status')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data && data.data && data.data.status) {
+        checkForRebootNotification(data.data.status);
+      }
+    })
+    .catch(function(err) {
+      console.log('Could not check reboot status on page load:', err);
+    });
+
   // Restore saved log-filter and panel-tab states
   applyStoredFilters();
   initPanelTabs();
@@ -1023,6 +1035,9 @@ $(document).ready(function() {
     // Basic state stuff
     setState(status.state);
     setOnline(status.online);
+
+    // Check for reboot notification
+    checkForRebootNotification(status);
 
     // Show updates if there are any to apply
     if(status.updates && status.updates.length > 0) {
@@ -1343,6 +1358,21 @@ $(document).ready(function() {
     $('.label-sd-card-version').text(config.sd_card_version || 'unavailable');
     $('.label-rpi-type').text(config.rpi_type || 'unavailable');
     $('.label-rpi-temp-c').text(config.rpi_temp_c || 'unavailable');
+    
+    // Add throttle status if present
+    if (config.rpi_throttle_status) {
+      $('.label-rpi-throttle').text(' (' + config.rpi_throttle_status + ')');
+    } else {
+      $('.label-rpi-throttle').text('');
+    }
+    
+    // Add internet connection status
+    $('.label-internet-connection').text(config.internet_connected ? 'Connected' : 'Disconnected')
+      .removeClass('info-up info-down')
+      .addClass(config.internet_connected ? 'info-up' : 'info-down');
+
+    // Display engine profile from engine.json
+    $('.label-engine-profile').text(config.engine_profile || 'unavailable');
 
     // Set the OS from the updater config
     setOS(config.os);

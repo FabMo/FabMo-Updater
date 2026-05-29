@@ -84,10 +84,12 @@ function check() {
 
 /**
  * Apply the patch by writing the new udev rules file
- * Returns a promise
+ * Returns a promise that resolves with { requiresReboot: boolean }
  */
 function apply() {
     try {
+        var needsReboot = false;
+        
         // Backup existing file if it exists
         if (fs.existsSync(TARGET_FILE)) {
             var backupFile = TARGET_FILE + '.backup-' + Date.now();
@@ -99,21 +101,63 @@ function apply() {
         log.info('  Writing new udev rules to ' + TARGET_FILE);
         fs.writeFileSync(TARGET_FILE, NEW_UDEV_RULES);
         
-        // Reload udev rules
-        log.info('  Reloading udev rules...');
+        // Try to reload udev rules and rescan USB devices
+        log.info('  Attempting to reload udev rules and rescan USB devices...');
         var exec = require('child_process').execSync;
         try {
+            // Reload the udev rules
             exec('udevadm control --reload-rules');
-            exec('udevadm trigger');
-            log.info('  udev rules reloaded successfully');
-            log.info('  Note: A system reboot is recommended to ensure all USB devices are properly re-enumerated');
+            log.info('  ✓ udev rules reloaded');
+            
+            // Trigger udev to reprocess devices
+            exec('udevadm trigger --action=add --subsystem-match=usb --subsystem-match=tty');
+            log.info('  ✓ USB devices triggered for re-enumeration');
+            
+            // Try to reload the cp210x driver for the Delta VFD
+            try {
+                exec('modprobe -r cp210x 2>/dev/null || true');
+                exec('modprobe cp210x');
+                log.info('  ✓ cp210x driver reloaded');
+            } catch (driverErr) {
+                log.debug('  Could not reload cp210x driver (may not be loaded): ' + driverErr.message);
+            }
+            
+            log.info('  ✓ Rules activated successfully');
+            log.info('  Note: For devices currently connected, unplug and replug them to apply new rules');
+            log.info('  Or reboot the system to ensure all devices are properly re-enumerated');
+            
+            // Set needsReboot based on whether devices are currently connected
+            // Check if any of the target USB devices are currently present
+            try {
+                var lsusbOutput = exec('lsusb').toString();
+                var hasTargetDevices = lsusbOutput.includes('1d50:606d') || // G2
+                                       lsusbOutput.includes('1a86:55d3') || // Waveshare
+                                       lsusbOutput.includes('0403:6001') || // Sparkfun
+                                       lsusbOutput.includes('10c4:83c4');   // Delta
+                
+                if (hasTargetDevices) {
+                    needsReboot = true;
+                    log.warn('  ⚠️  Target USB devices are currently connected');
+                    log.warn('  ⚠️  Reboot recommended, or unplug/replug devices');
+                } else {
+                    log.info('  No target devices currently connected - rules will apply when devices are plugged in');
+                }
+            } catch (lsusbErr) {
+                log.debug('  Could not check for connected devices: ' + lsusbErr.message);
+                // If we can't check, be conservative and suggest reboot
+                needsReboot = true;
+            }
+            
         } catch (err) {
             log.warn('  Could not reload udev rules: ' + err.message);
             log.warn('  A system reboot will be required for rules to take effect');
+            needsReboot = true;
         }
         
         log.info('  Patch applied successfully');
-        return Promise.resolve();
+        
+        // Return whether a reboot is needed
+        return Promise.resolve({ requiresReboot: needsReboot });
         
     } catch (err) {
         log.error('  Error applying patch: ' + err.message);
@@ -125,7 +169,7 @@ module.exports = {
     id: PATCH_ID,
     description: 'Update udev rules for USB device management (Control Card, VFD controllers)',
     version: '2026-05-27',
-    requiresReboot: true,  // udev rules are reloaded, but a reboot ensures all devices are re-enumerated
+    requiresReboot: false,  // Dynamic - determined during apply() based on device state
     check: check,
     apply: apply
 };

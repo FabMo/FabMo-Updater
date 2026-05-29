@@ -39,6 +39,54 @@ function getRpiTempC() {
   return (tempMc / 1000).toFixed(1);
 }
 
+function getRpiThrottleStatus() {
+  try {
+    var exec = require('child_process').execSync;
+    var output = exec('vcgencmd get_throttled', { encoding: 'utf8', timeout: 1000 });
+    var match = /throttled=(0x[0-9A-Fa-f]+)/.exec(output);
+    if (!match) { return null; }
+    
+    var throttled = parseInt(match[1], 16);
+    if (throttled === 0) { return null; }
+    
+    var flags = [];
+    // Bit meanings (see https://www.raspberrypi.com/documentation/computers/os.html#get_throttled)
+    if (throttled & 0x1) flags.push('UNDERVOLTED-NOW');
+    if (throttled & 0x2) flags.push('ARM-FREQ-CAPPED-NOW');
+    if (throttled & 0x4) flags.push('THROTTLED-NOW');
+    if (throttled & 0x8) flags.push('SOFT-TEMP-LIMIT-NOW');
+    if (throttled & 0x10000) flags.push('UNDERVOLTED-PAST');
+    if (throttled & 0x20000) flags.push('ARM-FREQ-CAPPED-PAST');
+    if (throttled & 0x40000) flags.push('THROTTLED-PAST');
+    if (throttled & 0x80000) flags.push('SOFT-TEMP-LIMIT-PAST');
+    
+    return flags.length > 0 ? flags.join(', ') : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function checkInternetConnection() {
+  try {
+    var exec = require('child_process').execSync;
+    // Try to ping a reliable DNS server with a 2 second timeout
+    exec('ping -c 1 -W 2 8.8.8.8 > /dev/null 2>&1', { timeout: 3000 });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getEngineProfile() {
+  try {
+    var data = fs.readFileSync('/opt/fabmo/config/engine.json', 'utf8');
+    var engineConfig = JSON.parse(data);
+    return engineConfig.profile || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // return the current updater status
 var getStatus = function(req, res, next) {
   var updater = require('../updater');
@@ -61,6 +109,9 @@ var getConfig = function(req, res, next) {
   cfg.config.sd_card_version = readFirstLine('/boot/fabmo-release.txt') || 'unavailable';
   cfg.config.rpi_type = getRpiType(modelText) || 'unavailable';
   cfg.config.rpi_temp_c = getRpiTempC() || 'unavailable';
+  cfg.config.rpi_throttle_status = getRpiThrottleStatus();
+  cfg.config.internet_connected = checkInternetConnection();
+  cfg.config.engine_profile = getEngineProfile() || 'unavailable';
 
   res.json({
   	status : 'success',

@@ -665,3 +665,125 @@ td {
     -ms-user-select: none;
     user-select: none;
 }
+
+/*
+ * Reboot Notification Banner
+ */
+.reboot-notification {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #e85169 0%, #dd8728 100%);
+    color: white;
+    z-index: 9999;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    animation: slideDown 0.4s ease;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.reboot-notification-content {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 15px;
+}
+
+.reboot-notification i.fa-exclamation-triangle {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.reboot-notification-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.reboot-notification-text strong {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.reboot-notification-text p {
+    font-size: 13px;
+    margin: 0;
+    opacity: 0.95;
+}
+
+.reboot-notification-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.btn-reboot-action {
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #e85169;
+    border: none;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-reboot-action:hover {
+    background-color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-reboot-action-secondary {
+    background-color: rgba(0, 0, 0, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-reboot-action-secondary:hover {
+    background-color: rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Adjust container margin when banner is shown */
+body.reboot-banner-shown #container {
+    margin-top: 80px;
+}
+
+@media (max-width: 768px) {
+    .reboot-notification-content {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px;
+    }
+    
+    .reboot-notification-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .btn-reboot-action,
+    .btn-reboot-action-secondary {
+        width: 100%;
+    }
+}

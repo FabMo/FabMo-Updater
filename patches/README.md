@@ -23,6 +23,8 @@ Name your patch file with a numeric prefix for ordering:
 - `002-another-patch.js`
 - etc.
 
+**Important**: Files starting with `EXAMPLE`, `TEMPLATE`, or containing `.test.` or `.spec.` are automatically excluded from execution. These are for documentation and testing only.
+
 ### 2. Patch Module Structure
 
 Each patch is a Node.js module that exports the following:
@@ -39,6 +41,7 @@ module.exports = {
     version: '2026-05-27',
     
     // Optional: Set to true if this patch requires a system reboot to take full effect
+    // Can also be dynamically determined - see below
     requiresReboot: true,
     
     // Function that checks if the patch needs to be applied
@@ -51,10 +54,16 @@ module.exports = {
     
     // Function that applies the patch
     // Returns: Promise that resolves when complete, rejects on error
+    // Can optionally return { requiresReboot: boolean } to dynamically set reboot requirement
     apply: function() {
         // Your patch logic here
         // Example: modify files, run commands, etc.
+        
+        // Option 1: Simple return (uses static requiresReboot property)
         return Promise.resolve();
+        
+        // Option 2: Dynamic reboot requirement
+        // return Promise.resolve({ requiresReboot: needsReboot });
     }
 };
 ```
@@ -79,6 +88,13 @@ module.exports = {
 - Examples: udev rules, kernel modules, system services, network configuration
 - The system will log a prominent warning and set a status flag
 - The UI can use this to prompt the user for a reboot
+
+**Dynamic Reboot Requirements:**
+- Patches can determine if reboot is needed at runtime
+- Have `apply()` return `{ requiresReboot: boolean }` instead of just success
+- Example: udev rules patch checks if target devices are currently connected
+- If devices present: requires reboot. If not: rules apply automatically when devices are plugged in
+- This provides a better user experience by only requiring reboots when truly necessary
 
 **Error Handling:**
 - If a patch fails, other patches will still run
@@ -141,19 +157,79 @@ Returns:
         "description": "Update udev rules for USB device management",
         "version": "2026-05-27",
         "applied": "2026-05-27T10:30:45.123Z",
-        "requiresReboot": true
+        "requiresReboot": false
       }
     ],
-    "rebootRequired": true
+    "rebootRequired": true,
+    "rebootMessage": "System patches require a reboot to fully apply changes",
+    "rebootTimestamp": "2026-05-27T10:30:45.123Z"
   }
 }
 ```
 
-The `rebootRequired` field at the top level indicates whether any applied patches require a system reboot.
+The `rebootRequired` field indicates if a persistent reboot notification is active (survives updater restarts).
+
+### Dismissing Reboot Notifications
+
+Users can acknowledge/dismiss the reboot notification:
+
+```bash
+POST /system/patches/dismiss-reboot
+```
 
 ### Using Reboot Status in the UI
 
-The updater's frontend can check for reboot requirements and prompt the user:
+The updater's frontend can check for reboot requirements and prompt the user.
+
+**Option 1: Poll the status endpoint**
+
+```javascript
+// Check updater status on page load and periodically
+function checkForRebootNotification() {
+  fetch('/status')
+    .then(res => res.json())
+    .then(data => {
+      if (data.data.status.rebootRequired) {
+        var message = data.data.status.rebootMessage || 'System restart recommended';
+        var timestamp = data.data.status.rebootTimestamp;
+        showRebootBanner(message, timestamp);
+      }
+    });
+}
+
+// Show prominent banner at top of page
+function showRebootBanner(message, timestamp) {
+  var banner = document.createElement('div');
+  banner.className = 'reboot-notification';
+  banner.innerHTML = `
+    <div style="background: #ff9800; padding: 15px; text-align: center; color: white;">
+      <strong>⚠️ ${message}</strong><br>
+      <small>Patches applied: ${new Date(timestamp).toLocaleString()}</small><br>
+      <button onclick="dismissReboot()">Dismiss</button>
+      <button onclick="rebootNow()">Reboot Now</button>
+    </div>
+  `;
+  document.body.insertBefore(banner, document.body.firstChild);
+}
+
+// Dismiss notification
+function dismissReboot() {
+  fetch('/system/patches/dismiss-reboot', { method: 'POST' })
+    .then(() => location.reload());
+}
+
+// Trigger reboot
+function rebootNow() {
+  if (confirm('Reboot the system now?')) {
+    fetch('/system/reboot', { method: 'POST' });
+  }
+}
+
+// Check on page load
+checkForRebootNotification();
+```
+
+**Option 2: Use the patches endpoint for more details**
 
 ```javascript
 // Check patch status
@@ -161,13 +237,35 @@ fetch('/system/patches')
   .then(res => res.json())
   .then(data => {
     if (data.data.rebootRequired) {
-      // Show a notification or modal prompting the user to reboot
-      showRebootPrompt();
+      var message = data.data.rebootMessage || 'System restart recommended';
+      var timestamp = data.data.rebootTimestamp;
+      
+      // Show which patches need reboot
+      var patchesNeedingReboot = data.data.patches.filter(p => 
+        p.applied && p.requiresReboot
+      );
+      
+      showDetailedRebootPrompt(message, timestamp, patchesNeedingReboot);
     }
   });
 ```
 
-You can also check the updater's status object which includes the `rebootRequired` flag after patches are applied during startup.
+### Persistent Notifications
+
+When patches are applied during updater self-update, the reboot notification persists across updater restarts:
+
+1. **During updater install**: Patches run, reboot flag is set to `/opt/patches/reboot-required.flag`
+2. **Updater restarts**: Normal startup process checks for the flag and adds it to `updater.status`
+3. **On next startup**: Prominent warning is displayed in logs and available via:
+   - `/status` endpoint → `updater.status.rebootRequired`
+   - `/system/patches` endpoint → detailed patch information
+4. **User can dismiss**: Via API endpoint, or flag is automatically cleared after actual reboot
+
+This ensures users see the reboot notification even if patches run during a process they can't observe.
+
+**Important**: The console logs shown during startup may not be visible to users. The UI should check the `/status` endpoint on page load to display reboot notifications prominently in the interface.
+
+**Note**: Patch execution happens early in the updater startup sequence (before the web server starts), so the patch logs are written to the system log but may not appear in the user's console view in the web UI. The web UI console typically starts capturing output after "FabMo-Updater started" message. This is why the persistent flag system and `/status` endpoint integration are essential for user notification.
 
 ## Patch Lifecycle
 
@@ -275,6 +373,37 @@ Both cases are logged with clear status messages.
 - Check `/var/log/fabmo.log` for error messages
 - Ensure `apply()` function returns a Promise
 - Add more logging within your patch
+
+### Reboot flag persists from previous run
+
+If a reboot flag was set on a previous run but you see no patches were applied:
+
+```
+Patches applied: 0
+Patches skipped (already applied): 1
+⚠️  SYSTEM REBOOT RECOMMENDED (from previous run)
+```
+
+This means:
+- A previous patch run required a reboot
+- The system hasn't been rebooted yet
+- The flag is preserved to remind you
+
+**To clear the flag:**
+
+1. **Reboot the system** (recommended) - Flag auto-clears after reboot
+2. **Dismiss via API**: `curl -X POST http://localhost:9876/system/patches/dismiss-reboot`
+3. **Manual delete**: `sudo rm /opt/patches/reboot-required.flag`
+
+The system automatically detects if you've rebooted (by checking system uptime vs flag timestamp) and clears stale flags.
+
+### Stale flag from test/example patches
+
+If you accidentally ran EXAMPLE or TEMPLATE patches that set a reboot flag:
+
+1. Delete the flag: `sudo rm /opt/patches/reboot-required.flag`
+2. Restart the updater
+3. The example patches are now excluded and won't run again
 
 ### Need to Force Re-apply
 

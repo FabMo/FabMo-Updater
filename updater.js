@@ -988,6 +988,19 @@ Updater.prototype.start = function(callback) {
                 log.error(err);
                 typeof callback === 'function' && callback(err);
             } else {
+                // Check for persistent reboot notification and add to status
+                var patches = require('./patches');
+                var rebootFlag = patches.checkRebootRequiredFlag();
+                if (rebootFlag) {
+                    this.status.rebootRequired = true;
+                    this.status.rebootMessage = rebootFlag.message;
+                    this.status.rebootTimestamp = rebootFlag.timestamp;
+                    // Display in logs
+                    patches.displayRebootNotificationIfNeeded();
+                } else {
+                    this.status.rebootRequired = false;
+                }
+                
                 typeof callback === 'function' && callback(null, this);
             }
         }.bind(this)
