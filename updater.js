@@ -988,11 +988,18 @@ Updater.prototype.start = function(callback) {
                 log.error(err);
                 typeof callback === 'function' && callback(err);
             } else {
-                // Display persistent reboot notification if needed
-                // This catches the case where patches were applied during updater self-update
-                // and the notification needs to be shown on the next normal startup
+                // Check for persistent reboot notification and add to status
                 var patches = require('./patches');
-                patches.displayRebootNotificationIfNeeded();
+                var rebootFlag = patches.checkRebootRequiredFlag();
+                if (rebootFlag) {
+                    this.status.rebootRequired = true;
+                    this.status.rebootMessage = rebootFlag.message;
+                    this.status.rebootTimestamp = rebootFlag.timestamp;
+                    // Display in logs
+                    patches.displayRebootNotificationIfNeeded();
+                } else {
+                    this.status.rebootRequired = false;
+                }
                 
                 typeof callback === 'function' && callback(null, this);
             }

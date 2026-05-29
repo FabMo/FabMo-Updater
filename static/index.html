@@ -14,6 +14,25 @@
 </head>
 <body>
 
+<!-- Reboot notification banner -->
+<div id="reboot-notification" class="reboot-notification" style="display:none;">
+  <div class="reboot-notification-content">
+    <i class="fa fa-exclamation-triangle"></i>
+    <div class="reboot-notification-text">
+      <strong id="reboot-notification-message">System Restart Recommended</strong>
+      <p id="reboot-notification-details">Patches were applied that require a reboot to take full effect.</p>
+    </div>
+    <div class="reboot-notification-actions">
+      <button id="btn-reboot-now" class="btn-reboot-action">
+        <i class="fa fa-refresh"></i> Reboot Now
+      </button>
+      <button id="btn-reboot-dismiss" class="btn-reboot-action-secondary">
+        <i class="fa fa-times"></i> Dismiss
+      </button>
+    </div>
+  </div>
+</div>
+
 <form style="display:none;" id="fileform">
   <input type="file" id="file" multiple>
 </form>
@@ -71,7 +90,8 @@
         <tr><td class="info-key">OS Version:</td> <td><span class="info-value label-os-version"/></td></tr>
         <tr><td class="info-key">SD Card Release:</td> <td><span class="info-value label-sd-card-version"/></td></tr>
         <tr><td class="info-key">Raspberry Pi Type:</td> <td><span class="info-value label-rpi-type"/></td></tr>
-        <tr><td class="info-key">RPi Core Temp (C):</td> <td><span class="info-value label-rpi-temp-c"/></td></tr>
+        <tr><td class="info-key">RPi Core Temp (C):</td> <td><span class="info-value label-rpi-temp-c"/><span class="info-value label-rpi-throttle"/></td></tr>
+        <tr><td class="info-key">Internet Connection:</td> <td><span class="info-value label-internet-connection"/></td></tr>
 
         <tr class="info-header-row"><td class="info-key-header">Updater</td><td>&nbsp;</td></tr>
         <tr><td class="info-key">Updater Repository:</td> <td><span class="info-value label-updater-git"></span></td></tr>
@@ -81,6 +101,7 @@
         <tr class="info-header-row"><td class="info-key-header">FabMo-Engine</td><td>&nbsp;</td></tr>
         <tr><td class="info-key">Engine Repository:</td> <td><span class="info-value label-engine-git"></span></td></tr>
         <tr><td class="info-key">Engine Version:</td> <td><span class="info-value label-engine-version"></span></td></tr>
+        <tr><td class="info-key">FabMo Profile:</td> <td><span class="info-value label-engine-profile"></span></td></tr>
         <tr><td class="info-key">Engine State:</td> <td><span class="info-value label-engine-status"/></td></tr>
 
         <tr class="info-header-row"><td class="info-key-header">Firmware</td><td>&nbsp;</td></tr>
@@ -273,6 +294,7 @@
 <script src="/xterm/xterm-addon-fit.js"></script>
 <script src="js/libs/jquery.min.js"></script>
 <script src="js/libs/updaterapi.js"></script>
+<script src="js/reboot-notification.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
