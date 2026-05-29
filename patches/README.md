@@ -39,6 +39,7 @@ module.exports = {
     version: '2026-05-27',
     
     // Optional: Set to true if this patch requires a system reboot to take full effect
+    // Can also be dynamically determined - see below
     requiresReboot: true,
     
     // Function that checks if the patch needs to be applied
@@ -51,10 +52,16 @@ module.exports = {
     
     // Function that applies the patch
     // Returns: Promise that resolves when complete, rejects on error
+    // Can optionally return { requiresReboot: boolean } to dynamically set reboot requirement
     apply: function() {
         // Your patch logic here
         // Example: modify files, run commands, etc.
+        
+        // Option 1: Simple return (uses static requiresReboot property)
         return Promise.resolve();
+        
+        // Option 2: Dynamic reboot requirement
+        // return Promise.resolve({ requiresReboot: needsReboot });
     }
 };
 ```
@@ -79,6 +86,13 @@ module.exports = {
 - Examples: udev rules, kernel modules, system services, network configuration
 - The system will log a prominent warning and set a status flag
 - The UI can use this to prompt the user for a reboot
+
+**Dynamic Reboot Requirements:**
+- Patches can determine if reboot is needed at runtime
+- Have `apply()` return `{ requiresReboot: boolean }` instead of just success
+- Example: udev rules patch checks if target devices are currently connected
+- If devices present: requires reboot. If not: rules apply automatically when devices are plugged in
+- This provides a better user experience by only requiring reboots when truly necessary
 
 **Error Handling:**
 - If a patch fails, other patches will still run
@@ -141,15 +155,25 @@ Returns:
         "description": "Update udev rules for USB device management",
         "version": "2026-05-27",
         "applied": "2026-05-27T10:30:45.123Z",
-        "requiresReboot": true
+        "requiresReboot": false
       }
     ],
-    "rebootRequired": true
+    "rebootRequired": true,
+    "rebootMessage": "System patches require a reboot to fully apply changes",
+    "rebootTimestamp": "2026-05-27T10:30:45.123Z"
   }
 }
 ```
 
-The `rebootRequired` field at the top level indicates whether any applied patches require a system reboot.
+The `rebootRequired` field indicates if a persistent reboot notification is active (survives updater restarts).
+
+### Dismissing Reboot Notifications
+
+Users can acknowledge/dismiss the reboot notification:
+
+```bash
+POST /system/patches/dismiss-reboot
+```
 
 ### Using Reboot Status in the UI
 
@@ -162,12 +186,29 @@ fetch('/system/patches')
   .then(data => {
     if (data.data.rebootRequired) {
       // Show a notification or modal prompting the user to reboot
-      showRebootPrompt();
+      var message = data.data.rebootMessage || 'System restart recommended';
+      var timestamp = data.data.rebootTimestamp;
+      showRebootPrompt(message, timestamp);
     }
   });
+
+// When user dismisses the notification
+function dismissReboot() {
+  fetch('/system/patches/dismiss-reboot', { method: 'POST' })
+    .then(() => hideRebootPrompt());
+}
 ```
 
-You can also check the updater's status object which includes the `rebootRequired` flag after patches are applied during startup.
+### Persistent Notifications
+
+When patches are applied during updater self-update, the reboot notification persists across updater restarts:
+
+1. **During updater install**: Patches run, reboot flag is set to `/opt/patches/reboot-required.flag`
+2. **Updater restarts**: Normal startup process checks for the flag
+3. **On next startup**: Prominent warning is displayed in logs and available via API
+4. **User can dismiss**: Via API endpoint, or flag is automatically cleared after actual reboot
+
+This ensures users see the reboot notification even if patches run during a process they can't see.
 
 ## Patch Lifecycle
 

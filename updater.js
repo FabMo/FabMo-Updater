@@ -988,6 +988,12 @@ Updater.prototype.start = function(callback) {
                 log.error(err);
                 typeof callback === 'function' && callback(err);
             } else {
+                // Display persistent reboot notification if needed
+                // This catches the case where patches were applied during updater self-update
+                // and the notification needs to be shown on the next normal startup
+                var patches = require('./patches');
+                patches.displayRebootNotificationIfNeeded();
+                
                 typeof callback === 'function' && callback(null, this);
             }
         }.bind(this)

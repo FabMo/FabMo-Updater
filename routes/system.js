@@ -41,19 +41,10 @@ var shutdown = function(req, res, next) {
 
 var getPatchStatus = function(req, res, next) {
   try {
-    var status = patches.getPatchStatus();
-    
-    // Check if any applied patches require a reboot
-    var rebootRequired = status.some(function(patch) {
-      return patch.applied && patch.requiresReboot;
-    });
-    
+    var statusData = patches.getPatchStatus();
     var answer = {
       status: "success",
-      data: {
-        patches: status,
-        rebootRequired: rebootRequired
-      }
+      data: statusData
     };
     res.json(answer);
   } catch(err) {
@@ -65,8 +56,27 @@ var getPatchStatus = function(req, res, next) {
   }
 };
 
+var dismissRebootNotification = function(req, res, next) {
+  try {
+    patches.clearRebootRequiredFlag();
+    log.info('Reboot notification dismissed by user');
+    var answer = {
+      status: "success",
+      data: {}
+    };
+    res.json(answer);
+  } catch(err) {
+    log.error('Error dismissing reboot notification: ' + err.message);
+    res.json({
+      status: "error",
+      message: err.message
+    });
+  }
+};
+
 module.exports = function(server) {
   server.post('/system/reboot', reboot);
   server.post('/system/shutdown', shutdown);
   server.get('/system/patches', getPatchStatus);
+  server.post('/system/patches/dismiss-reboot', dismissRebootNotification);
 };
