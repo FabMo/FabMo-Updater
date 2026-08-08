@@ -112,9 +112,12 @@ function check() {
                 continue;
             }
             
-            // Check if file is protected with immutable flag
-            if (!isImmutable(connFile)) {
-                log.info('  Connection file not protected: ' + REQUIRED_CONNECTIONS[i]);
+            // Check if static connections (not wlan0_ap) are protected with immutable flag
+            // wlan0_ap should NOT be protected as it needs dynamic SSID updates
+            var shouldBeProtected = (REQUIRED_CONNECTIONS[i] === 'lan-connection' || 
+                                    REQUIRED_CONNECTIONS[i] === 'direct-connection');
+            if (shouldBeProtected && !isImmutable(connFile)) {
+                log.info('  Static connection file not protected: ' + REQUIRED_CONNECTIONS[i]);
                 needsApplying = true;
             }
         }
@@ -185,14 +188,16 @@ function apply() {
             fs.ensureDirSync(connectionsDir);
             
             // First, remove immutable flags if they exist (so we can update files)
-            log.debug('  Removing immutable flags temporarily...');
-            for (var i = 0; i < REQUIRED_CONNECTIONS.length; i++) {
-                var connFile = path.join(connectionsDir, REQUIRED_CONNECTIONS[i]);
+            // Only need to do this for static connections that we protect
+            log.debug('  Removing immutable flags temporarily from static connections...');
+            var staticConnections = ['lan-connection', 'direct-connection'];
+            for (var i = 0; i < staticConnections.length; i++) {
+                var connFile = path.join(connectionsDir, staticConnections[i]);
                 if (fs.existsSync(connFile)) {
                     try {
                         exec('chattr -i "' + connFile + '" 2>/dev/null || true');
                     } catch (err) {
-                        log.debug('  Could not remove immutable flag from ' + REQUIRED_CONNECTIONS[i]);
+                        log.debug('  Could not remove immutable flag from ' + staticConnections[i]);
                     }
                 }
             }
@@ -220,19 +225,23 @@ function apply() {
                 fs.chmodSync(targetFile, '600');
             }
             
-            // Set immutable flags on connection files
-            log.info('  Protecting connection files with immutable flags...');
-            for (var k = 0; k < REQUIRED_CONNECTIONS.length; k++) {
-                var connFile = path.join(connectionsDir, REQUIRED_CONNECTIONS[k]);
+            // Set immutable flags on static connection files only
+            // NOTE: wlan0_ap.nmconnection is NOT protected because its SSID is dynamically
+            //       updated by ip-reporting.py to broadcast the current IP address
+            log.info('  Protecting static connection files with immutable flags...');
+            var protectedConnections = ['lan-connection', 'direct-connection'];
+            for (var k = 0; k < protectedConnections.length; k++) {
+                var connFile = path.join(connectionsDir, protectedConnections[k]);
                 if (fs.existsSync(connFile)) {
                     try {
                         exec('chattr +i "' + connFile + '" 2>/dev/null');
-                        log.info('    ✓ Protected: ' + REQUIRED_CONNECTIONS[k]);
+                        log.info('    ✓ Protected: ' + protectedConnections[k]);
                     } catch (err) {
-                        log.warn('    ✗ Could not protect: ' + REQUIRED_CONNECTIONS[k] + ' (' + err.message + ')');
+                        log.warn('    ✗ Could not protect: ' + protectedConnections[k] + ' (' + err.message + ')');
                     }
                 }
             }
+            log.info('    ℹ wlan0_ap remains writable for dynamic SSID updates');
             
             // Copy NetworkManager main config if it differs
             var nmConfSource = path.join(RESOURCE_DIR, 'NetworkManager/NetworkManager.conf');
@@ -328,7 +337,8 @@ function apply() {
             
             log.info('  ✓ Network configuration restoration complete');
             log.info('  Backup saved to: ' + backupDir);
-            log.info('  Connection profiles are now protected with immutable flags');
+            log.info('  Static connections protected: lan-connection, direct-connection');
+            log.info('  Dynamic connection (wlan0_ap) remains writable for SSID updates');
             
             if (needsReboot) {
                 log.warn('  ⚠️  System reboot recommended for network changes to fully take effect');

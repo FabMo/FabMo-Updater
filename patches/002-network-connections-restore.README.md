@@ -40,17 +40,46 @@ When needed, the patch:
 
 ### Immutable Flag Protection
 
-After restoration, connection files are protected with the Linux immutable flag (`chattr +i`). This means:
-- ✅ NetworkManager can still read and use the connections
-- ✅ NetworkManager can modify connection settings (passwords, IP addresses, etc.)
-- ❌ Files cannot be deleted (even by root) without first removing the flag
-- ❌ Files cannot be renamed or moved
+After restoration, **static** connection files are protected with the Linux immutable flag (`chattr +i`):
 
-To manually modify a protected connection:
+**Protected connections** (static configurations):
+- `lan-connection` - DHCP settings don't change
+- `direct-connection` - Static IP never changes
+
+**Unprotected connection** (dynamic configuration):
+- `wlan0_ap` - SSID is updated frequently to broadcast current IP
+
+This selective protection means:
+- ✅ Static connections cannot be accidentally deleted
+- ✅ NetworkManager can still read all connections  
+- ✅ NetworkManager can modify settings within protected connections
+- ✅ **wlan0_ap SSID can be updated dynamically** by ip-reporting.py
+- ❌ Protected files cannot be deleted (even by root) without first removing the flag
+- ❌ Protected files cannot be renamed or moved
+
+**Why wlan0_ap is NOT protected:**
+
+The FabMo networking system uses the AP SSID as a method to broadcast the current IP address to users. The [ip-reporting.py](file:///fabmo/files/network_conf_fabmo/ip-reporting.py) script continuously monitors the active network connection and updates the SSID to display:
+- `FabMo-#####-LAN@10.0.0.177` when connected to LAN
+- `FabMo-#####-PC@192.168.44.1` when direct PC connection
+- `FabMo-#####-wifi@192.168.1.50` when connected via WiFi
+- `FabMo-#####-AP@192.168.42.1` when only AP is active
+
+This requires `nmcli con modify wlan0_ap 802-11-wireless.ssid` to write to the connection file frequently. An immutable flag would block this critical functionality.
+
+To manually modify a **protected** connection (lan-connection or direct-connection):
 ```bash
 sudo chattr -i /etc/NetworkManager/system-connections/lan-connection
 # make changes
 sudo chattr +i /etc/NetworkManager/system-connections/lan-connection
+```
+
+To modify the **wlan0_ap** connection (not protected):
+```bash
+# No unlocking needed - just modify directly
+sudo nmcli con modify wlan0_ap [settings]
+# or edit the file directly
+sudo nano /etc/NetworkManager/system-connections/wlan0_ap.nmconnection
 ```
 
 ## When This Patch Runs
