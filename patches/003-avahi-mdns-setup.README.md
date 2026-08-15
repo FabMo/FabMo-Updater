@@ -64,19 +64,30 @@ This patch complements:
 - Mobile-optimized dnsmasq configuration
 - Captive portal handling for mobile devices
 
-## Future: Image Builder Integration
-Eventually add to `/fabmo_image_builder/build-fabmo-image.sh`:
+## Image Builder Integration
+✅ **COMPLETED** - Avahi is now integrated into `/fabmo_image_builder/build-fabmo-image.sh`:
+
+**Package installation** (in `install_packages_and_configure()`):
 ```bash
-# Install Avahi
-apt-get install -y avahi-daemon avahi-utils
-
-# Copy configurations
-cp resources/avahi/avahi-daemon.conf /etc/avahi/
-cp resources/avahi/fabmo.service /etc/avahi/services/
-
-# Enable service
-systemctl enable avahi-daemon
+apt-get install -y ... avahi-daemon avahi-utils
 ```
+
+**Configuration files** (in `copy_all_files()`):
+```bash
+# Avahi mDNS Configuration for fabmo.local access
+install_file "$RESOURCE_DIR/avahi/avahi-daemon.conf" "/etc/avahi/avahi-daemon.conf"
+install_file "$RESOURCE_DIR/avahi/fabmo.service" "/etc/avahi/services/fabmo.service"
+```
+
+**Service enablement** (in `load_and_initialize_systemd_services()`):
+```bash
+systemctl enable avahi-daemon.service
+```
+
+This means:
+- **New SD card images**: Include Avahi pre-configured and ready
+- **Existing SD cards**: Get Avahi via this patch during updater startup
+- **Complete coverage**: All systems (new and existing) will have fabmo.local support
 
 ## Troubleshooting
 **fabmo.local doesn't resolve:**

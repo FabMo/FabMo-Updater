@@ -98,6 +98,8 @@ function installAvahi() {
 
 /**
  * Check if Avahi configuration is correct
+ * Returns false if patch has already been applied (all correct)
+ * Returns true if patch needs to be applied (something is wrong or missing)
  */
 function check() {
     log.info('Checking Avahi mDNS configuration...');
@@ -106,13 +108,13 @@ function check() {
     if (!fs.existsSync(RESOURCE_DIR)) {
         log.info('Resource directory not found: ' + RESOURCE_DIR);
         log.info('Skipping Avahi setup (image builder resources not present)');
-        return true; // Not an error - just skip
+        return false; // Skip - not applicable without resources
     }
     
     // Check if avahi-daemon is installed
     if (!isAvahiInstalled()) {
         log.warn('avahi-daemon is not installed');
-        return false;
+        return true; // Needs to be applied - will install avahi
     }
     
     // Calculate expected hashes from source files
@@ -122,7 +124,7 @@ function check() {
             config.hash = calculateFileHash(config.source);
         } else {
             log.warn('Source file missing: ' + config.source);
-            return false;
+            return false; // Skip - can't apply without source files
         }
     }
     
@@ -155,123 +157,130 @@ function check() {
             log.info('avahi-daemon service is running');
         } catch (err) {
             log.warn('avahi-daemon service is not running');
-            return false;
+            return true; // Needs to be applied - service not running
         }
     }
     
-    return allCorrect;
+    // Return true if patch needs to be applied (something wrong)
+    // Return false if all correct (patch not needed)
+    return !allCorrect;
 }
 
 /**
  * Apply the Avahi mDNS patch
+ * Returns a Promise that resolves with { requiresReboot: boolean }
  */
 function apply() {
-    log.info('Applying Avahi mDNS patch...');
-    
-    // Check if resource directory exists
-    if (!fs.existsSync(RESOURCE_DIR)) {
-        log.info('Resource directory not found - skipping Avahi setup');
-        return true; // Not an error
-    }
-    
-    // Install avahi-daemon if not present
-    if (!isAvahiInstalled()) {
-        log.info('Avahi not installed, installing now...');
-        if (!installAvahi()) {
-            log.error('Failed to install Avahi');
-            return false;
-        }
-    }
-    
-    // Ensure target directories exist
-    try {
-        fs.ensureDirSync(AVAHI_CONF_DIR);
-        fs.ensureDirSync(AVAHI_SERVICES_DIR);
-    } catch (err) {
-        log.error('Failed to create Avahi directories: ' + err.message);
-        return false;
-    }
-    
-    // Copy configuration files
-    log.info('Installing Avahi configuration files...');
-    try {
-        for (var name in CONFIG_FILES) {
-            var config = CONFIG_FILES[name];
+    return new Promise(function(resolve, reject) {
+        try {
+            log.info('Applying Avahi mDNS patch...');
             
-            if (!fs.existsSync(config.source)) {
-                log.error('Source file not found: ' + config.source);
-                return false;
+            // Check if resource directory exists
+            if (!fs.existsSync(RESOURCE_DIR)) {
+                log.info('Resource directory not found - skipping Avahi setup');
+                return resolve({ requiresReboot: false });
             }
             
-            // Backup existing file if present
-            if (fs.existsSync(config.target)) {
-                var backupPath = config.target + '.backup-' + Date.now();
-                log.info('Backing up existing ' + name + ' to ' + backupPath);
-                fs.copyFileSync(config.target, backupPath);
-            }
-            
-            // Copy new file
-            log.info('Installing ' + name + ' to ' + config.target);
-            fs.copyFileSync(config.source, config.target);
-            
-            // Set proper permissions
-            fs.chmodSync(config.target, 0o644);
-        }
-    } catch (err) {
-        log.error('Failed to install Avahi configuration: ' + err.message);
-        return false;
-    }
-    
-    // Enable and restart avahi-daemon service
-    log.info('Enabling and restarting avahi-daemon service...');
-    try {
-        exec('systemctl enable avahi-daemon', {stdio: 'inherit'});
-        exec('systemctl restart avahi-daemon', {stdio: 'inherit'});
-        log.info('avahi-daemon service restarted');
-    } catch (err) {
-        log.error('Failed to restart avahi-daemon: ' + err.message);
-        return false;
-    }
-    
-    // Wait a moment for service to start
-    try {
-        var maxRetries = 5;
-        var retries = 0;
-        while (retries < maxRetries) {
-            try {
-                exec('systemctl is-active avahi-daemon', {stdio: 'pipe'});
-                break;
-            } catch (e) {
-                retries++;
-                if (retries >= maxRetries) {
-                    throw new Error('Service did not start after ' + maxRetries + ' retries');
+            // Install avahi-daemon if not present
+            if (!isAvahiInstalled()) {
+                log.info('Avahi not installed, installing now...');
+                if (!installAvahi()) {
+                    return reject(new Error('Failed to install Avahi'));
                 }
-                // Wait 1 second before retry
-                exec('sleep 1', {stdio: 'pipe'});
             }
+            
+            // Ensure target directories exist
+            try {
+                fs.ensureDirSync(AVAHI_CONF_DIR);
+                fs.ensureDirSync(AVAHI_SERVICES_DIR);
+            } catch (err) {
+                return reject(new Error('Failed to create Avahi directories: ' + err.message));
+            }
+            
+            // Copy configuration files
+            log.info('Installing Avahi configuration files...');
+            try {
+                for (var name in CONFIG_FILES) {
+                    var config = CONFIG_FILES[name];
+                    
+                    if (!fs.existsSync(config.source)) {
+                        return reject(new Error('Source file not found: ' + config.source));
+                    }
+                    
+                    // Backup existing file if present
+                    if (fs.existsSync(config.target)) {
+                        var backupPath = config.target + '.backup-' + Date.now();
+                        log.info('Backing up existing ' + name + ' to ' + backupPath);
+                        fs.copyFileSync(config.target, backupPath);
+                    }
+                    
+                    // Copy new file
+                    log.info('Installing ' + name + ' to ' + config.target);
+                    fs.copyFileSync(config.source, config.target);
+                    
+                    // Set proper permissions
+                    fs.chmodSync(config.target, 0o644);
+                }
+            } catch (err) {
+                return reject(new Error('Failed to install Avahi configuration: ' + err.message));
+            }
+            
+            // Enable and restart avahi-daemon service
+            log.info('Enabling and restarting avahi-daemon service...');
+            try {
+                exec('systemctl enable avahi-daemon', {stdio: 'inherit'});
+                exec('systemctl restart avahi-daemon', {stdio: 'inherit'});
+                log.info('avahi-daemon service restarted');
+            } catch (err) {
+                return reject(new Error('Failed to restart avahi-daemon: ' + err.message));
+            }
+            
+            // Wait a moment for service to start
+            try {
+                var maxRetries = 5;
+                var retries = 0;
+                while (retries < maxRetries) {
+                    try {
+                        exec('systemctl is-active avahi-daemon', {stdio: 'pipe'});
+                        break;
+                    } catch (e) {
+                        retries++;
+                        if (retries >= maxRetries) {
+                            return reject(new Error('Service did not start after ' + maxRetries + ' retries'));
+                        }
+                        // Wait 1 second before retry
+                        exec('sleep 1', {stdio: 'pipe'});
+                    }
+                }
+            } catch (err) {
+                return reject(new Error('avahi-daemon service failed to start: ' + err.message));
+            }
+            
+            // Test if fabmo.local resolves
+            log.info('Testing mDNS resolution...');
+            try {
+                // Give it a few seconds to register
+                exec('sleep 3', {stdio: 'pipe'});
+                
+                var result = exec('avahi-resolve -n fabmo.local', {stdio: 'pipe'}).toString();
+                log.info('fabmo.local resolves successfully');
+                log.info('Resolution: ' + result.trim());
+            } catch (err) {
+                log.warn('fabmo.local resolution test failed (may work after reboot)');
+                log.debug(err.message);
+            }
+            
+            log.info('Avahi mDNS patch applied successfully');
+            log.info('FabMo should now be accessible at: http://fabmo.local');
+            
+            // Resolve with no reboot required (mDNS should work immediately)
+            resolve({ requiresReboot: false });
+            
+        } catch (err) {
+            log.error('Unexpected error in apply(): ' + err.message);
+            reject(err);
         }
-    } catch (err) {
-        log.error('avahi-daemon service failed to start: ' + err.message);
-        return false;
-    }
-    
-    // Test if fabmo.local resolves
-    log.info('Testing mDNS resolution...');
-    try {
-        // Give it a few seconds to register
-        exec('sleep 3', {stdio: 'pipe'});
-        
-        var result = exec('avahi-resolve -n fabmo.local', {stdio: 'pipe'}).toString();
-        log.info('fabmo.local resolves successfully');
-        log.info('Resolution: ' + result.trim());
-    } catch (err) {
-        log.warn('fabmo.local resolution test failed (may work after reboot)');
-        log.debug(err.message);
-    }
-    
-    log.info('Avahi mDNS patch applied successfully');
-    log.info('FabMo should now be accessible at: http://fabmo.local');
-    return true;
+    });
 }
 
 /**
@@ -309,6 +318,7 @@ module.exports = {
     id: PATCH_ID,
     description: PATCH_DESCRIPTION,
     version: PATCH_VERSION,
+    requiresReboot: false,  // mDNS should work immediately after service restart
     check: check,
     apply: apply,
     revert: revert

@@ -959,15 +959,20 @@ $(document).ready(function() {
   $('#btn-check-for-updates').addClass('disabled');
   $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
   $('#check-button-text').text('Checking...');
+  $('#message-noupdates').html('<i class="fa fa-cog fa-spin"></i> Checking for updates ...').removeClass('hide');
   updater.checkForUpdates(function() {
-    // If checkInProgress is still true, the status event didn't find updates
-    if (checkInProgress) {
-      checkInProgress = false;
-      $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
-      $('#btn-check-for-updates').removeClass('disabled');
-      $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
-      $('#check-button-text').text(' Check again for new Updates');
-    }
+    // Check request completed - wait a moment for status event to arrive with results
+    // before declaring "no updates available"
+    setTimeout(function() {
+      if (checkInProgress) {
+        // Status event hasn't shown updates yet - safe to show "no updates"
+        checkInProgress = false;
+        $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
+        $('#btn-check-for-updates').removeClass('disabled');
+        $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
+        $('#check-button-text').text(' Check again for new Updates');
+      }
+    }, 2000); // 2 second delay for status event to arrive
   });
 
   // Updater log event - append new log messages to console and update PROGRESS report display depending on content
@@ -1054,7 +1059,11 @@ $(document).ready(function() {
       $('.update-indicator').addClass('updates-available')
       $('#check-for-updates-controls').addClass('hide');
       checkInProgress = false;
+      $('#btn-check-for-updates').removeClass('disabled');
+      $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
+      $('#check-button-text').text(' Check again for new Updates');
     } else if (!checkInProgress) {
+      // No updates and check not in progress - can safely show "no updates" message
       $('#check-for-updates-controls').removeClass('hide');
       $('#message-updates').addClass('hide');
       $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
@@ -1180,16 +1189,21 @@ $(document).ready(function() {
     $("#btn-check-for-updates").addClass('disabled');
     $('#check-button-icon').removeClass('fa-cloud-download').addClass('fa-cog fa-spin');
     $("#check-button-text").text('Checking...');
-    $('#message-noupdates').html('<i class="fa fa-cog fa-spin"></i> Checking for updates ...');
+    $('#message-noupdates').html('<i class="fa fa-cog fa-spin"></i> Checking for updates ...').removeClass('hide');
     clearConsole();
     updater.checkForUpdates(function() {
-      if (checkInProgress) {
-        checkInProgress = false;
-        $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
-        $('#btn-check-for-updates').removeClass('disabled');
-        $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
-        $('#check-button-text').text(' Check again for new Updates');
-      }
+      // Check request completed - wait a moment for status event to arrive with results
+      // before declaring "no updates available"
+      setTimeout(function() {
+        if (checkInProgress) {
+          // Status event hasn't shown updates yet - safe to show "no updates"
+          checkInProgress = false;
+          $('#message-noupdates').html('There are no new software updates available for automatic download.').removeClass('hide');
+          $('#btn-check-for-updates').removeClass('disabled');
+          $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
+          $('#check-button-text').text(' Check again for new Updates');
+        }
+      }, 2000); // 2 second delay for status event to arrive
     });
   });
 
