@@ -29,8 +29,8 @@ var PATCH_ID = '003-avahi-mdns-setup';
 var PATCH_DESCRIPTION = 'Setup Avahi mDNS for fabmo.local hostname resolution';
 var PATCH_VERSION = '2026-08-11';
 
-// Source directory for Avahi configuration files
-var RESOURCE_DIR = '/fabmo_image_builder/resources/avahi';
+// Source directory for Avahi configuration files (bundled with the updater)
+var RESOURCE_DIR = path.join(__dirname, 'resources', '003-avahi');
 
 // Target paths
 var AVAHI_CONF_DIR = '/etc/avahi';
@@ -106,9 +106,8 @@ function check() {
     
     // Check if resource directory exists
     if (!fs.existsSync(RESOURCE_DIR)) {
-        log.info('Resource directory not found: ' + RESOURCE_DIR);
-        log.info('Skipping Avahi setup (image builder resources not present)');
-        return false; // Skip - not applicable without resources
+        log.warn('Avahi resource directory missing from updater package: ' + RESOURCE_DIR);
+        return false; // Skip - updater package is incomplete
     }
     
     // Check if avahi-daemon is installed
@@ -177,7 +176,7 @@ function apply() {
             
             // Check if resource directory exists
             if (!fs.existsSync(RESOURCE_DIR)) {
-                log.info('Resource directory not found - skipping Avahi setup');
+                log.warn('Avahi resource directory missing from updater package: ' + RESOURCE_DIR);
                 return resolve({ requiresReboot: false });
             }
             

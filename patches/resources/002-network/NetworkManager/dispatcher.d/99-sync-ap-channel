@@ -1,0 +1,15 @@
+#!/bin/bash
+# NetworkManager dispatcher script to sync AP channel when WiFi connects
+# Place in /etc/NetworkManager/dispatcher.d/
+
+INTERFACE=$1
+ACTION=$2
+
+# Only act on wlan0 interface when it connects
+if [ "$INTERFACE" = "wlan0" ] && [ "$ACTION" = "up" ]; then
+    # Wait a moment for connection to stabilize
+    sleep 3
+    
+    # Run the sync script
+    /fabmo/files/network_conf_fabmo/sync-ap-channel.sh &
+fi

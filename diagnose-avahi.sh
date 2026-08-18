@@ -16,25 +16,26 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo "1. Checking resource files..."
-if [ -d "/fabmo_image_builder/resources/avahi" ]; then
-    echo "   ✓ Resource directory exists: /fabmo_image_builder/resources/avahi"
-    if [ -f "/fabmo_image_builder/resources/avahi/avahi-daemon.conf" ]; then
+UPDATER_RESOURCE_DIR="/fabmo-updater/patches/resources/003-avahi"
+echo "1. Checking resource files (bundled in updater)..."
+if [ -d "$UPDATER_RESOURCE_DIR" ]; then
+    echo "   ✓ Resource directory exists: $UPDATER_RESOURCE_DIR"
+    if [ -f "$UPDATER_RESOURCE_DIR/avahi-daemon.conf" ]; then
         echo "   ✓ Source file exists: avahi-daemon.conf"
-        echo "     $(wc -l < /fabmo_image_builder/resources/avahi/avahi-daemon.conf) lines"
+        echo "     $(wc -l < "$UPDATER_RESOURCE_DIR/avahi-daemon.conf") lines"
     else
         echo "   ❌ Missing: avahi-daemon.conf"
     fi
     
-    if [ -f "/fabmo_image_builder/resources/avahi/fabmo.service" ]; then
+    if [ -f "$UPDATER_RESOURCE_DIR/fabmo.service" ]; then
         echo "   ✓ Source file exists: fabmo.service"
-        echo "     $(wc -l < /fabmo_image_builder/resources/avahi/fabmo.service) lines"
+        echo "     $(wc -l < "$UPDATER_RESOURCE_DIR/fabmo.service") lines"
     else
         echo "   ❌ Missing: fabmo.service"
     fi
 else
-    echo "   ❌ Resource directory not found: /fabmo_image_builder/resources/avahi"
-    echo "      Patch will skip (not an error - just means image builder not present)"
+    echo "   ❌ Resource directory not found: $UPDATER_RESOURCE_DIR"
+    echo "      Updater package is incomplete - patch will skip"
 fi
 
 echo ""
