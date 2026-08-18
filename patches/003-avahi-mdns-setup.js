@@ -317,39 +317,39 @@ function apply() {
                 } catch (err) {
                     return reject(new Error('Failed to install Avahi service file: ' + err.message));
                 }
-            
-            // Enable and restart avahi-daemon service
-            log.info('Enabling and restarting avahi-daemon service...');
-            try {
-                exec('systemctl enable avahi-daemon', {stdio: 'inherit'});
-                exec('systemctl restart avahi-daemon', {stdio: 'inherit'});
-                log.info('avahi-daemon service restarted');
-            } catch (err) {
-                return reject(new Error('Failed to restart avahi-daemon: ' + err.message));
-            }
-            
-            // Wait a moment for service to start
-            try {
-                var maxRetries = 5;
-                var retries = 0;
-                while (retries < maxRetries) {
-                    try {
-                        exec('systemctl is-active avahi-daemon', {stdio: 'pipe'});
-                        break;
-                    } catch (e) {
-                        retries++;
-                        if (retries >= maxRetries) {
-                            return reject(new Error('Service did not start after ' + maxRetries + ' retries'));
-                        }
-                        // Wait 1 second before retry
-                        exec('sleep 1', {stdio: 'pipe'});
-                    }
+                
+                // Step 6: Enable and restart avahi-daemon service
+                log.info('Enabling and restarting avahi-daemon service...');
+                try {
+                    exec('systemctl enable avahi-daemon', {stdio: 'inherit'});
+                    exec('systemctl restart avahi-daemon', {stdio: 'inherit'});
+                    log.info('avahi-daemon service restarted');
+                } catch (err) {
+                    return reject(new Error('Failed to restart avahi-daemon: ' + err.message));
                 }
-            } catch (err) {
-                return reject(new Error('avahi-daemon service failed to start: ' + err.message));
-            }
-            
-                // Step 6: Test if hostname resolves
+                
+                // Wait a moment for service to start
+                try {
+                    var maxRetries = 5;
+                    var retries = 0;
+                    while (retries < maxRetries) {
+                        try {
+                            exec('systemctl is-active avahi-daemon', {stdio: 'pipe'});
+                            break;
+                        } catch (e) {
+                            retries++;
+                            if (retries >= maxRetries) {
+                                return reject(new Error('Service did not start after ' + maxRetries + ' retries'));
+                            }
+                            // Wait 1 second before retry
+                            exec('sleep 1', {stdio: 'pipe'});
+                        }
+                    }
+                } catch (err) {
+                    return reject(new Error('avahi-daemon service failed to start: ' + err.message));
+                }
+                
+                // Step 7: Test if hostname resolves
                 log.info('Testing mDNS resolution...');
                 try {
                     // Give it a few seconds to register
@@ -370,11 +370,12 @@ function apply() {
                 
                 // Resolve with no reboot required (mDNS should work immediately)
                 resolve({ requiresReboot: false });
-            
-        } catch (err) {
-            log.error('Unexpected error in apply(): ' + err.message);
-            reject(err);
-        }
+                
+            } catch (err) {
+                log.error('Unexpected error in apply(): ' + err.message);
+                reject(err);
+            }
+        });
     });
 }
 
