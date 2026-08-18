@@ -1,19 +1,21 @@
 /*
- * Patch 003: Setup Avahi mDNS for fabmo.local Access
+ * Patch 003: Setup Avahi mDNS with Unique Hostname
  * 
  * This patch installs and configures Avahi daemon to provide mDNS (multicast DNS)
- * service discovery. This allows users to access FabMo via http://fabmo.local
- * instead of requiring the IP address.
+ * service discovery with a unique hostname based on the machine's hardware ID.
+ * This allows users to access FabMo via http://fabmo-XXXXXX.local (where XXXXXX is
+ * the first 6 characters of the machine ID, matching the AP naming convention).
  * 
  * Benefits:
  * - Works with PCs that have static IP configurations (common in enterprise/education)
  * - Provides consistent hostname regardless of network mode (LAN/Direct/AP)
  * - User-friendly - no need to remember IP addresses
- * - Automatic discovery for compatible clients
+ * - Supports multiple FabMo tools on same network (unique hostnames prevent collisions)
+ * - Matches existing AP naming: FabMo-XXXXXX → fabmo-xxxxxx.local
  * 
  * Installs:
  * - avahi-daemon package (if not present)
- * - Custom avahi-daemon.conf (optimized for FabMo)
+ * - Dynamic avahi-daemon.conf with unique hostname (generated at runtime)
  * - FabMo service file (advertises HTTP service)
  * 
  * This patch is idempotent and safe to run multiple times.
@@ -26,8 +28,8 @@ var crypto = require('crypto');
 var path = require('path');
 
 var PATCH_ID = '003-avahi-mdns-setup';
-var PATCH_DESCRIPTION = 'Setup Avahi mDNS for fabmo.local hostname resolution';
-var PATCH_VERSION = '2026-08-11';
+var PATCH_DESCRIPTION = 'Setup Avahi mDNS with unique hostname based on machine ID';
+var PATCH_VERSION = '2026-08-18';
 
 // Source directory for Avahi configuration files (bundled with the updater)
 var RESOURCE_DIR = path.join(__dirname, 'resources', '003-avahi');
@@ -36,19 +38,16 @@ var RESOURCE_DIR = path.join(__dirname, 'resources', '003-avahi');
 var AVAHI_CONF_DIR = '/etc/avahi';
 var AVAHI_SERVICES_DIR = '/etc/avahi/services';
 
-// Configuration files with expected SHA256 hashes
+// Configuration files
 var CONFIG_FILES = {
-    'avahi-daemon.conf': {
-        source: path.join(RESOURCE_DIR, 'avahi-daemon.conf'),
-        target: path.join(AVAHI_CONF_DIR, 'avahi-daemon.conf'),
-        hash: null // Will be calculated from source
-    },
     'fabmo.service': {
         source: path.join(RESOURCE_DIR, 'fabmo.service'),
         target: path.join(AVAHI_SERVICES_DIR, 'fabmo.service'),
         hash: null
     }
 };
+
+// Avahi daemon config will be generated dynamically based on machine ID
 
 /**
  * Calculate SHA256 hash of a file
@@ -97,6 +96,74 @@ function installAvahi() {
 }
 
 /**
+ * Get machine ID and generate hostname
+ * Returns the hostname (e.g., 'fabmo-a1b2c3') or null on error
+ */
+function getMachineHostname(callback) {
+    var hooks = require('../hooks');
+    
+    hooks.getUniqueID(function(err, machineId) {
+        if (err || !machineId) {
+            log.warn('Could not get unique machine ID, using fallback');
+            // Use a random fallback if we can't get the real ID
+            var fallback = Math.random().toString(36).substring(2, 8).toLowerCase();
+            return callback(null, 'fabmo-' + fallback);
+        }
+        
+        // Extract first 6 characters, remove non-alphanumeric, lowercase
+        var cleanId = machineId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        var shortId = cleanId.substring(0, 6);
+        
+        if (shortId.length < 6) {
+            // Pad with zeros if ID is too short
+            shortId = (shortId + '000000').substring(0, 6);
+        }
+        
+        var hostname = 'fabmo-' + shortId;
+        log.info('Generated hostname: ' + hostname + ' (from machine ID: ' + machineId + ')');
+        callback(null, hostname);
+    });
+}
+
+/**
+ * Generate avahi-daemon.conf content with the specified hostname
+ */
+function generateAvahiConfig(hostname) {
+    return `# Avahi daemon configuration for FabMo
+# Dynamically generated with unique hostname based on machine ID
+# Generated: ${new Date().toISOString()}
+
+[server]
+host-name=${hostname}
+use-ipv4=yes
+use-ipv6=no
+allow-interfaces=eth0,wlan0
+
+[wide-area]
+enable-wide-area=no
+
+[publish]
+publish-addresses=yes
+publish-hinfo=yes
+publish-workstation=yes
+publish-domain=yes
+publish-a-on-ipv6=no
+publish-aaaa-on-ipv4=no
+
+[reflector]
+enable-reflector=no
+
+[rlimits]
+rlimit-core=0
+rlimit-data=4194304
+rlimit-fsize=0
+rlimit-nofile=768
+rlimit-stack=4194304
+rlimit-nproc=3
+`;
+}
+
+/**
  * Check if Avahi configuration is correct
  * Returns false if patch has already been applied (all correct)
  * Returns true if patch needs to be applied (something is wrong or missing)
@@ -104,7 +171,7 @@ function installAvahi() {
 function check() {
     log.info('Checking Avahi mDNS configuration...');
     
-    // Check if resource directory exists
+    // Check if resource directory exists (for service file)
     if (!fs.existsSync(RESOURCE_DIR)) {
         log.warn('Avahi resource directory missing from updater package: ' + RESOURCE_DIR);
         return false; // Skip - updater package is incomplete
@@ -116,53 +183,55 @@ function check() {
         return true; // Needs to be applied - will install avahi
     }
     
-    // Calculate expected hashes from source files
-    for (var name in CONFIG_FILES) {
-        var config = CONFIG_FILES[name];
-        if (fs.existsSync(config.source)) {
-            config.hash = calculateFileHash(config.source);
-        } else {
-            log.warn('Source file missing: ' + config.source);
-            return false; // Skip - can't apply without source files
-        }
+    // Check if avahi-daemon.conf exists (will be dynamically generated)
+    var configPath = path.join(AVAHI_CONF_DIR, 'avahi-daemon.conf');
+    if (!fs.existsSync(configPath)) {
+        log.warn('avahi-daemon.conf missing');
+        return true; // Needs to be applied
     }
     
-    // Check if all target files exist with correct content
-    var allCorrect = true;
-    for (var name in CONFIG_FILES) {
-        var config = CONFIG_FILES[name];
-        
-        if (!fs.existsSync(config.target)) {
-            log.warn('Missing Avahi config: ' + config.target);
-            allCorrect = false;
-            continue;
+    // Check if config has a valid host-name entry (not default)
+    try {
+        var configContent = fs.readFileSync(configPath, 'utf8');
+        if (!configContent.match(/host-name=fabmo-[a-z0-9]{6}/)) {
+            log.warn('avahi-daemon.conf does not have FabMo unique hostname');
+            return true; // Needs to be applied - hostname not configured
         }
-        
-        var targetHash = calculateFileHash(config.target);
-        if (targetHash !== config.hash) {
-            log.warn('Avahi config hash mismatch: ' + name);
-            log.debug('Expected: ' + config.hash);
-            log.debug('Found: ' + targetHash);
-            allCorrect = false;
-        }
+    } catch (err) {
+        log.warn('Could not read avahi-daemon.conf: ' + err.message);
+        return true; // Needs to be applied
     }
     
-    if (allCorrect) {
-        log.info('Avahi configuration is correct');
-        
-        // Check if service is running
-        try {
-            exec('systemctl is-active avahi-daemon', {stdio: 'pipe'});
-            log.info('avahi-daemon service is running');
-        } catch (err) {
-            log.warn('avahi-daemon service is not running');
-            return true; // Needs to be applied - service not running
-        }
+    // Calculate expected hash from source service file
+    var serviceConfig = CONFIG_FILES['fabmo.service'];
+    if (fs.existsSync(serviceConfig.source)) {
+        serviceConfig.hash = calculateFileHash(serviceConfig.source);
+    } else {
+        log.warn('Source file missing: ' + serviceConfig.source);
+        return false; // Skip - can't apply without source files
     }
     
-    // Return true if patch needs to be applied (something wrong)
-    // Return false if all correct (patch not needed)
-    return !allCorrect;
+    // Check if service file exists with correct content
+    if (!fs.existsSync(serviceConfig.target)) {
+        log.warn('Missing Avahi service file: ' + serviceConfig.target);
+        return true; // Needs to be applied
+    }
+    
+    var targetHash = calculateFileHash(serviceConfig.target);
+    if (targetHash !== serviceConfig.hash) {
+        log.warn('Avahi service file hash mismatch');
+        return true; // Needs to be applied
+    }
+    
+    // Check if service is running
+    try {
+        exec('systemctl is-active avahi-daemon', {stdio: 'pipe'});
+        log.info('Avahi mDNS configuration is correct and service is running');
+        return false; // All correct, no need to apply
+    } catch (err) {
+        log.warn('avahi-daemon service is not running');
+        return true; // Needs to be applied - service not running
+    }
 }
 
 /**
@@ -171,58 +240,83 @@ function check() {
  */
 function apply() {
     return new Promise(function(resolve, reject) {
-        try {
-            log.info('Applying Avahi mDNS patch...');
-            
-            // Check if resource directory exists
-            if (!fs.existsSync(RESOURCE_DIR)) {
-                log.warn('Avahi resource directory missing from updater package: ' + RESOURCE_DIR);
-                return resolve({ requiresReboot: false });
+        log.info('Applying Avahi mDNS patch...');
+        
+        // Check if resource directory exists (for service file)
+        if (!fs.existsSync(RESOURCE_DIR)) {
+            log.warn('Avahi resource directory missing from updater package: ' + RESOURCE_DIR);
+            return resolve({ requiresReboot: false });
+        }
+        
+        // Step 1: Get the machine ID and generate hostname
+        getMachineHostname(function(err, hostname) {
+            if (err || !hostname) {
+                return reject(new Error('Failed to generate hostname: ' + (err ? err.message : 'Unknown error')));
             }
             
-            // Install avahi-daemon if not present
-            if (!isAvahiInstalled()) {
-                log.info('Avahi not installed, installing now...');
-                if (!installAvahi()) {
-                    return reject(new Error('Failed to install Avahi'));
+            log.info('Using hostname: ' + hostname + ' → ' + hostname + '.local');
+            
+            try {
+                // Step 2: Install avahi-daemon if not present
+                if (!isAvahiInstalled()) {
+                    log.info('Avahi not installed, installing now...');
+                    if (!installAvahi()) {
+                        return reject(new Error('Failed to install Avahi'));
+                    }
                 }
-            }
-            
-            // Ensure target directories exist
-            try {
-                fs.ensureDirSync(AVAHI_CONF_DIR);
-                fs.ensureDirSync(AVAHI_SERVICES_DIR);
-            } catch (err) {
-                return reject(new Error('Failed to create Avahi directories: ' + err.message));
-            }
-            
-            // Copy configuration files
-            log.info('Installing Avahi configuration files...');
-            try {
-                for (var name in CONFIG_FILES) {
-                    var config = CONFIG_FILES[name];
+                
+                // Step 3: Ensure target directories exist
+                try {
+                    fs.ensureDirSync(AVAHI_CONF_DIR);
+                    fs.ensureDirSync(AVAHI_SERVICES_DIR);
+                } catch (err) {
+                    return reject(new Error('Failed to create Avahi directories: ' + err.message));
+                }
+                
+                // Step 4: Generate and write avahi-daemon.conf with unique hostname
+                var configPath = path.join(AVAHI_CONF_DIR, 'avahi-daemon.conf');
+                log.info('Generating dynamic avahi-daemon.conf with hostname: ' + hostname);
+                
+                try {
+                    // Backup existing file if present
+                    if (fs.existsSync(configPath)) {
+                        var backupPath = configPath + '.backup-' + Date.now();
+                        log.info('Backing up existing avahi-daemon.conf to ' + backupPath);
+                        fs.copyFileSync(configPath, backupPath);
+                    }
                     
-                    if (!fs.existsSync(config.source)) {
-                        return reject(new Error('Source file not found: ' + config.source));
+                    // Write new config
+                    var configContent = generateAvahiConfig(hostname);
+                    fs.writeFileSync(configPath, configContent, 'utf8');
+                    fs.chmodSync(configPath, 0o644);
+                    log.info('avahi-daemon.conf written successfully');
+                } catch (err) {
+                    return reject(new Error('Failed to write avahi-daemon.conf: ' + err.message));
+                }
+                
+                // Step 5: Copy service file
+                log.info('Installing Avahi service file...');
+                try {
+                    var serviceConfig = CONFIG_FILES['fabmo.service'];
+                    
+                    if (!fs.existsSync(serviceConfig.source)) {
+                        return reject(new Error('Source file not found: ' + serviceConfig.source));
                     }
                     
                     // Backup existing file if present
-                    if (fs.existsSync(config.target)) {
-                        var backupPath = config.target + '.backup-' + Date.now();
-                        log.info('Backing up existing ' + name + ' to ' + backupPath);
-                        fs.copyFileSync(config.target, backupPath);
+                    if (fs.existsSync(serviceConfig.target)) {
+                        var backupPath = serviceConfig.target + '.backup-' + Date.now();
+                        log.info('Backing up existing fabmo.service to ' + backupPath);
+                        fs.copyFileSync(serviceConfig.target, backupPath);
                     }
                     
                     // Copy new file
-                    log.info('Installing ' + name + ' to ' + config.target);
-                    fs.copyFileSync(config.source, config.target);
-                    
-                    // Set proper permissions
-                    fs.chmodSync(config.target, 0o644);
+                    log.info('Installing fabmo.service to ' + serviceConfig.target);
+                    fs.copyFileSync(serviceConfig.source, serviceConfig.target);
+                    fs.chmodSync(serviceConfig.target, 0o644);
+                } catch (err) {
+                    return reject(new Error('Failed to install Avahi service file: ' + err.message));
                 }
-            } catch (err) {
-                return reject(new Error('Failed to install Avahi configuration: ' + err.message));
-            }
             
             // Enable and restart avahi-daemon service
             log.info('Enabling and restarting avahi-daemon service...');
@@ -255,25 +349,27 @@ function apply() {
                 return reject(new Error('avahi-daemon service failed to start: ' + err.message));
             }
             
-            // Test if fabmo.local resolves
-            log.info('Testing mDNS resolution...');
-            try {
-                // Give it a few seconds to register
-                exec('sleep 3', {stdio: 'pipe'});
+                // Step 6: Test if hostname resolves
+                log.info('Testing mDNS resolution...');
+                try {
+                    // Give it a few seconds to register
+                    exec('sleep 3', {stdio: 'pipe'});
+                    
+                    var testHostname = hostname + '.local';
+                    var result = exec('avahi-resolve -n ' + testHostname, {stdio: 'pipe'}).toString();
+                    log.info(testHostname + ' resolves successfully');
+                    log.info('Resolution: ' + result.trim());
+                } catch (err) {
+                    log.warn('mDNS resolution test failed (may work after reboot)');
+                    log.debug(err.message);
+                }
                 
-                var result = exec('avahi-resolve -n fabmo.local', {stdio: 'pipe'}).toString();
-                log.info('fabmo.local resolves successfully');
-                log.info('Resolution: ' + result.trim());
-            } catch (err) {
-                log.warn('fabmo.local resolution test failed (may work after reboot)');
-                log.debug(err.message);
-            }
-            
-            log.info('Avahi mDNS patch applied successfully');
-            log.info('FabMo should now be accessible at: http://fabmo.local');
-            
-            // Resolve with no reboot required (mDNS should work immediately)
-            resolve({ requiresReboot: false });
+                log.info('Avahi mDNS patch applied successfully');
+                log.info('FabMo is now accessible at: http://' + hostname + '.local');
+                log.info('This matches the AP name convention (FabMo-' + hostname.substring(6).toUpperCase() + ')');
+                
+                // Resolve with no reboot required (mDNS should work immediately)
+                resolve({ requiresReboot: false });
             
         } catch (err) {
             log.error('Unexpected error in apply(): ' + err.message);

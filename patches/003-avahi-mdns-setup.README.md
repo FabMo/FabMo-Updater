@@ -1,7 +1,7 @@
 # Avahi mDNS Setup for FabMo
 
 ## Overview
-This patch (003) sets up Avahi daemon to provide mDNS (multicast DNS) resolution for `fabmo.local`, making FabMo accessible without knowing the IP address.
+This patch (003) sets up Avahi daemon to provide mDNS (multicast DNS) resolution with **unique hostnames** based on machine ID. Each FabMo tool gets a hostname like `fabmo-a1b2c3.local` (matching the AP naming convention), making it accessible without knowing the IP address.
 
 ## Problem Solved
 **Issue 1: Static IP PCs cannot connect to FabMo**
@@ -9,54 +9,101 @@ This patch (003) sets up Avahi daemon to provide mDNS (multicast DNS) resolution
 - These PCs ignore DHCP offers from FabMo's dnsmasq server
 - Traffic to 192.168.44.1 gets dropped because it's on a different subnet
 
-**Solution:** With Avahi, users can access `http://fabmo.local` instead of `http://192.168.44.1`. mDNS resolution works via link-local multicast, bypassing subnet routing issues.
+**Issue 2: Multiple FabMo tools on same network**
+- With hardcoded `fabmo.local`, all tools would collide (undefined which one responds)
+- Users need unique, predictable hostnames for each tool
+
+**Solution:** With Avahi and unique hostnames:
+- Access via `http://fabmo-XXXXXX.local` (where XXXXXX is first 6 chars of machine ID)
+- Matches existing AP naming: `FabMo-A1B2C3` → `fabmo-a1b2c3.local`
+- mDNS resolution works via link-local multicast, bypassing subnet routing issues
+- Multiple tools coexist without hostname collisions
 
 ## How It Works
-1. Avahi daemon advertises the hostname `fabmo` on the local network
-2. Client devices can resolve `fabmo.local` to the actual IP address (192.168.44.1, 192.168.42.1, or LAN IP)
-3. Works on:
+1. Patch reads unique machine ID (CPU serial on RPi, factory ID on Edison, etc.)
+2. Generates hostname: `fabmo-` + first 6 chars (lowercase) of machine ID
+3. Avahi daemon advertises this unique hostname on the local network
+4. Client devices can resolve `fabmo-a1b2c3.local` to the actual IP address
+5. Works on:
    - **macOS/iOS**: Native mDNS support (Bonjour)
    - **Linux**: Avahi client (usually pre-installed)
    - **Windows 10+**: Native mDNS support
    - **Android**: mDNS support via network service discovery
 
 ## Files Installed
-- `/etc/avahi/avahi-daemon.conf` - Main Avahi configuration
+- `/etc/avahi/avahi-daemon.conf` - **Dynamically generated** with unique hostname
 - `/etc/avahi/services/fabmo.service` - HTTP service advertisement
 
 ## Resources
-Source files located in:
+Service file template located in:
 ```
-/fabmo_image_builder/resources/avahi/
-├── avahi-daemon.conf
+/fabmo-updater/patches/resources/003-avahi/
 └── fabmo.service
 ```
+
+The `avahi-daemon.conf` is **generated at runtime** based on the machine's unique ID, ensuring each tool has a unique hostname.
 
 ## Patch Behavior
 - **Idempotent**: Safe to run multiple times
 - **Conditional**: Skips if resources directory not present
 - **Package Installation**: Automatically installs `avahi-daemon` if needed
+- **Dynamic Hostname**: Generates unique hostname based on machine ID (first 6 chars)
 - **Service Management**: Enables and starts avahi-daemon
-- **Verification**: Tests that fabmo.local resolves after installation
+- **Verification**: Tests that the unique hostname resolves after installation
+
+## Hostname Generation
+**Machine ID Sources** (platform-specific):
+- **Raspberry Pi**: CPU serial from `/proc/cpuinfo` (e.g., `00000000a1b2c3d4`)
+- **BeagleBone**: EEPROM serial
+- **Edison**: Factory serial from `/factory/serial_number`
+- **Generic Linux**: D-Bus machine-id
+
+**Hostname Format**: `fabmo-<6chars>`
+- Example machine ID: `a1b2c3d4e5f6`
+- Generated hostname: `fabmo-a1b2c3`
+- mDNS address: `http://fabmo-a1b2c3.local`
+- Matches AP name: `FabMo-A1B2C3` (uppercased)
+
+**Fallback**: If machine ID cannot be read, uses random 6-character fallback.
 
 ## Testing
 After applying patch:
 ```bash
-# On the Raspberry Pi
-sudo avahi-resolve -n fabmo.local
-# Should output: fabmo.local    192.168.44.1 (or current IP)
+# On the Raspberry Pi (replace a1b2c3 with your actual machine ID)
+sudo avahi-resolve -n fabmo-a1b2c3.local
+# Should output: fabmo-a1b2c3.local    192.168.44.1 (or current IP)
+
+# Find your hostname from the patch logs or check the config:
+grep host-name /etc/avahi/avahi-daemon.conf
 
 # From client PC (Linux/Mac)
-ping fabmo.local
+ping fabmo-a1b2c3.local
 
 # From any device
-# Open browser to: http://fabmo.local
+# Open browser to: http://fabmo-a1b2c3.local
+```
+
+## Multiple Tools on Same Network
+With unique hostnames, multiple FabMo tools coexist peacefully:
+
+```
+Network:
+├── Tool #1 (ID: a1b2c3) → fabmo-a1b2c3.local → 192.168.1.50
+├── Tool #2 (ID: e5f6g7) → fabmo-e5f6g7.local → 192.168.1.51
+└── Tool #3 (ID: i9j0k1) → fabmo-i9j0k1.local → 192.168.1.52
+
+Each tool accessible at its unique hostname:
+http://fabmo-a1b2c3.local  ✓
+http://fabmo-e5f6g7.local  ✓
+http://fabmo-i9j0k1.local  ✓
 ```
 
 ## Compatibility
 - Works in all network modes (LAN, Direct, AP)
 - Does NOT replace IP-based access (both work)
 - Fallback: If mDNS fails, IP addresses still work
+- Each tool has unique hostname - no conflicts with multiple tools
+- Hostname matches AP naming convention for consistency
 
 ## Related Changes
 This patch complements:
@@ -74,8 +121,8 @@ apt-get install -y ... avahi-daemon avahi-utils
 
 **Configuration files** (in `copy_all_files()`):
 ```bash
-# Avahi mDNS Configuration for fabmo.local access
-install_file "$RESOURCE_DIR/avahi/avahi-daemon.conf" "/etc/avahi/avahi-daemon.conf"
+# Avahi mDNS - Service file only
+# Note: avahi-daemon.conf is dynamically generated by patch on first boot
 install_file "$RESOURCE_DIR/avahi/fabmo.service" "/etc/avahi/services/fabmo.service"
 ```
 
@@ -84,14 +131,21 @@ install_file "$RESOURCE_DIR/avahi/fabmo.service" "/etc/avahi/services/fabmo.serv
 systemctl enable avahi-daemon.service
 ```
 
+**Strategy**:
+- Image includes Avahi **package** and **service file** (static)
+- Patch generates **unique hostname config** on first boot (dynamic)
+- This ensures each tool gets its unique hostname based on actual hardware
+
 This means:
-- **New SD card images**: Include Avahi pre-configured and ready
-- **Existing SD cards**: Get Avahi via this patch during updater startup
-- **Complete coverage**: All systems (new and existing) will have fabmo.local support
+- **New SD card images**: Include Avahi pre-installed, ready for customization
+- **First boot**: Patch generates unique hostname config automatically
+- **Existing SD cards**: Get Avahi via patch during updater startup
+- **Complete coverage**: All systems get unique hostname support
 
 ## Troubleshooting
-**fabmo.local doesn't resolve:**
+**Hostname doesn't resolve:**
 - Check service: `systemctl status avahi-daemon`
+- Check hostname: `grep host-name /etc/avahi/avahi-daemon.conf`
 - Check network: `avahi-browse -a` (shows all advertised services)
 - Restart: `sudo systemctl restart avahi-daemon`
 
@@ -100,7 +154,17 @@ This means:
 - Android: Some apps don't support mDNS (use IP as fallback)
 - Check firewall: mDNS uses UDP port 5353
 
+**Finding your hostname:**
+- Check AP name: `FabMo-A1B2C3` → `fabmo-a1b2c3.local`
+- Check config: `grep host-name /etc/avahi/avahi-daemon.conf`
+- Check dashboard: mDNS hostname displayed in system info
+
 ## User Documentation
 Tell users they can now access FabMo using either:
-- **By hostname**: `http://fabmo.local` (works with any network configuration)
+- **By unique hostname**: `http://fabmo-a1b2c3.local` (first 6 chars of machine ID)
 - **By IP**: `http://192.168.44.1` (direct), `http://192.168.42.1` (AP), or LAN IP
+
+**Finding the hostname:**
+- Look at the WiFi AP name: `FabMo-A1B2C3` → use `fabmo-a1b2c3.local`
+- Check the dashboard system info page
+- Look at the sticker on the device (if present)
