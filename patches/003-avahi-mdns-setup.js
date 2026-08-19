@@ -61,12 +61,18 @@ function calculateFileHash(filePath) {
     }
 }
 
-/**
- * Check if avahi-daemon package is installed
- */
 function isAvahiInstalled() {
     try {
         exec('which avahi-daemon', {stdio: 'pipe'});
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
+
+function isAvahiUtilsInstalled() {
+    try {
+        exec('which avahi-resolve', {stdio: 'pipe'});
         return true;
     } catch (err) {
         return false;
@@ -110,14 +116,12 @@ function getMachineHostname(callback) {
             return callback(null, 'fabmo-' + fallback);
         }
         
-        // Extract first 6 characters, remove non-alphanumeric, lowercase
+        // Match FabMo's working ID convention: strip all zeros, take first 6 chars.
+        // e.g. '10000000da1b7c1f' → '1da1b7',  '33db7558c8b5a8ca' → '33db75'
         var cleanId = machineId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-        var shortId = cleanId.substring(0, 6);
-        
-        if (shortId.length < 6) {
-            // Pad with zeros if ID is too short
-            shortId = (shortId + '000000').substring(0, 6);
-        }
+        var noZeros = cleanId.replace(/0/g, '');
+        var pool = noZeros.length >= 6 ? noZeros : (noZeros + cleanId);
+        var shortId = pool.substring(0, 6);
         
         var hostname = 'fabmo-' + shortId;
         log.info('Generated hostname: ' + hostname + ' (from machine ID: ' + machineId + ')');
@@ -180,7 +184,12 @@ function check() {
     // Check if avahi-daemon is installed
     if (!isAvahiInstalled()) {
         log.warn('avahi-daemon is not installed');
-        return true; // Needs to be applied - will install avahi
+        return true;
+    }
+
+    if (!isAvahiUtilsInstalled()) {
+        log.warn('avahi-utils is not installed');
+        return true;
     }
     
     // Check if avahi-daemon.conf exists (will be dynamically generated)
@@ -190,48 +199,58 @@ function check() {
         return true; // Needs to be applied
     }
     
-    // Check if config has a valid host-name entry (not default)
-    try {
-        var configContent = fs.readFileSync(configPath, 'utf8');
-        if (!configContent.match(/host-name=fabmo-[a-z0-9]{6}/)) {
-            log.warn('avahi-daemon.conf does not have FabMo unique hostname');
-            return true; // Needs to be applied - hostname not configured
-        }
-    } catch (err) {
-        log.warn('Could not read avahi-daemon.conf: ' + err.message);
-        return true; // Needs to be applied
-    }
-    
-    // Calculate expected hash from source service file
-    var serviceConfig = CONFIG_FILES['fabmo.service'];
-    if (fs.existsSync(serviceConfig.source)) {
-        serviceConfig.hash = calculateFileHash(serviceConfig.source);
-    } else {
-        log.warn('Source file missing: ' + serviceConfig.source);
-        return false; // Skip - can't apply without source files
-    }
-    
-    // Check if service file exists with correct content
-    if (!fs.existsSync(serviceConfig.target)) {
-        log.warn('Missing Avahi service file: ' + serviceConfig.target);
-        return true; // Needs to be applied
-    }
-    
-    var targetHash = calculateFileHash(serviceConfig.target);
-    if (targetHash !== serviceConfig.hash) {
-        log.warn('Avahi service file hash mismatch');
-        return true; // Needs to be applied
-    }
-    
-    // Check if service is running
-    try {
-        exec('systemctl is-active avahi-daemon', {stdio: 'pipe'});
-        log.info('Avahi mDNS configuration is correct and service is running');
-        return false; // All correct, no need to apply
-    } catch (err) {
-        log.warn('avahi-daemon service is not running');
-        return true; // Needs to be applied - service not running
-    }
+    // Compare current hostname against the machine-specific expected value (async).
+    // Pattern match alone is insufficient - fabmo-100000 matches but is the wrong ID
+    // for all RPi 4s since they share that serial prefix.
+    return new Promise(function(resolve) {
+        getMachineHostname(function(err, expectedHostname) {
+            if (err || !expectedHostname) {
+                log.warn('Could not determine expected hostname, will re-apply patch');
+                return resolve(true);
+            }
+            try {
+                var configContent = fs.readFileSync(configPath, 'utf8');
+                var match = configContent.match(/host-name=(fabmo-[a-z0-9]+)/);
+                if (!match) {
+                    log.warn('avahi-daemon.conf has no FabMo hostname entry');
+                    return resolve(true);
+                }
+                if (match[1] !== expectedHostname) {
+                    log.warn('Avahi hostname mismatch: current=' + match[1] + ', expected=' + expectedHostname);
+                    return resolve(true);
+                }
+
+                // Check service file
+                var serviceConfig = CONFIG_FILES['fabmo.service'];
+                if (!fs.existsSync(serviceConfig.source)) {
+                    log.warn('Source service file missing: ' + serviceConfig.source);
+                    return resolve(false);
+                }
+                serviceConfig.hash = calculateFileHash(serviceConfig.source);
+                if (!fs.existsSync(serviceConfig.target)) {
+                    log.warn('Missing Avahi service file: ' + serviceConfig.target);
+                    return resolve(true);
+                }
+                if (calculateFileHash(serviceConfig.target) !== serviceConfig.hash) {
+                    log.warn('Avahi service file hash mismatch');
+                    return resolve(true);
+                }
+
+                // Check service is running
+                try {
+                    exec('systemctl is-active avahi-daemon', {stdio: 'pipe'});
+                    log.info('Avahi mDNS is correct (' + expectedHostname + '.local) and service is running');
+                    return resolve(false);
+                } catch (e) {
+                    log.warn('avahi-daemon service is not running');
+                    return resolve(true);
+                }
+            } catch (e) {
+                log.warn('Error checking avahi config: ' + e.message);
+                return resolve(true);
+            }
+        });
+    });
 }
 
 /**
@@ -257,9 +276,9 @@ function apply() {
             log.info('Using hostname: ' + hostname + ' → ' + hostname + '.local');
             
             try {
-                // Step 2: Install avahi-daemon if not present
-                if (!isAvahiInstalled()) {
-                    log.info('Avahi not installed, installing now...');
+                // Step 2: Install avahi-daemon and/or avahi-utils if either is missing
+                if (!isAvahiInstalled() || !isAvahiUtilsInstalled()) {
+                    log.info('Installing missing Avahi packages...');
                     if (!installAvahi()) {
                         return reject(new Error('Failed to install Avahi'));
                     }
