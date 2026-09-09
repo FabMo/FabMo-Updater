@@ -82,6 +82,13 @@ function check() {
         if (!fs.existsSync(path.join(DNSMASQ_DIR, 'active-mode.conf'))) {
             log.info('  Missing active-mode.conf symlink');
             needsApplying = true;
+        } else {
+            var target = null;
+            try { target = fs.readlinkSync(path.join(DNSMASQ_DIR, 'active-mode.conf')); } catch(e) {}
+            if (target !== path.join(DNSMASQ_DIR, 'ap-only.conf')) {
+                log.info('  active-mode.conf points to wrong target: ' + target);
+                needsApplying = true;
+            }
         }
 
         for (var m = 0; m < REQUIRED_DISPATCHER_SCRIPTS.length; m++) {
@@ -184,11 +191,15 @@ function apply() {
                 }
             }
 
-            // active-mode.conf symlink defaults to ap-only; FabMo Engine repoints it at runtime
+            // active-mode.conf must point to ap-only at boot; network-monitor.sh switches it if needed
+            var apOnlyConf = path.join(DNSMASQ_DIR, 'ap-only.conf');
             var activeModeLink = path.join(DNSMASQ_DIR, 'active-mode.conf');
-            if (!fs.existsSync(activeModeLink)) {
-                log.info('  Creating active-mode.conf -> ap-only.conf');
-                fs.symlinkSync(path.join(DNSMASQ_DIR, 'ap-only.conf'), activeModeLink);
+            var currentTarget = null;
+            try { currentTarget = fs.readlinkSync(activeModeLink); } catch(e) {}
+            if (currentTarget !== apOnlyConf) {
+                log.info('  Setting active-mode.conf -> ap-only.conf (was: ' + (currentTarget || 'missing') + ')');
+                try { fs.unlinkSync(activeModeLink); } catch(e) {}
+                fs.symlinkSync(apOnlyConf, activeModeLink);
             }
 
             // --- Install missing NM dispatcher scripts ---
