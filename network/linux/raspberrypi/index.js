@@ -1,7 +1,15 @@
 /*
- * network/linux/edison/index.js
+ * network/linux/raspberrypi/index.js
  *
- * Network manager for the intel edison
+ * Network manager for the Raspberry Pi.
+ *
+ * NOTE: This module is currently NOT wired into the updater startup sequence.
+ * updater.js never assigns this.networkManager, so this code does not run at
+ * runtime.  Actual RPi network behaviour is governed by OS-level services
+ * (dhcpcd / NetworkManager) configured by the image builder and by patches
+ * 002 and 003.  If Node-managed networking is revived, this module should be
+ * instantiated in updater.js and platform detection should be re-enabled in
+ * UpdaterConfigFirstTime().
  */
 var log = require('../../../log').logger('network');
 var os = require('os');
@@ -26,22 +34,25 @@ var WIFI_SCAN_INTERVAL = 5000;
 var WIFI_SCAN_RETRIES = 3;
 
 var wifiInterface = 'wlan0';
-var ethernetInterface = "enp0s17u1u1";
+var ethernetInterface = 'eth0';
 var apModeGateway= '192.168.42.1';
 var tmpPath = os.tmpdir() + '/';
 
 var DEFAULT_NETMASK = "255.255.255.0";
 var DEFAULT_BROADCAST = "192.168.1.255"
-// This is how long the system will wait for DHCP before going into "magic mode" (ms)
-var DHCP_MAGIC_TTL = 5000;
+// How long between DHCP lease checks in magic mode (ms)
+var DHCP_MAGIC_RETRY_INTERVAL = 5000;
+// How many times to retry before assuming direct-connect (total wait = RETRY_INTERVAL × MAX_RETRIES)
+var DHCP_MAGIC_MAX_RETRIES = 12;  // 12 × 5s = 60 seconds
+// How often to probe for an upstream DHCP server while acting as one ourselves (ms)
+var DHCP_SERVER_RECHECK_INTERVAL = 300000; // 5 minutes
 var ETHERNET_SCAN_INTERVAL = 2000;
 var NETWORK_HEALTH_RETRIES = 8;
 var NETWORK_HEALTH_RETRY_INTERVAL = 1500;
 
-// This function calls an external network management script called `jedison` which is a 
-// fork of the management script provided by intel for the edison that accepts all of its commands
-// and prints all of its outputs in JSON format.  It is located in the /scripts directory.
-// TODO : Thanks to `wpa_cli` - this function (and the script it calls) might be obsolete?  Good riddance if so.
+// Thin wrapper around the `jedison` Python script (network/linux/raspberrypi/jedison),
+// a Raspberry Pi network management helper that drives hostapd/wpa_supplicant via JSON.
+// TODO: wpa_cli now covers most of what jedison does; consider replacing it.
 
 function jedison(cmdline, callback) {
     var callback = callback || function() {}
@@ -67,7 +78,7 @@ log.debug("Got ERROR")
     });
 }
 
-var EdisonNetworkManager = function() {
+var RpiNetworkManager = function() {
   this.mode = 'unknown';
   this.wifiState = 'idle';
   this.ethernetState = 'idle';
@@ -79,13 +90,14 @@ var EdisonNetworkManager = function() {
     wireless: null,
     wired : null
   };
+  this._dhcpMagicActive = false;
 }
-util.inherits(EdisonNetworkManager, NetworkManager);
+util.inherits(RpiNetworkManager, NetworkManager);
 
 // return an object containing {ipaddress:'',mode:''}
 //   interface - Interface name to get the info for
 //    callback - Called back with the info or error if there was an error
-EdisonNetworkManager.prototype.getInfo = function(interface,callback) {
+RpiNetworkManager.prototype.getInfo = function(interface,callback) {
   //jedison('get wifi-info', callback);
   ifconfig.status(interface,function(err,ifstatus){
       if(err)return callback(err);
@@ -98,7 +110,7 @@ log.debug(ifstatus.inet)
 }
 
 // Return a list of IP addresses (the local IP for all interfaces)
-EdisonNetworkManager.prototype.getLocalAddresses = function() {
+RpiNetworkManager.prototype.getLocalAddresses = function() {
   var retval = [];
   try {
     if(this.networkInfo.wireless) {
@@ -117,19 +129,19 @@ EdisonNetworkManager.prototype.getLocalAddresses = function() {
 // Get the current "scan results"
 // (A list of wifi networks that are visible to this client)
 //   callback - Called with the network list or with an error if error
-EdisonNetworkManager.prototype.getNetworks = function(callback) {
+RpiNetworkManager.prototype.getNetworks = function(callback) {
   //jedison('get networks', callback);
   wpa_cli.scan_results(wifiInterface, callback);
 }
 
 // Intiate a wifi network scan (site survey)
 //   callback - Called when scan is complete (may take a while) or with error if error
-EdisonNetworkManager.prototype.scan = function(callback) {
+RpiNetworkManager.prototype.scan = function(callback) {
   wpa_cli.scan(wifiInterface, callback);
 }
 
 // This function defines a state machine that runs as long as wifi is in managed mode
-EdisonNetworkManager.prototype.runWifi = function() {
+RpiNetworkManager.prototype.runWifi = function() {
 
   if(this.command) {
     switch(this.command.cmd) {
@@ -226,7 +238,7 @@ EdisonNetworkManager.prototype.runWifi = function() {
 }
 
 // This function defines a state machine that runs as long as wifi is in station (AP) mode
-EdisonNetworkManager.prototype.runWifiStation = function() {
+RpiNetworkManager.prototype.runWifiStation = function() {
   switch(this.wifiState) {
     case 'idle':
       this.scan_retries = WIFI_SCAN_RETRIES;
@@ -327,7 +339,7 @@ log.debug(err)
 
 // Periodic network check for wifi mode
 // TODO - probably should be _runWifiAP
-EdisonNetworkManager.prototype.runWifiAP = function() {
+RpiNetworkManager.prototype.runWifiAP = function() {
   switch(this.wifiState) {
     default:
       this.getInfo(wifiInterface,function(err, data) {
@@ -345,7 +357,7 @@ EdisonNetworkManager.prototype.runWifiAP = function() {
 
 // Issue the command to join AP mode
 // Function returns immediately
-EdisonNetworkManager.prototype.joinAP = function() {
+RpiNetworkManager.prototype.joinAP = function() {
   this.command = {
     'cmd' : 'ap',
   }
@@ -354,7 +366,7 @@ EdisonNetworkManager.prototype.joinAP = function() {
 // Actually do the work of joining AP mode
 // Uses jedison to switch modes
 //   callback - Called once in AP mode, or with error if error
-EdisonNetworkManager.prototype._joinAP = function(callback) {
+RpiNetworkManager.prototype._joinAP = function(callback) {
   log.info("Entering AP mode...");
   var network_config = config.updater.get('network');
   network_config.wifi.mode = 'ap';
@@ -369,7 +381,7 @@ EdisonNetworkManager.prototype._joinAP = function(callback) {
 
 // Issue the command to turn on wifi
 // Function returns immediately
-EdisonNetworkManager.prototype.enableWifi = function(){
+RpiNetworkManager.prototype.enableWifi = function(){
   this.command = {
     'cmd' : 'on'
   }
@@ -377,7 +389,7 @@ EdisonNetworkManager.prototype.enableWifi = function(){
 
 // Issue the command to turn off wifi
 // Function returns immediately
-EdisonNetworkManager.prototype.disableWifi = function(){
+RpiNetworkManager.prototype.disableWifi = function(){
   this.command = {
     'cmd' : 'off'
   }
@@ -385,7 +397,7 @@ EdisonNetworkManager.prototype.disableWifi = function(){
 
 // Actually do the work to turn off wifi
 //   callback - called once wifi is disabled, or with error if error
-EdisonNetworkManager.prototype._disableWifi = function(callback){
+RpiNetworkManager.prototype._disableWifi = function(callback){
   log.info("Disabling wifi...");
   //var network_config = config.updater.get('network');
   //network_config.mode = 'off';
@@ -405,7 +417,7 @@ EdisonNetworkManager.prototype._disableWifi = function(callback){
 // Function returns immediately
 //       ssid - The network to join
 //   password - The network key
-EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
+RpiNetworkManager.prototype.joinWifi = function(ssid, password) {
   this.command = {
     'cmd' : 'join',
     'ssid' : ssid,
@@ -417,7 +429,7 @@ EdisonNetworkManager.prototype.joinWifi = function(ssid, password) {
 //       ssid - The network to join
 //   password - The network key
 //   callback - Called when wifi is joined, or with error if error
-EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
+RpiNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
   var self = this;
   log.info("Attempting to join wifi network: " + ssid + " with password: " + password);
   var network_config = config.updater.get('network');
@@ -437,7 +449,7 @@ EdisonNetworkManager.prototype._joinWifi = function(ssid, password, callback) {
 
 // Issue the command to drop out of AP (and implicitly join the last remembered network)
 // Function returns immediately
-EdisonNetworkManager.prototype.unjoinAP = function() {
+RpiNetworkManager.prototype.unjoinAP = function() {
   this.command = {
     'cmd' : 'noap'
   }
@@ -445,7 +457,7 @@ EdisonNetworkManager.prototype.unjoinAP = function() {
 
 // Do the actual work of dropping out of AP mode
 //   callback - Callback called when AP mode has been exited or with error if error
-EdisonNetworkManager.prototype._unjoinAP = function(callback) {
+RpiNetworkManager.prototype._unjoinAP = function(callback) {
   jedison('unjoin', function(err, result) {
     if(err) {
       log.error(err);
@@ -457,7 +469,7 @@ EdisonNetworkManager.prototype._unjoinAP = function(callback) {
 // Apply the wifi configuration.  If in AP, drop out of AP (and wifi config will be applied automatically)
 // If in station mode, join the wifi network specified in the network configuration.
 // Function returns immediately
-EdisonNetworkManager.prototype.applyWifiConfig = function() {
+RpiNetworkManager.prototype.applyWifiConfig = function() {
   var network_config = config.updater.get('network');
   switch(network_config.wifi.mode) {
     case 'ap':
@@ -485,7 +497,7 @@ log.debug("READ STATION MODE")
  */
 
 // Initialize the network manager.  This kicks off the state machines that process commands from here on out
-EdisonNetworkManager.prototype.init = function() {
+RpiNetworkManager.prototype.init = function() {
   log.info('Initializing network manager...');
   jedison("init --name='" + config.updater.get('name') + "' --password='" + config.updater.get('password').replace('$','\\$') + "'", function(err, data) {
     log.info('Applying network configuration...');
@@ -498,7 +510,7 @@ EdisonNetworkManager.prototype.init = function() {
 
 // Get a list of the available wifi networks.  (The "scan results")
 //   callback - Called with list of wifi networks or error if error
-EdisonNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
+RpiNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
   // TODO should use setImmediate here
   callback(null, this.networks);
 }
@@ -506,15 +518,14 @@ EdisonNetworkManager.prototype.getAvailableWifiNetworks = function(callback) {
 // Connect to the specified wifi network.
 //   ssid - The network ssid to connect to
 //    key - The network key
-EdisonNetworkManager.prototype.connectToAWifiNetwork= function(ssid,key,callback) {
+RpiNetworkManager.prototype.connectToAWifiNetwork = function(ssid,key,callback) {
   // TODO a callback is passed here, but is not used.  If this function must have a callback, we should setImmediate after issuing the wifi command
   this.joinWifi(ssid, key, callback);
 }
 
 // Enable the wifi
 //   callback - Called when wifi is enabled or with error if error
-EdisonNetworkManager.prototype.turnWifiOn=function(callback){
-  //callback(new Error('Not available on the edison wifi manager.'));
+RpiNetworkManager.prototype.turnWifiOn = function(callback){
     ifconfig.status(wifiInterface,function(err,status){
         if(!status.up){
 log.debug("==========not status up")
@@ -532,20 +543,19 @@ log.debug("=========status up")
 
 // Disable the wifi
 //   callback - Called when wifi is disabled or with error if error
-EdisonNetworkManager.prototype.turnWifiOff=function(callback){
-  //callback(new Error('Not available on the edison wifi manager.'));
+RpiNetworkManager.prototype.turnWifiOff = function(callback){
   this.disableWifi();
 }
 
 // Get the history of connected wifi networks
 //   callback - Called with a list of networks
-EdisonNetworkManager.prototype.getWifiHistory=function(callback){
+RpiNetworkManager.prototype.getWifiHistory = function(callback){
   callback(null, this.network_history);
 }
 
 // Enter AP mode
 //   callback - Called once the command has been issued (but does not wait for the system to enter AP)
-EdisonNetworkManager.prototype.turnWifiHotspotOn=function(callback){
+RpiNetworkManager.prototype.turnWifiHotspotOn = function(callback){
   log.info("Entering AP mode...")
   this.joinAP();
   callback(null);
@@ -553,7 +563,7 @@ EdisonNetworkManager.prototype.turnWifiHotspotOn=function(callback){
 
 // Get network status
 //   callback - Called with network status or with error if error
-EdisonNetworkManager.prototype.getStatus = function(callback) {
+RpiNetworkManager.prototype.getStatus = function(callback) {
   ifconfig.status(callback);
   //var status = {'wifi' : {}}
 }
@@ -563,7 +573,7 @@ EdisonNetworkManager.prototype.getStatus = function(callback) {
 //    identity - Object of this format {name : 'thisismyname', password : 'thisismypassword'}
 //               Identity need not contain both values - only the values specified will be changed
 //    callback - Called when identity has been changed or with error if error
-EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
+RpiNetworkManager.prototype.setIdentity = function(identity, callback) {
   async.series([
     function set_name(callback) {
       if(identity.name) {
@@ -614,26 +624,26 @@ EdisonNetworkManager.prototype.setIdentity = function(identity, callback) {
 
 // Check to see if this host is online
 //   callback - Called back with the online state, or with error if error
-EdisonNetworkManager.prototype.isOnline = function(callback) {
+RpiNetworkManager.prototype.isOnline = function(callback) {
   setImmediate(callback, null, this.mode === 'station');
 }
 
 // Turn the ethernet interface on
 //   callback - Called when the ethernet interface is up or with error if error
-EdisonNetworkManager.prototype.turnEthernetOn=function(callback) {
+RpiNetworkManager.prototype.turnEthernetOn = function(callback) {
   ifconfig.up(ethernetInterface,callback);
 }
 
 // Turn the ethernet interface off
 //   callback - Called when the ethernet interface is up or with error if error
-EdisonNetworkManager.prototype.turnEthernetOff=function(callback) {
+RpiNetworkManager.prototype.turnEthernetOff = function(callback) {
   ifconfig.down(ethernetInterface,callback);
 }
 
 // Enable DHCP for the provided interface
 //   interface - The interface to update
 //   callback - Called when complete, or with error if error
-EdisonNetworkManager.prototype.enableDHCP=function(interface, callback) {
+RpiNetworkManager.prototype.enableDHCP = function(interface, callback) {
 log.debug('Enabling DHCP on ' + interface);
 udhcpc.enable({interface: interface},callback)
 }
@@ -641,7 +651,7 @@ udhcpc.enable({interface: interface},callback)
 // Disable DHCP for the provided interface
 //   interface - The interface to update
 //    callback - Called when complete, or with error if error
-EdisonNetworkManager.prototype.disableDHCP=function(interface, callback) {
+RpiNetworkManager.prototype.disableDHCP = function(interface, callback) {
 log.debug('Disabling DHCP on ' + interface);
   udhcpc.disable(interface,callback);
 }
@@ -649,7 +659,7 @@ log.debug('Disabling DHCP on ' + interface);
 // Start the internal DHCP server on the provided interface
 //   interface - The interface on which to start the DHCP server
 //    callback - Called when the DHCP server has been started, or with error if error
-EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
+RpiNetworkManager.prototype.startDHCPServer = function(interface, callback) {
   var ethernet_config = config.updater.get('network').ethernet;
   var options = {
     interface: interface,
@@ -668,7 +678,7 @@ EdisonNetworkManager.prototype.startDHCPServer=function(interface, callback) {
 // Stop the internal DHCP server on the provided interface
 //   interface - The interface on which to stop the DHCP server
 //    callback - Called when the DHCP server has been stopped, or with error if error
-EdisonNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
+RpiNetworkManager.prototype.stopDHCPServer = function(interface, callback) {
   udhcpd.disable({interface:interface,tmpPath:tmpPath},callback);
 }
 
@@ -676,7 +686,7 @@ EdisonNetworkManager.prototype.stopDHCPServer=function(interface, callback) {
 //   interface - The interface to update
 //          ip - The IP address, eg: '192.168.44.50'
 //    callback - Called when the address has been set or with error if error
-EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
+RpiNetworkManager.prototype.setIpAddress = function(interface, ip, callback) {
   if(!ip)return callback("no ip specified !");
   ifconfig.status(interface, function(err, status) {
     if(err)return callback(err,status);
@@ -694,7 +704,7 @@ EdisonNetworkManager.prototype.setIpAddress=function(interface, ip, callback) {
 //   interface - The interface to update
 //     netmask - The netmask, eg: '255.255.255.0'
 //    callback - Called when the netmask has been set or with error if error
-EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback) {
+RpiNetworkManager.prototype.setNetmask = function(interface, netmask, callback) {
   if(!netmask)return callback("no netmask specified !");
   ifconfig.status(interface, function(err, status) {
     if(err)return callback(err,status);
@@ -712,7 +722,7 @@ EdisonNetworkManager.prototype.setNetmask=function(interface, netmask, callback)
 //   interface - The interface to update
 //     gateway - The gateway, eg: '255.255.255.0'
 //    callback - Called when the gateway has been set or with error if error
-EdisonNetworkManager.prototype.setGateway=function(gateway, callback) {
+RpiNetworkManager.prototype.setGateway = function(gateway, callback) {
   doshell('route add default gw '+ gateway, function(s) {
     callback(null);
   });
@@ -720,7 +730,7 @@ EdisonNetworkManager.prototype.setGateway=function(gateway, callback) {
 
 // Take the configuration stored in the network config and apply it to the currently running instance
 // This function returns immediately
-EdisonNetworkManager.prototype.applyNetworkConfig=function(){
+RpiNetworkManager.prototype.applyNetworkConfig = function(){
   this.applyWifiConfig();
   // TODO - Why is this commented out?
 //  this.applyEthernetConfig();
@@ -729,7 +739,7 @@ EdisonNetworkManager.prototype.applyNetworkConfig=function(){
 // Take the ethernet configuration stored in the network config and apply it to the currently running instance
 // TODO - Cleanup indentation below
 // This function returns immediately (but takes a while to complete)
-EdisonNetworkManager.prototype.applyEthernetConfig=function(){
+RpiNetworkManager.prototype.applyEthernetConfig = function(){
   var self = this;
   var ethernet_config = config.updater.get('network').ethernet;
   ifconfig.status(ethernetInterface,function(err,status){
@@ -763,30 +773,56 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
             break;
 
           case 'magic':
-            self.enableDHCP(ethernetInterface,function(err){
-              setTimeout(function(){
-                ifconfig.status(ethernetInterface,function(err,status){
-                  if(err)log.warn(err);
-                  if(status.ipv4_address!==undefined) {// we got a lease !
-                      this.networkInfo.wired = status.ipv4_address;
-        log.info("[magic mode] An ip address was assigned to the ethernet interface : "+status.ipv4_address);
-                      return;
-      }
-      else{ // no lease, stop the dhcp client, set a static config and launch a dhcp server.
-                    async.series([
-                      self.disableDHCP.bind(this,ethernetInterface),
-                      self.setIpAddress.bind(this,ethernetInterface,ethernet_config.default_config.ip_address),
-                      self.setNetmask.bind(this,ethernetInterface,ethernet_config.default_config.netmask),
-                      self.setGateway.bind(this,ethernet_config.default_config.gateway),
-                      self.startDHCPServer.bind(this,ethernetInterface)
-                  ],function(err,results){
-                      if(err) log.warn(err);
-                      else log.info("[magic mode] No dhcp server found, switched to static configuration and launched a dhcp server...");
-                  });
+            if (self._dhcpMagicActive) {
+              log.warn('[magic mode] DHCP negotiation already in progress, skipping');
+              break;
+            }
+            self._dhcpMagicActive = true;
+            var magicRetries = 0;
+            var attemptLease = function() {
+              self.enableDHCP(ethernetInterface, function(err) {
+                if (err) { log.warn('[magic mode] enableDHCP error: ' + err); }
+                setTimeout(function() {
+                  // Abort if cable was unplugged while waiting
+                  if (self.ethernetState !== 'plugged') {
+                    log.info('[magic mode] Cable unplugged during DHCP negotiation, aborting');
+                    self._dhcpMagicActive = false;
+                    return;
                   }
-                }.bind(this));
-              }.bind(this),DHCP_MAGIC_TTL);
-            }.bind(this));
+                  ifconfig.status(ethernetInterface, function(err, status) {
+                    if (!err && status.ipv4_address !== undefined) {
+                      // Got a lease from an upstream router
+                      self.networkInfo.wired = status.ipv4_address;
+                      self._dhcpMagicActive = false;
+                      log.info('[magic mode] Got upstream DHCP lease: ' + status.ipv4_address);
+                    } else if (magicRetries < DHCP_MAGIC_MAX_RETRIES) {
+                      magicRetries++;
+                      log.info('[magic mode] No lease yet (attempt ' + magicRetries + '/' + DHCP_MAGIC_MAX_RETRIES + '), retrying...');
+                      attemptLease();
+                    } else {
+                      // No upstream DHCP server found — assume direct PC connection
+                      self._dhcpMagicActive = false;
+                      log.info('[magic mode] No upstream DHCP server after ' + DHCP_MAGIC_MAX_RETRIES + ' attempts, entering direct-connect mode');
+                      async.series([
+                        self.disableDHCP.bind(self, ethernetInterface),
+                        self.setIpAddress.bind(self, ethernetInterface, ethernet_config.default_config.ip_address),
+                        self.setNetmask.bind(self, ethernetInterface, ethernet_config.default_config.netmask),
+                        self.setGateway.bind(self, ethernet_config.default_config.gateway),
+                        self.startDHCPServer.bind(self, ethernetInterface)
+                      ], function(err, results) {
+                        if (err) { log.warn(err); }
+                        else {
+                          log.info('[magic mode] Direct-connect DHCP server active at ' + ethernet_config.default_config.ip_address);
+                          // Periodically re-check for an upstream router so we can stop being rogue
+                          self._scheduleDhcpServerRecheck(ethernet_config);
+                        }
+                      });
+                    }
+                  });
+                }, DHCP_MAGIC_RETRY_INTERVAL);
+              });
+            };
+            attemptLease();
             break;
 
           case 'off':
@@ -798,11 +834,51 @@ EdisonNetworkManager.prototype.applyEthernetConfig=function(){
   }.bind(this));
 }
 
+// While acting as a direct-connect DHCP server, periodically probe for an upstream router.
+// If one is found, exit DHCP server mode gracefully so we stop being a rogue server.
+RpiNetworkManager.prototype._scheduleDhcpServerRecheck = function(ethernet_config) {
+  var self = this;
+  setTimeout(function() {
+    if (self.ethernetState !== 'plugged' || self._dhcpMagicActive) { return; }
+    log.info('[magic mode] Probing for upstream DHCP server...');
+    async.series([
+      self.stopDHCPServer.bind(self, ethernetInterface),
+      self.disableDHCP.bind(self, ethernetInterface),
+      self.enableDHCP.bind(self, ethernetInterface)
+    ], function(err) {
+      if (err) { log.warn('[magic mode] Recheck probe error: ' + err); }
+      setTimeout(function() {
+        if (self.ethernetState !== 'plugged') { return; }
+        ifconfig.status(ethernetInterface, function(err, status) {
+          var directIp = ethernet_config.default_config.ip_address;
+          if (!err && status.ipv4_address && status.ipv4_address !== directIp) {
+            // Upstream router is back — stay in client mode
+            self.networkInfo.wired = status.ipv4_address;
+            log.info('[magic mode] Upstream DHCP server found, exiting direct-connect mode. Using: ' + status.ipv4_address);
+          } else {
+            // Still no upstream server — restore direct-connect mode and schedule next recheck
+            async.series([
+              self.disableDHCP.bind(self, ethernetInterface),
+              self.setIpAddress.bind(self, ethernetInterface, directIp),
+              self.setNetmask.bind(self, ethernetInterface, ethernet_config.default_config.netmask),
+              self.setGateway.bind(self, ethernet_config.default_config.gateway),
+              self.startDHCPServer.bind(self, ethernetInterface)
+            ], function(err) {
+              if (err) { log.warn('[magic mode] Recheck restore error: ' + err); }
+              self._scheduleDhcpServerRecheck(ethernet_config);
+            });
+          }
+        });
+      }, DHCP_MAGIC_RETRY_INTERVAL);
+    });
+  }, DHCP_SERVER_RECHECK_INTERVAL);
+};
+
 // This function is the main process for ethernet.
 // TODO - cleanup indentation below
 // Basically, it looks for media to be plugged or unplugged, and applies the correct
 // configuration accordingly.
-EdisonNetworkManager.prototype.runEthernet = function(){
+RpiNetworkManager.prototype.runEthernet = function(){
   var self = this;
   function checkEthernetState(){
     var oldState = this.ethernetState;
@@ -855,4 +931,4 @@ EdisonNetworkManager.prototype.runEthernet = function(){
 
 }
 
-exports.NetworkManager = EdisonNetworkManager;
+exports.NetworkManager = RpiNetworkManager;
