@@ -73,9 +73,16 @@ function check() {
         }
 
         for (var k = 0; k < REQUIRED_DNSMASQ_CONFIGS.length; k++) {
-            if (!fs.existsSync(path.join(DNSMASQ_DIR, REQUIRED_DNSMASQ_CONFIGS[k]))) {
+            var dnsPath = path.join(DNSMASQ_DIR, REQUIRED_DNSMASQ_CONFIGS[k]);
+            if (!fs.existsSync(dnsPath)) {
                 log.info('  Missing dnsmasq config: ' + REQUIRED_DNSMASQ_CONFIGS[k]);
                 needsApplying = true;
+            } else if (REQUIRED_DNSMASQ_CONFIGS[k] === 'direct-mode.conf') {
+                var content = fs.readFileSync(dnsPath, 'utf8');
+                if (!content.includes('bind-interfaces')) {
+                    log.info('  direct-mode.conf missing bind-interfaces (rogue DHCP fix)');
+                    needsApplying = true;
+                }
             }
         }
 
@@ -184,9 +191,15 @@ function apply() {
             for (var j = 0; j < REQUIRED_DNSMASQ_CONFIGS.length; j++) {
                 var configName = REQUIRED_DNSMASQ_CONFIGS[j];
                 var dnsTarget = path.join(DNSMASQ_DIR, configName);
-                if (!fs.existsSync(dnsTarget)) {
+                var dnsSource = path.join(RESOURCE_DIR, 'dnsmasq', configName);
+                var needsInstall = !fs.existsSync(dnsTarget);
+                if (!needsInstall && configName === 'direct-mode.conf') {
+                    var existing = fs.readFileSync(dnsTarget, 'utf8');
+                    if (!existing.includes('bind-interfaces')) needsInstall = true;
+                }
+                if (needsInstall) {
                     log.info('  Installing dnsmasq config: ' + configName);
-                    fs.copySync(path.join(RESOURCE_DIR, 'dnsmasq', configName), dnsTarget);
+                    fs.copySync(dnsSource, dnsTarget);
                     fs.chmodSync(dnsTarget, 0o644);
                 }
             }
