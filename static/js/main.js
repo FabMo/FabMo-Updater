@@ -806,7 +806,29 @@ function launchDashboard(hardReload) {
           const timestamp = new Date().getTime();
           window.location.href = window.location.href.split('?')[0] + '?reload=' + timestamp;
       }
-      window.open(updater.getEngineURL(), "_self");
+      // Only chase the current machine_name via .local when the user is already on a .local
+      // hostname; if they came in via IP, stay on IP so mDNS availability doesn't matter.
+      if (/\.local$/i.test(location.hostname)) {
+        fetch(updater.engine_url + '/network/identity')
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            var name = data && data.data && data.data.machine_name;
+            if (name) {
+              var hostname = name.toLowerCase()
+                .replace(/[^a-z0-9-]/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '') || 'fabmo';
+              window.open(location.protocol + '//' + hostname + '.local', '_self');
+            } else {
+              window.open(updater.getEngineURL(), '_self');
+            }
+          })
+          .catch(function() {
+            window.open(updater.getEngineURL(), '_self');
+          });
+      } else {
+        window.open(updater.getEngineURL(), '_self');
+      }
     },
     cancel : function() {
       dismissModal();
@@ -1252,6 +1274,40 @@ $(document).ready(function() {
     );
   });
 
+  // Save Machine Name and/or Password to engine config
+  $('#dup-btn-wifi-network-id').click(function(evt) {
+    // just click the btn-wifi-network-id button, cheap shot to test
+    $('#btn-wifi-network-id').trigger('click');
+  }); 
+  $('#btn-wifi-network-id').click(function(evt) {
+    evt.preventDefault();
+    var machine_name = $('#wifi-network-name').val().trim();
+    var password = $('#wifi-network-password').val().trim();
+    if (!machine_name && !password) { return; }
+    fetch(updater.engine_url + '/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ engine: Object.assign(
+        {},
+        machine_name ? { machine_name: machine_name } : {},
+        password     ? { password: password }         : {}
+      )})
+    }).then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.status === 'success') {
+          if (machine_name) {
+            $('#current-machine-name').text('(current: ' + machine_name + ')');
+          }
+          $('#wifi-network-name').val('');
+          $('#wifi-network-password').val('');
+          setConsoleMessage('Identity saved.', false);
+        } else {
+          setConsoleMessage('Error saving identity.', true);
+        }
+      })
+      .catch(function() { setConsoleMessage('Could not reach engine.', true); });
+  });
+
   // Console clear button
   $('#btn-console-clear').click(function() {clearConsole()});
   $('#btn-console-copy').click(function() {copyActiveConsole()});
@@ -1390,6 +1446,18 @@ $(document).ready(function() {
 
     // Set the OS from the updater config
     setOS(config.os);
+
+    // Populate Machine Name display and input from engine config
+    fetch(updater.engine_url + '/config')
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        var machine_name = '';
+        try { machine_name = data.data.engine.machine_name || ''; } catch(e) {}
+        if (machine_name) {
+          $('#current-machine-name').text('(current: ' + machine_name + ')');
+        }
+      })
+      .catch(function() {});
 
     // If there are fields for other configuration entries - fill those in
     config = flattenObject(config);

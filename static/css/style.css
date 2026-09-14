@@ -417,9 +417,10 @@ em {
 
 input[type="text"], input[type="password"] {
 	display: inline-block;
+	width: 20em;
 	border-radius: 0.25em;
     display: inline-block;
-	padding: 0.5em 1em;
+	padding: 0.5em 2cap;
 	border: 1px solid #aaa;
 }
 

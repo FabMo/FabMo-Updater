@@ -7,6 +7,9 @@
 var log = require('../log').logger('network');
 var config =  require('../config');
 var util =  require('../util');
+var fs = require('fs');
+
+var ENGINE_CONFIG_PATH = '/opt/fabmo/config/engine.json';
 
 // Return a list of wifi networks that are currently visible.
 // TODO - This is a bad route name, because retrieving it doesn't actually trigger a scan
@@ -133,27 +136,51 @@ hotspotState = function(req,res,next){
   }
 }
 
-// Set the network ID name and password
-// This is the AP SSID/Hostname
-setNetworkIdentity = function(req,res,next){
-  var name = req.params.name;
-  var password = req.params.password;
-
-  var network = require('../updater').networkManager;
-  network.setIdentity({'name' : name, 'password' : password}, function(err, data) {
-    if(err) {
-      return res.json({'status':'error', 'message' : err.message});
+// Set machine_name and/or password in the engine config. Both fields are optional;
+// only non-blank values are written.
+setNetworkIdentity = function(req, res, next) {
+  var machine_name = (req.params.name || '').trim();
+  var password = (req.params.password || '').trim();
+  if (!machine_name && !password) {
+    return res.json({status: 'error', message: 'No name or password provided'});
+  }
+  fs.readFile(ENGINE_CONFIG_PATH, 'utf8', function(err, data) {
+    var engineConfig = {};
+    if (!err) {
+      try { engineConfig = JSON.parse(data); } catch(e) {}
     }
-    res.json({'status':'success'});
+    if (machine_name) { engineConfig.machine_name = machine_name; }
+    if (password)     { engineConfig.password = password; }
+    fs.writeFile(ENGINE_CONFIG_PATH, JSON.stringify(engineConfig, null, 4), function(writeErr) {
+      if (writeErr) {
+        log.error('Failed to write identity: ' + writeErr.message);
+        return res.json({status: 'error', message: writeErr.message});
+      }
+      log.info('Identity updated' + (machine_name ? '; machine_name=' + machine_name : ''));
+      res.json({status: 'success'});
+    });
   });
 }
 
-// Retrieve the network ID (but only return the name, not password)
-// This is the AP SSID/Hostname
+// Retrieve machine_name, machine_id, and engine_id from the engine config
 getNetworkIdentity = function(req, res, next) {
-  res.json({
-    status : 'success',
-    data : {name : config.updater.get('name'), id : config.updater.get('id')}
+  fs.readFile(ENGINE_CONFIG_PATH, 'utf8', function(err, data) {
+    if (err) {
+      return res.json({status: 'error', message: err.message});
+    }
+    try {
+      var engineConfig = JSON.parse(data);
+      res.json({
+        status: 'success',
+        data: {
+          machine_name: engineConfig.machine_name || '',
+          machine_id: engineConfig.machine_id || '',
+          engine_id: engineConfig.engine_id || ''
+        }
+      });
+    } catch(e) {
+      res.json({status: 'error', message: 'Could not parse engine config'});
+    }
   });
 }
 

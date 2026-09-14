@@ -172,14 +172,31 @@
     -->
     <div class="content-pane" id="view-settings">
       <h1><i class="fa fa-wrench"></i> Settings</h1>
-      <h2>System Identity</h2>
-      <p>The name selected here will be used both as the system hostname as well as the SSID when in AP mode.  The password will be used both as the root password as well as the network key for AP mode.  <em>You do not need to enter both values.  Only non-blank values will be changed.</em></p>
+
+      <h2>Machine Name <span id="current-machine-name" style="font-weight:normal; font-size:0.8em; color:#aaa;"></span></h2>
+      <p>The <strong>Machine Name</strong> is your friendly label for this tool. It is used as the Wi-Fi SSID
+         (e.g. <em>MyTool-LAN@10.0.0.177</em>) and as the Avahi network shortcut (e.g. <em>MyTool.local</em>).
+         The permanent <strong>Machine ID</strong> (hardware-derived, e.g. <em>FabMo-33db75</em>) is the default and will be used unless you set a name here.</p>
       <form class="form-horizontal" id="form-wifi-network-id">
         <fieldset>
-         <label>System ID: </label>
-         <input id="wifi-network-name" type="text" placeholder="Name" />
-         <input id="wifi-network-password" type="password" placeholder="Root Password" />
-         <button id="btn-wifi-network-id" class="btn-green">Set System ID</button>
+          <label>New Machine Name: </label>
+          <input id="wifi-network-name" type="text" placeholder="Leave blank to keep current name" />
+        </fieldset>
+                <fieldset>
+          <button id="dup-btn-wifi-network-id" class="btn-green">Apply Change</button>
+        </fieldset>
+
+
+      <h2>Password</h2>
+        <p>The universal FabMo <strong>Password</strong> is the general password used for accessing this tool in FabMo and the Updater
+           and as the network key for this tool's Wi-Fi hotspot (AP mode).</p>
+        <fieldset>
+          <label>New Password: </label>
+          <input id="wifi-network-password" type="password" placeholder="Leave blank to keep current password" />
+        </fieldset>
+
+        <fieldset>
+          <button id="btn-wifi-network-id" class="btn-green">Apply Change</button>
         </fieldset>
       </form>
       <!--
@@ -188,8 +205,9 @@
       <button id="btn-start-engine" class="button btn-green">Start Engine</button>
       <button id="btn-stop-engine" class="button btn-red">Stop Engine</button>
       -->
-      <h2>Configuration</h2>
-      <fieldset>
+      <h2>Update Packages Location</h2>
+        <p>The Github location for the current list of update packages and related data.</p>
+        <fieldset>
         <ul>
           <li>
             <label class="settings" for="config-packages_url">Packages URL: </label>
