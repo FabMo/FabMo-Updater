@@ -157,6 +157,25 @@ setNetworkIdentity = function(req, res, next) {
         return res.json({status: 'error', message: writeErr.message});
       }
       log.info('Identity updated' + (machine_name ? '; machine_name=' + machine_name : ''));
+
+      // Notify the running FabMo engine so its in-memory config and SSID update immediately.
+      // This is non-fatal: if FabMo is not running or rejects the call, the file write above
+      // still took effect and will be picked up on the next FabMo restart.
+      if (machine_name || password) {
+        var axios = require('axios');
+        var enginePort = config.updater.get('engine_server_port') || 80;
+        var payload = {};
+        if (machine_name) payload.name = machine_name;
+        if (password)     payload.password = password;
+        axios.post('http://localhost:' + enginePort + '/network/identity', payload, { timeout: 5000 })
+          .then(function(resp) {
+            log.info('FabMo engine notified of identity change (' + resp.status + ')');
+          })
+          .catch(function(e) {
+            log.warn('Could not notify FabMo engine of identity change (may not be running): ' + (e.message || e));
+          });
+      }
+
       // Also update hostname and Avahi immediately so .local resolves without waiting for ip-reporting.py
       if (machine_name) {
         var exec = require('child_process').exec;

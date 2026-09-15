@@ -150,6 +150,7 @@ function runPatches(callback) {
     log.info('SYSTEM PATCHES: Starting patch check...');
     log.info('========================================');
     
+    var trackingFileExisted = fs.existsSync(PATCHES_TRACKING_FILE);
     var appliedPatches = loadTrackingFile();
     var patches = loadPatchModules();
     var rebootRequired = false;
@@ -190,6 +191,10 @@ function runPatches(callback) {
                     }
                 } else {
                     patchesSkipped++;
+                    // Record in memory so we can regenerate the tracking file if it was missing
+                    if (!appliedPatches[patch.id]) {
+                        appliedPatches[patch.id] = new Date().toISOString();
+                    }
                 }
             });
         }).catch(function(err) {
@@ -222,7 +227,19 @@ function runPatches(callback) {
         }
         // If no patches were applied (patchesApplied === 0), leave existing flag as-is
         // This preserves reboot notifications from previous runs
-        
+
+        // Regenerate the tracking file if it was deleted but patches are confirmed applied.
+        // Without this, a deleted /opt/patches directory leaves no record, making the
+        // system appear unpatched even though all checks passed.
+        if (!trackingFileExisted && patchesSkipped > 0 && patchesApplied === 0) {
+            try {
+                saveTrackingFile(appliedPatches);
+                log.info('Tracking file regenerated with ' + Object.keys(appliedPatches).length + ' confirmed-applied patch(es)');
+            } catch (saveErr) {
+                log.warn('Could not regenerate tracking file: ' + saveErr.message);
+            }
+        }
+
         log.info('========================================');
         if (callback) { callback(null, { rebootRequired: rebootRequired }); }
     }).catch(function(err) {
