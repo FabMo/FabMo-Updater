@@ -1274,6 +1274,29 @@ $(document).ready(function() {
     );
   });
 
+  // Apply Change button (name-only shortcut above the password section — same logic as Apply Changes)
+  $('#dup-btn-wifi-network-id').click(function(evt) {
+    evt.preventDefault();
+    var machine_name = $('#wifi-network-name').val().trim();
+    var password = $('#wifi-network-password').val().trim();
+    if (!machine_name && !password) { return; }
+    var payload = {};
+    if (machine_name) { payload.name = machine_name; }
+    if (password)     { payload.password = password; }
+    updater.setNetworkIdentity(payload, function(err, data) {
+      if (err) {
+        setConsoleMessage('Could not save identity.', true);
+      } else {
+        if (machine_name) {
+          $('#current-machine-name').text('(current: ' + machine_name + ')');
+        }
+        $('#wifi-network-name').val('');
+        $('#wifi-network-password').val('');
+        setConsoleMessage('Identity saved.', false);
+      }
+    });
+  });
+
   // Save Machine Name and/or Password via the updater's own same-origin endpoint (no CORS needed)
   $('#btn-wifi-network-id').click(function(evt) {
     evt.preventDefault();
