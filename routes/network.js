@@ -167,7 +167,7 @@ setNetworkIdentity = function(req, res, next) {
         var payload = {};
         if (machine_name) payload.name = machine_name;
         if (password)     payload.password = password;
-        axios.post('http://localhost:' + enginePort + '/network/identity', payload, { timeout: 5000 })
+        axios.post('http://127.0.0.1:' + enginePort + '/network/identity', payload, { timeout: 5000 })
           .then(function(resp) {
             log.info('FabMo engine notified of identity change (' + resp.status + ')');
           })

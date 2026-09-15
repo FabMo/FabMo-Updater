@@ -54,6 +54,14 @@ $('.menu-item').click(function() {
           window.location.href = "/login";
         }})
 
+      case 'view-settings':
+        // refresh current name whenever the pane is opened
+        updater.getNetworkIdentity(function(err, data) {
+          var name = (data && data.machine_name) || '';
+          if (name) { $('#current-machine-name').text('(current: ' + name + ')'); }
+        });
+        /* falls through */
+
       default:
         $('.content-pane').removeClass('active');
         $('#' + this.dataset.id).addClass('active');
@@ -1459,17 +1467,13 @@ $(document).ready(function() {
     // Set the OS from the updater config
     setOS(config.os);
 
-    // Populate Machine Name display and input from engine config
-    fetch(updater.engine_url + '/config')
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        var machine_name = '';
-        try { machine_name = data.data.engine.machine_name || ''; } catch(e) {}
-        if (machine_name) {
-          $('#current-machine-name').text('(current: ' + machine_name + ')');
-        }
-      })
-      .catch(function() {});
+    // Populate current machine name from updater's own endpoint (same-origin, no CORS risk)
+    updater.getNetworkIdentity(function(err, data) {
+      var machine_name = (data && data.machine_name) || '';
+      if (machine_name) {
+        $('#current-machine-name').text('(current: ' + machine_name + ')');
+      }
+    });
 
     // If there are fields for other configuration entries - fill those in
     config = flattenObject(config);
