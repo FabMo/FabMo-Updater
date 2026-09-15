@@ -157,6 +157,21 @@ setNetworkIdentity = function(req, res, next) {
         return res.json({status: 'error', message: writeErr.message});
       }
       log.info('Identity updated' + (machine_name ? '; machine_name=' + machine_name : ''));
+      // Also update hostname and Avahi immediately so .local resolves without waiting for ip-reporting.py
+      if (machine_name) {
+        var exec = require('child_process').exec;
+        var hostname = machine_name.toLowerCase()
+          .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '') || 'fabmo';
+        exec('hostnamectl set-hostname ' + hostname, function(e) {
+          if (e) log.warn('Could not set hostname: ' + e.message);
+        });
+        exec('sed -i "s|^host-name=.*|host-name=' + hostname + '|" /etc/avahi/avahi-daemon.conf', function(e) {
+          if (e) log.warn('Could not update avahi-daemon.conf: ' + e.message);
+        });
+        exec('systemctl restart avahi-daemon', function(e) {
+          if (e) log.warn('Could not restart avahi-daemon: ' + e.message);
+        });
+      }
       res.json({status: 'success'});
     });
   });

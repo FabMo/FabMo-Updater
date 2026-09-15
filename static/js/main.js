@@ -1274,38 +1274,27 @@ $(document).ready(function() {
     );
   });
 
-  // Save Machine Name and/or Password to engine config
-  $('#dup-btn-wifi-network-id').click(function(evt) {
-    // just click the btn-wifi-network-id button, cheap shot to test
-    $('#btn-wifi-network-id').trigger('click');
-  }); 
+  // Save Machine Name and/or Password via the updater's own same-origin endpoint (no CORS needed)
   $('#btn-wifi-network-id').click(function(evt) {
     evt.preventDefault();
     var machine_name = $('#wifi-network-name').val().trim();
     var password = $('#wifi-network-password').val().trim();
     if (!machine_name && !password) { return; }
-    fetch(updater.engine_url + '/config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ engine: Object.assign(
-        {},
-        machine_name ? { machine_name: machine_name } : {},
-        password     ? { password: password }         : {}
-      )})
-    }).then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (data.status === 'success') {
-          if (machine_name) {
-            $('#current-machine-name').text('(current: ' + machine_name + ')');
-          }
-          $('#wifi-network-name').val('');
-          $('#wifi-network-password').val('');
-          setConsoleMessage('Identity saved.', false);
-        } else {
-          setConsoleMessage('Error saving identity.', true);
+    var payload = {};
+    if (machine_name) { payload.name = machine_name; }
+    if (password)     { payload.password = password; }
+    updater.setNetworkIdentity(payload, function(err, data) {
+      if (err) {
+        setConsoleMessage('Could not save identity.', true);
+      } else {
+        if (machine_name) {
+          $('#current-machine-name').text('(current: ' + machine_name + ')');
         }
-      })
-      .catch(function() { setConsoleMessage('Could not reach engine.', true); });
+        $('#wifi-network-name').val('');
+        $('#wifi-network-password').val('');
+        setConsoleMessage('Identity saved.', false);
+      }
+    });
   });
 
   // Console clear button
