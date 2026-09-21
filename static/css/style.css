@@ -376,13 +376,13 @@ em {
 	padding: 2px 8px;
 	cursor: pointer;
 	border-radius: 3px;
-	color: #f5c518;
-	border: 1px solid #f5c518;
+	color: #888;
 	white-space: nowrap;
 	transition: all 0.2s ease;
 }
 .console-action-btn:hover {
-	background-color: rgba(245, 197, 24, 0.15);
+	color: #ddd;
+	background-color: #333;
 }
 
 .console-filter-sep {

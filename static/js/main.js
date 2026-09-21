@@ -1335,6 +1335,10 @@ $(document).ready(function() {
 
   // Switch to Terminal panel and run ck_services diagnostic
   $('#btn-terminal-services').click(function() {
+    // Collapse content panes so the console fills the full height (same as clicking Console in the menu)
+    $('.content-pane').removeClass('active');
+    $('.menu-item').removeClass('active');
+    $('.menu-item[data-id="view-console"]').addClass('active');
     // Trigger the Terminal tab click to handle panel switch, init, and refit
     document.querySelector('.console-tab[data-panel="terminal-wrapper"]').click();
     // Poll until the PTY socket is connected, then send the command
