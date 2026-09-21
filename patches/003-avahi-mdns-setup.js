@@ -130,6 +130,31 @@ function getMachineHostname(callback) {
 }
 
 /**
+ * Return the hostname that Avahi SHOULD be advertising.
+ * Prefers engine.machine_name so a user-set friendly name survives updates.
+ */
+function getActiveHostname(callback) {
+    var engineConfigPath = '/opt/fabmo/config/engine.json';
+    try {
+        var engineConfig = JSON.parse(fs.readFileSync(engineConfigPath, 'utf8'));
+        var machineName = (engineConfig.machine_name || '').trim();
+        if (machineName) {
+            // Replicate FabMo's sanitiseHostname logic exactly
+            var hostname = machineName.toLowerCase()
+                .replace(/[^a-z0-9-]/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .substring(0, 63) || 'fabmo';
+            log.info('Using machine_name-derived hostname: ' + hostname);
+            return callback(null, hostname);
+        }
+    } catch (e) {
+        log.debug('Could not read engine config, falling back to hardware ID: ' + e.message);
+    }
+    getMachineHostname(callback);
+}
+
+/**
  * Generate avahi-daemon.conf content with the specified hostname
  */
 function generateAvahiConfig(hostname) {
@@ -199,18 +224,16 @@ function check() {
         return true; // Needs to be applied
     }
     
-    // Compare current hostname against the machine-specific expected value (async).
-    // Pattern match alone is insufficient - fabmo-100000 matches but is the wrong ID
-    // for all RPi 4s since they share that serial prefix.
+    // Compare current hostname against the expected value (machine_name if set, else hardware ID)
     return new Promise(function(resolve) {
-        getMachineHostname(function(err, expectedHostname) {
+        getActiveHostname(function(err, expectedHostname) {
             if (err || !expectedHostname) {
                 log.warn('Could not determine expected hostname, will re-apply patch');
                 return resolve(true);
             }
             try {
                 var configContent = fs.readFileSync(configPath, 'utf8');
-                var match = configContent.match(/host-name=(fabmo-[a-z0-9]+)/);
+                var match = configContent.match(/^host-name=([a-z0-9][a-z0-9-]*)/m);
                 if (!match) {
                     log.warn('avahi-daemon.conf has no FabMo hostname entry');
                     return resolve(true);
@@ -267,8 +290,8 @@ function apply() {
             return resolve({ requiresReboot: false });
         }
         
-        // Step 1: Get the machine ID and generate hostname
-        getMachineHostname(function(err, hostname) {
+        // Step 1: Get the target hostname (machine_name if set, else hardware ID)
+        getActiveHostname(function(err, hostname) {
             if (err || !hostname) {
                 return reject(new Error('Failed to generate hostname: ' + (err ? err.message : 'Unknown error')));
             }
