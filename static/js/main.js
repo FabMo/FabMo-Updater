@@ -1333,6 +1333,23 @@ $(document).ready(function() {
   $('#btn-console-copy').click(function() {copyActiveConsole()});
   $('#btn-fabmo-refresh').click(function() {fetchExternalLogs(true)});
 
+  // Switch to Terminal panel and run ck_services diagnostic
+  $('#btn-terminal-services').click(function() {
+    // Trigger the Terminal tab click to handle panel switch, init, and refit
+    document.querySelector('.console-tab[data-panel="terminal-wrapper"]').click();
+    // Poll until the PTY socket is connected, then send the command
+    var attempts = 0;
+    function trySend() {
+      attempts++;
+      if (terminalSocket && terminalSocket.connected && !terminalSessionDead) {
+        terminalSocket.emit('terminal:input', 'ck_services\r');
+      } else if (attempts < 40) {
+        setTimeout(trySend, 250);
+      }
+    }
+    setTimeout(trySend, 250);
+  });
+
   // Button to browse for a manual update
   $('#btn-update-manual').click(function() {
     $('#message-noupdates').addClass('hide');

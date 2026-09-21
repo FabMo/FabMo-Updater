@@ -371,6 +371,20 @@ em {
 	font-family: monospace;
 }
 
+/* Action button in the console header — runs a command in the terminal */
+.console-action-btn {
+	padding: 2px 8px;
+	cursor: pointer;
+	border-radius: 3px;
+	color: #f5c518;
+	border: 1px solid #f5c518;
+	white-space: nowrap;
+	transition: all 0.2s ease;
+}
+.console-action-btn:hover {
+	background-color: rgba(245, 197, 24, 0.15);
+}
+
 .console-filter-sep {
 	color: #555;
 }
@@ -580,7 +594,7 @@ td {
 #modal {
 	display: none; /* Hidden by default */
     position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
+    z-index: 9999; /* Must be above console panels and all other content */
     left: 0;
     top: 0;
     width: 100%; /* Full width */
