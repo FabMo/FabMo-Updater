@@ -1002,7 +1002,7 @@ $(document).ready(function() {
         $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
         $('#check-button-text').text(' Check again for new Updates');
       }
-    }, 2000); // 2 second delay for status event to arrive
+    }, 20000); // 20 second fallback — remote manifest fetch can take 5-15s on slow connections
   });
 
   // Updater log event - append new log messages to console and update PROGRESS report display depending on content
@@ -1233,7 +1233,7 @@ $(document).ready(function() {
           $('#check-button-icon').removeClass('fa-spin fa-gear fa-cog').addClass('fa-cloud-download');
           $('#check-button-text').text(' Check again for new Updates');
         }
-      }, 2000); // 2 second delay for status event to arrive
+      }, 20000); // 20 second fallback — remote manifest fetch can take 5-15s on slow connections
     });
   });
 
