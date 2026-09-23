@@ -67,4 +67,48 @@ module.exports = function(server) {
 //	 	appendRequestPath: false
 	}));
 
+	// While the updater replaces its own files during a self-update, static
+	// pages (typically /login, where the browser lands once the session
+	// resets) briefly 404 and the user sees a raw JSON error. For browser
+	// navigations, serve a friendly page that polls until the updater is
+	// back and then returns to "/". The HTML is inline on purpose: a file
+	// under static/ could itself be missing mid-update. API clients
+	// (JSON Accept headers) still get the normal error response.
+	var RESTARTING_PAGE = [
+		'<!doctype html>',
+		'<html><head><meta charset="utf-8">',
+		'<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+		'<title>FabMo Updater</title>',
+		'<style>',
+		'body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:#313366;color:#fff;',
+		'display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center}',
+		'.box{max-width:26rem;padding:2rem}',
+		'h1{font-size:1.4rem;margin:0 0 .5rem}',
+		'p{color:#cfcfcf;line-height:1.4}',
+		'a{color:#ffda29}',
+		'</style></head><body><div class="box">',
+		'<h1>FabMo Updater is restarting&hellip;</h1>',
+		'<p>This page is not available right now. If an update is in progress,',
+		' the updater will be back in a moment &mdash; this page retries automatically.</p>',
+		'<p><a href="/">Return to the updater now</a></p>',
+		'</div>',
+		'<script>',
+		'(function poll(){',
+		'fetch("/",{cache:"no-store"}).then(function(r){',
+		'if(r.ok){window.location.replace("/");}else{setTimeout(poll,2000);}',
+		'}).catch(function(){setTimeout(poll,2000);});',
+		'})();',
+		'</script></body></html>'
+	].join('\n');
+
+	server.on('NotFound', function (req, res, err, callback) {
+		var wantsHtml = ((req.headers && req.headers.accept) || '').indexOf('text/html') !== -1;
+		if (wantsHtml && !res.headersSent) {
+			res.writeHead(404, { 'Content-Type': 'text/html' });
+			res.end(RESTARTING_PAGE);
+			return;
+		}
+		return callback();
+	});
+
 };
