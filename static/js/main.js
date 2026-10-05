@@ -1282,25 +1282,29 @@ $(document).ready(function() {
     );
   });
 
-  // Apply Change button (name-only shortcut above the password section — same logic as Apply Changes)
+  // Apply Change button (the Machine Name's own button). Same as Apply Changes below, except
+  // that a blank name here resets the Machine Name to the default (the Machine ID).
   $('#dup-btn-wifi-network-id').click(function(evt) {
     evt.preventDefault();
     var machine_name = $('#wifi-network-name').val().trim();
     var password = $('#wifi-network-password').val().trim();
-    if (!machine_name && !password) { return; }
-    var payload = {};
-    if (machine_name) { payload.name = machine_name; }
+    if (!machine_name && !confirm('Reset the Machine Name to the default (the Machine ID)?')) { return; }
+    var payload = { name: machine_name };
     if (password)     { payload.password = password; }
     updater.setNetworkIdentity(payload, function(err, data) {
       if (err) {
         setConsoleMessage('Could not save identity.', true);
       } else {
-        if (machine_name) {
-          $('#current-machine-name').text('(current: ' + machine_name + ')');
-        }
+        // Read the name back - after a reset it is the Machine ID
+        updater.getNetworkIdentity(function(err, data) {
+          var current = (data && data.machine_name) || machine_name;
+          if (current) {
+            $('#current-machine-name').text('(current: ' + current + ')');
+          }
+        });
         $('#wifi-network-name').val('');
         $('#wifi-network-password').val('');
-        setConsoleMessage('Identity saved.', false);
+        setConsoleMessage(machine_name ? 'Identity saved.' : 'Machine Name reset to default.', false);
       }
     });
   });
