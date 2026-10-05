@@ -10,6 +10,38 @@ var util =  require('../util');
 var fs = require('fs');
 
 var ENGINE_CONFIG_PATH = '/opt/fabmo/config/engine.json';
+var FABMO_DEF_PATH = '/fabmo-def/fabmo-def.json';
+
+// Record the machine_name in fabmo-def.json so that it survives updates (the engine
+// re-applies it to engine.json on startup). A blank name clears it. Other keys in the
+// file are preserved. Best-effort: failures are logged and passed to the callback only.
+function writeDefMachineName(name, callback) {
+  fs.readFile(FABMO_DEF_PATH, 'utf8', function(err, data) {
+    var def = {};
+    if (!err) {
+      try {
+        def = JSON.parse(data);
+      } catch(e) {
+        log.warn('fabmo-def.json is unreadable; not recording machine_name: ' + e.message);
+        return callback(e);
+      }
+    } else if (!name) {
+      return callback(null);  // nothing there to clear
+    }
+    def.machine_name = name;
+    var tmp = FABMO_DEF_PATH + '.updater.tmp';
+    fs.writeFile(tmp, JSON.stringify(def, null, 2), function(writeErr) {
+      if (writeErr) {
+        log.warn('Could not write fabmo-def.json: ' + writeErr.message);
+        return callback(writeErr);
+      }
+      fs.rename(tmp, FABMO_DEF_PATH, function(renameErr) {
+        if (renameErr) { log.warn('Could not rename fabmo-def.json: ' + renameErr.message); }
+        callback(renameErr);
+      });
+    });
+  });
+}
 
 // Return a list of wifi networks that are currently visible.
 // TODO - This is a bad route name, because retrieving it doesn't actually trigger a scan
@@ -137,11 +169,14 @@ hotspotState = function(req,res,next){
 }
 
 // Set machine_name and/or password in the engine config. Both fields are optional;
-// only non-blank values are written.
+// only non-blank values are written - except that a name sent explicitly as blank ('')
+// resets machine_name to the default (machine_id) and clears it from fabmo-def.json.
 setNetworkIdentity = function(req, res, next) {
+  var has_name = typeof req.params.name === 'string';
   var machine_name = (req.params.name || '').trim();
+  var reset_name = has_name && !machine_name;
   var password = (req.params.password || '').trim();
-  if (!machine_name && !password) {
+  if (!has_name && !password) {
     return res.json({status: 'error', message: 'No name or password provided'});
   }
   fs.readFile(ENGINE_CONFIG_PATH, 'utf8', function(err, data) {
@@ -150,23 +185,31 @@ setNetworkIdentity = function(req, res, next) {
       try { engineConfig = JSON.parse(data); } catch(e) {}
     }
     if (machine_name) { engineConfig.machine_name = machine_name; }
+    // On a reset with no machine_id on file, the engine re-defaults the name at its next start
+    if (reset_name)   { engineConfig.machine_name = engineConfig.machine_id || null; }
     if (password)     { engineConfig.password = password; }
+    // The name that hostname/Avahi should now follow (blank if the name is not changing)
+    var effective_name = reset_name ? (engineConfig.machine_id || '') : machine_name;
     fs.writeFile(ENGINE_CONFIG_PATH, JSON.stringify(engineConfig, null, 4), function(writeErr) {
       if (writeErr) {
         log.error('Failed to write identity: ' + writeErr.message);
         return res.json({status: 'error', message: writeErr.message});
       }
-      log.info('Identity updated' + (machine_name ? '; machine_name=' + machine_name : ''));
+      log.info('Identity updated' + (machine_name ? '; machine_name=' + machine_name : '') + (reset_name ? '; machine_name reset to default' : ''));
 
-      // Notify the running FabMo engine so its in-memory config and SSID update immediately.
-      // This is non-fatal: if FabMo is not running or rejects the call, the file write above
-      // still took effect and will be picked up on the next FabMo restart.
-      if (machine_name || password) {
+      // Order matters here: fabmo-def.json is written BEFORE the engine is notified. The
+      // engine writes the same value to fabmo-def.json when it handles the notification, so
+      // doing these one after the other keeps the two writers from overlapping.
+      var record = has_name ? writeDefMachineName : function(name, cb) { cb(null); };
+      record(machine_name, function(defErr) {
+        // Notify the running FabMo engine so its in-memory config and SSID update immediately.
+        // This is non-fatal: if FabMo is not running or rejects the call, the file writes above
+        // still took effect and will be picked up on the next FabMo restart.
         var axios = require('axios');
         var enginePort = config.updater.get('engine_server_port') || 80;
         var payload = {};
-        if (machine_name) payload.name = machine_name;
-        if (password)     payload.password = password;
+        if (has_name) payload.name = machine_name;   // '' tells the engine to reset the name
+        if (password) payload.password = password;
         axios.post('http://127.0.0.1:' + enginePort + '/network/identity', payload, { timeout: 5000 })
           .then(function(resp) {
             log.info('FabMo engine notified of identity change (' + resp.status + ')');
@@ -174,24 +217,24 @@ setNetworkIdentity = function(req, res, next) {
           .catch(function(e) {
             log.warn('Could not notify FabMo engine of identity change (may not be running): ' + (e.message || e));
           });
-      }
 
-      // Also update hostname and Avahi immediately so .local resolves without waiting for ip-reporting.py
-      if (machine_name) {
-        var exec = require('child_process').exec;
-        var hostname = machine_name.toLowerCase()
-          .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '') || 'fabmo';
-        exec('hostnamectl set-hostname ' + hostname, function(e) {
-          if (e) log.warn('Could not set hostname: ' + e.message);
-        });
-        exec('sed -i "s|^host-name=.*|host-name=' + hostname + '|" /etc/avahi/avahi-daemon.conf', function(e) {
-          if (e) log.warn('Could not update avahi-daemon.conf: ' + e.message);
-        });
-        exec('systemctl restart avahi-daemon', function(e) {
-          if (e) log.warn('Could not restart avahi-daemon: ' + e.message);
-        });
-      }
-      res.json({status: 'success'});
+        // Also update hostname and Avahi immediately so .local resolves without waiting for ip-reporting.py
+        if (effective_name) {
+          var exec = require('child_process').exec;
+          var hostname = effective_name.toLowerCase()
+            .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '') || 'fabmo';
+          exec('hostnamectl set-hostname ' + hostname, function(e) {
+            if (e) log.warn('Could not set hostname: ' + e.message);
+          });
+          exec('sed -i "s|^host-name=.*|host-name=' + hostname + '|" /etc/avahi/avahi-daemon.conf', function(e) {
+            if (e) log.warn('Could not update avahi-daemon.conf: ' + e.message);
+          });
+          exec('systemctl restart avahi-daemon', function(e) {
+            if (e) log.warn('Could not restart avahi-daemon: ' + e.message);
+          });
+        }
+        res.json({status: 'success'});
+      });
     });
   });
 }

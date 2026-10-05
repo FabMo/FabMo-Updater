@@ -176,11 +176,12 @@
       <h2>Machine Name <span id="current-machine-name" style="font-weight:normal; font-size:0.8em; color:#aaa;"></span></h2>
       <p>The <strong>Machine Name</strong> is your friendly label for this tool. It is used as the Wi-Fi SSID
          (e.g. <em>MyTool-LAN@10.0.0.177</em>) and as the Avahi network shortcut (e.g. <em>MyTool.local</em>).
-         The permanent <strong>Machine ID</strong> (hardware-derived, e.g. <em>FabMo-33db75</em>) is the default and will be used unless you set a name here.</p>
+         The permanent <strong>Machine ID</strong> (hardware-derived, e.g. <em>FabMo-33db75</em>) is the default and will be used unless you set a name here.
+         To go back to the default, apply a blank name. Your Machine Name is kept through software updates.</p>
       <form class="form-horizontal" id="form-wifi-network-id">
         <fieldset>
           <label>New Machine Name: </label>
-          <input id="wifi-network-name" type="text" placeholder="Leave blank to keep current name" />
+          <input id="wifi-network-name" type="text" placeholder="Leave blank to reset to the Machine ID" />
         </fieldset>
                 <fieldset>
           <button id="dup-btn-wifi-network-id" type="button" class="btn-green">Apply Change</button>
