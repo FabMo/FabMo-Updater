@@ -681,6 +681,7 @@ exports.installPackageFromFile = installPackageFromFile;
 exports.checkForAvailablePackage = checkForAvailablePackage;
 exports.downloadPackage = downloadPackage;
 exports.parseVersion = parseVersion;
+exports.compareVersions = compareVersions;
 exports.filterPackages = filterPackages;
 
 exports.executeOperation = executeOperation;

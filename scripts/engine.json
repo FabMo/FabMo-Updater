@@ -6,6 +6,7 @@
 	"token" : "/fabmo/install_token",
 	"repository" : "https://github.com/FabMo/FabMo-Engine",
 	"updaterNeeded" : "v2.0.0",
+	"bundledUpdater" : "latest",
 	"services" : ["fabmo"],
 	"operations" : [
 		{

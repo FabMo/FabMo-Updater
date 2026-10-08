@@ -294,6 +294,112 @@ function stageVersionJSON() {
  		.then(function() {log.info(versionFilePath + ' written.')})
 }
 
+/*
+ * Stage the pinned FabMo-Updater package inside the engine package.
+ *
+ * The engine installs it in the background on its first boot if it is newer
+ * than the installed updater (see FabMo-Engine updater_bundle.js and
+ * bundled_updater/README.md) — updater updates are no longer a separate,
+ * user-visible product.
+ *
+ * Controlled by "bundledUpdater" in engine.json:
+ *    "latest"  - newest published FabMo-Updater release for this
+ *                os/platform (from the gofabmo.org package manifest)
+ *    "v4.0.55" - an explicit pin (hold the fleet on a known version)
+ *    absent    - skip; the engine package ships without a bundle and the
+ *                engine-side check is a no-op (dev/testing builds)
+ * The field is a build directive, not a package-manifest field - it is
+ * removed from the manifest before manifest.json is written.
+ *
+ * Runs BEFORE createFilesArchive so the package lands inside files.tar.gz
+ * at bundled_updater/, which expands to /fabmo/bundled_updater/ on the
+ * tool. Downloads are verified against the manifest md5 when the chosen
+ * version is listed there. A requested-but-failed bundle FAILS the build:
+ * silently shipping without it would let fleet updaters go stale.
+ */
+var PACKAGES_MANIFEST_URL = 'https://www.gofabmo.org/manifest/packages.json';
+
+function stageBundledUpdater() {
+	if(product !== 'engine') { return Q(); }
+	var pin = ('bundledUpdater' in manifest) ? String(manifest.bundledUpdater || '').trim() : '';
+	delete manifest.bundledUpdater;
+	if(!pin || pin.toLowerCase() === 'none') {
+		log.warn('No bundledUpdater pin in engine.json - the engine package will ship WITHOUT an updater bundle.');
+		return Q();
+	}
+	log.info('Staging bundled updater (pin: ' + pin + ')');
+	return doshell('curl -fsSL --retry 3 ' + PACKAGES_MANIFEST_URL)
+		.then(function(body) {
+			var entries = [];
+			try {
+				entries = (JSON.parse(body).packages || []).filter(function(p) {
+					return p.product === 'FabMo-Updater' &&
+					       p.os === manifest.os &&
+					       p.platform === manifest.platform;
+				});
+			} catch(e) {
+				log.warn('Could not parse the package manifest: ' + e.message);
+			}
+
+			var entry = null;
+			var version = null;
+			if(pin.toLowerCase() === 'latest') {
+				entries.forEach(function(p) {
+					if(!entry || fmp.compareVersions(p.version, entry.version) > 0) {
+						entry = p;
+					}
+				});
+				if(!entry) {
+					throw new Error('bundledUpdater is "latest" but no FabMo-Updater package was found in the manifest for ' + manifest.os + '/' + manifest.platform);
+				}
+				version = entry.version;
+			} else {
+				version = pin[0] === 'v' ? pin : 'v' + pin;
+				entries.forEach(function(p) {
+					if(p.version === version) { entry = p; }
+				});
+			}
+
+			// Prefer the manifest's URL (and md5) for the chosen version;
+			// fall back to the conventional release-asset URL for an
+			// explicit pin that is not (or not yet) in the manifest.
+			var bundleName = 'fabmo-updater_' + manifest.os + '_' + manifest.platform + '_' + version + '.fmp';
+			var url = entry ? entry.url :
+				'https://github.com/FabMo/FabMo-Updater/releases/download/' + version + '/' + bundleName;
+			if(!entry) {
+				log.warn('Pinned updater ' + version + ' is not in the package manifest - downloading by convention, no md5 check: ' + url);
+			}
+
+			var bundleDir = stagePath('bundled_updater');
+			var bundlePath = path.resolve(bundleDir, bundleName);
+			log.info('Downloading bundled updater ' + version + ' from ' + url);
+			return doshell('mkdir -p ' + bundleDir)
+				.then(function() {
+					return doshell('curl -fSL --retry 3 -o ' + bundlePath + ' ' + url);
+				})
+				.then(function() {
+					return Q.nfcall(fs.stat, bundlePath).then(function(stat) {
+						if(stat.size < 1024 * 1024) {
+							throw new Error('Bundled updater download is implausibly small (' + stat.size + ' bytes): ' + url);
+						}
+					});
+				})
+				.then(function() {
+					if(!entry || !entry.md5) { return Q(); }
+					return doshell('md5sum ' + bundlePath).then(function(hash) {
+						var got = hash.split(' ')[0].trim();
+						if(got !== entry.md5) {
+							throw new Error('Bundled updater md5 mismatch: expected ' + entry.md5 + ', got ' + got);
+						}
+						log.info('Bundled updater md5 verified.');
+					});
+				})
+				.then(function() {
+					log.info('Bundled updater ' + version + ' staged at bundled_updater/' + bundleName);
+				});
+		});
+}
+
 function createFilesArchive() {
 	log.info('Creating the files archive')
 	return doshell('tar -czf  ../files.tar.gz ./*', {cwd : stagingDirectory});
@@ -486,6 +592,7 @@ clean()
 .then(stageRepos)
 .then(stageNodeModules)
 .then(stageVersionJSON)
+.then(stageBundledUpdater)
 .then(createFilesArchive)
 .then(clearStagingArea)
 .then(stageFilesArchive)
