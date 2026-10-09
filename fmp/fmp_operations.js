@@ -45,6 +45,57 @@ const resolveCwdPath = function(cwd, pth) {
     return pth;
 };
 
+// User-data paths that must survive an update even when a broader parent
+// directory (e.g. /opt/fabmo) is the delete target. Cut files are never
+// shipped in snapshots, so wiping them while the job/history DB is restored
+// from a snapshot orphans every job record and crashes the tool on any
+// preview/edit/run. There is no reason an update needs to destroy them.
+var PRESERVE_PATHS = ['/opt/fabmo/files'];
+
+// Is `candidate` a strict (proper) descendant of `dir`?
+function isStrictDescendant(candidate, dir) {
+    var rel = path.relative(dir, candidate);
+    return rel !== '' && rel.slice(0, 2) !== '..' && !path.isAbsolute(rel);
+}
+
+// fs.remove(target), but never destroy any PRESERVE_PATHS that live inside it.
+// If a preserved path is strictly inside target, delete the target's contents
+// selectively (recursing) instead of removing it wholesale. An explicit delete
+// of a preserved path itself (target === the path) is still honored.
+function removePreserving(target, callback, preserveList) {
+    preserveList = preserveList || PRESERVE_PATHS;
+    var resolved = path.resolve(target);
+    var preservedInside = preserveList
+        .map(function(p) { return path.resolve(p); })
+        .filter(function(p) { return isStrictDescendant(p, resolved); });
+
+    if (preservedInside.length === 0) {
+        return fs.remove(resolved, callback);
+    }
+
+    log.info(`Preserving user data under ${resolved}: ${preservedInside.join(', ')}`);
+    fs.readdir(resolved, function(err, entries) {
+        if (err) {
+            // Nothing to delete (missing/unreadable) — not fatal.
+            if (err.code === 'ENOENT') { return callback(); }
+            return callback(err);
+        }
+        async.each(entries, function(entry, cb) {
+            var child = path.join(resolved, entry);
+            // A preserved path itself — keep it untouched.
+            if (preservedInside.indexOf(child) !== -1) {
+                return cb();
+            }
+            // An ancestor of a preserved path — recurse to delete selectively.
+            if (preservedInside.some(function(p) { return isStrictDescendant(p, child); })) {
+                return removePreserving(child, cb, preserveList);
+            }
+            // Safe to remove wholesale.
+            fs.remove(child, cb);
+        }, callback);
+    });
+}
+
 // Delete the files provided by the `paths` attribute
 //   operation - Operation object
 //   paths - List of files to delete.  glob-style wildcards are acceptable.
@@ -59,8 +110,9 @@ function deleteFiles(operation) {
             operation.paths,
             function(path, callback) {
                 log.info(`Deleting path: ${path}`);
-                // Remove the directory or file
-                fs.remove(path, function(err) {
+                // Remove the directory or file, but preserve protected user
+                // data (cut files) that may live inside the delete target.
+                removePreserving(path, function(err) {
                     if (err) {
                         log.warn(`Error deleting path: ${err.message}`);
                         return callback(err);
@@ -174,6 +226,8 @@ async function updateJSONFile(operation) {
 // Helper functions are not exposed, only operations
 // DON'T put helpers in the exports, because the exports list is used for operation lookup
 exports.deleteFiles = deleteFiles;
+exports.removePreserving = removePreserving;
+exports.PRESERVE_PATHS = PRESERVE_PATHS;
 exports.expandArchive = expandArchive;
 exports.installFirmware = installFirmware;
 exports.createDirectories = createDirectories;
