@@ -285,6 +285,26 @@ function executeOperations(manifest) {
 }
 
 
+// Flush all written files to physical disk.
+// The fmp operations (notably expandArchive) write through the page cache; on ext4
+// with delayed allocation, a power loss within ~30 seconds of extraction can leave
+// every installed file present but zero-length, even though the install "completed".
+// Syncing here makes the install durable before the token is set and services restart.
+// Return a promise that resolves with the manifest object.  A sync failure is logged
+// but does not fail the installation.
+//   manifest - The parsed manifest object.  Not used, but pass through for promise chaining
+function syncFilesystems(manifest) {
+	var deferred = Q.defer();
+	log.info('Syncing filesystems');
+	child_process.exec('sync', function(err) {
+		if(err) {
+			log.warn('Filesystem sync failed: ' + err.message);
+		}
+		deferred.resolve(manifest);
+	});
+	return deferred.promise;
+}
+
 // Delete the token file specified by the provided package manifest.  Do nothing if there is no token file specified.
 // Return a promise that resolves with the manifest object
 //   manifest - Parsed manifest object that may or may not contain a token attribute
@@ -457,6 +477,7 @@ function installUnpackedPackage(manifest_filename) {
 		.then(unlock)
 		.then(clearToken)
 		.then(executeOperations)
+		.then(syncFilesystems)
 		.then(setToken)
 		.finally(lock)
 		.then(function() {
