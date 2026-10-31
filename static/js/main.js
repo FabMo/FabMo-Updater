@@ -1071,6 +1071,28 @@ $(document).ready(function() {
     setState(status.state);
     setOnline(status.online);
 
+    // Report the outcome of an update-to-master once the updater goes idle again
+    if(masterUpdateTask && status.state === 'idle') {
+      var task = masterUpdateTask;
+      masterUpdateTask = null;
+      resetMasterUpdateButton();
+      fetch('/tasks')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          var result = data.data.tasks[task];
+          if(result === 'success') {
+            $('#report-title').removeClass('fa-spinner fa-spin fa-exclamation-triangle').addClass('fa-check');
+            $('#report-message').html(' UPDATE COMPLETE: FabMo is now on the latest master. Click here to return to the dashboard.');
+          } else {
+            $('#report-title').removeClass('fa-spinner fa-spin fa-check').addClass('fa-exclamation-triangle');
+            $('#report-message').html(' UPDATE FAILED: The update to master did not complete - see the console below for details.');
+          }
+        })
+        .catch(function(err) {
+          console.error('Could not fetch task result:', err);
+        });
+    }
+
     // Check for reboot notification
     checkForRebootNotification(status);
 
@@ -1129,10 +1151,55 @@ $(document).ready(function() {
     }
   });
 
-// TODO Obsolete?
+  // Update the engine to the tip of master on GitHub (development builds)
+  // The task id is remembered so the status handler can report the outcome
+  // when the updater returns to the idle state.
+  var masterUpdateTask = null;
+
+  function resetMasterUpdateButton() {
+    $('#btn-update-latest').removeClass('disabled');
+    $('#master-button-icon').removeClass('fa-cog fa-spin').addClass('fa-github');
+    $('#master-button-text').text(' Update to Latest Master (Development)');
+  }
+
   $("#btn-update-latest").click( function(evt) {
     evt.preventDefault();
-    updater.updateEngine('master');
+    if($('#btn-update-latest').hasClass('disabled')) { return; }
+    showModal({
+      title : 'Update to Latest Master?',
+      message : 'This will update FabMo to the latest <em>development</em> code from GitHub (the master branch), which may be newer than the official releases and has not necessarily been fully tested. It requires an internet connection and can take several minutes - do not power off the tool while it runs. Progress is shown in the console below. Continue?',
+      icon : 'fa-github',
+      okText : 'Update to Master',
+      cancelText : 'Cancel',
+      ok : function() {
+        // Close the modal without a full page reload (dismissModal reloads,
+        // which would wipe the progress display and the in-flight request)
+        $('#btn-modal-ok').off('click');
+        $('#btn-modal-cancel').off('click');
+        modalShown = false;
+        $('#modal').hide();
+
+        clearConsole();
+        $('#btn-update-latest').addClass('disabled');
+        $('#master-button-icon').removeClass('fa-github').addClass('fa-cog fa-spin');
+        $('#master-button-text').text(' Updating to master ...');
+        $('#report-title').removeClass('fa-check fa-exclamation-triangle').addClass('fa-spinner fa-spin');
+        $('#report-message').html(' UPDATE PROGRESS: Updating to latest master from GitHub ...');
+        $('#report-progress').css('display', 'block');
+        updater.updateEngine('master', function(err, data) {
+          if(err) {
+            resetMasterUpdateButton();
+            $('#report-title').removeClass('fa-spinner fa-spin').addClass('fa-exclamation-triangle');
+            $('#report-message').html(' UPDATE FAILED: ' + (err.message || err));
+            return;
+          }
+          masterUpdateTask = data.task;
+        });
+      },
+      cancel : function() {
+        dismissModal();
+      }
+    });
   });
 
   // TODO Obsolete?

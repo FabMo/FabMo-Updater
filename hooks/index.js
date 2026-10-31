@@ -66,6 +66,42 @@ var execute = function(name, args, callback) {
 	return deferred.promise;
 }
 
+// Run the hook with the provided name, like execute(), but spawn it and stream
+// its output to the log line-by-line as it runs. Use this for long-running
+// hooks (eg: update_engine) where cp.exec would hold all output until the end
+// (and can overflow its maxBuffer) - streaming lets the updater console show
+// live progress over the websocket.
+//       name - The name of the hook
+//       args - List of arguments for the hook script
+//   callback - Called when the hook is complete with (err)
+var executeStreaming = function(name, args, callback) {
+	callback = callback || function() {};
+	var hook;
+	try {
+		hook = getHook(name);
+	} catch(e) {
+		return callback(e);
+	}
+	var child = cp.spawn(hook.file, args || []);
+	byline(child.stdout).on('data', function(line) { log.shell(line.toString()); });
+	byline(child.stderr).on('data', function(line) { log.shell(line.toString()); });
+	var done = false;
+	child.on('error', function(err) {
+		if(done) { return; }
+		done = true;
+		callback(err);
+	});
+	child.on('close', function(code) {
+		if(done) { return; }
+		done = true;
+		if(code === 0) {
+			callback(null);
+		} else {
+			callback(new Error("The '" + name + "' hook exited with code " + code));
+		}
+	});
+}
+
 // Spawn a detached process and return it
 var spawn = function(name) {
 	var hook = getHook(name);
@@ -193,17 +229,19 @@ exports.installEngine = function(version, callback) {
 	});
 }
 
-// TODO Obsolete?
+// Update the engine in place from its git repository to the specified ref
+// (typically 'master'). Releases are installed with .fmp packages; this is the
+// development/bleeding-edge pathway behind the "Update to Master" button.
 exports.updateEngine = function(version, callback) {
 	var updater = require('../updater');
 	callback = callback || function() {};
 	var key = updater.startTask();
 	updater.setState('updating');
 	callback(null, key);
-	execute('update_engine', version, function(err,stdout) {
+	executeStreaming('update_engine', [version, config.updater.get('engine_git_repos')], function(err) {
 		if(err) {
 			updater.failTask(key);
-			log.error("Did not update to " + version + " successfully.");
+			log.error("Did not update to " + version + " successfully: " + err.message);
 		} else {
 			updater.passTask(key);
 			log.info("Updated to " + version + " successfully.");

@@ -190,16 +190,16 @@ Updater.prototype.addAvailablePackage = function(package) {
 //     callback(null);
 // };
 
-////##
-// // Update the engine
-// // TODO - I think this is a legacy function that does the GIT update - should be removed - everything is done with .fmp files now
-// Updater.prototype.updateEngine = function(version, callback) {
-//     if(this.status.state != 'idle') {
-//         callback(new Error('Cannot update the engine when in the ' + this.status.state + ' state.'));
-//     } else {
-//         hooks.updateEngine(version, callback);
-//     }
-// }
+// Update the engine in place from git to the specified ref (typically 'master')
+// This is the development/bleeding-edge pathway ("Update to Master" button) -
+// official releases are installed with .fmp packages instead.
+Updater.prototype.updateEngine = function(version, callback) {
+    if(this.status.state != 'idle') {
+        callback(new Error('Cannot update the engine when in the ' + this.status.state + ' state.'));
+    } else {
+        hooks.updateEngine(version, callback);
+    }
+}
 
 ////##
 // // Install a specific version of the engine
