@@ -224,14 +224,15 @@ Updater.prototype.factoryReset = function(callback) {
 }
 
 
-// Update the updater
-// TODO - This is legacy code that should no longer be used.  The update process is done with .fmp files now.
+// Update the updater itself from git to the specified ref (typically 'master')
+// The development/bleeding-edge pathway ("Update Updater to Master" button) -
+// official releases are installed with .fmp packages instead. The updater
+// restarts once the new version is staged.
 Updater.prototype.updateUpdater = function(version, callback) {
     if(this.status.state != 'idle') {
         callback(new Error('Cannot update the updater when in the ' + this.status.state + ' state.'));
     } else {
-        callback(); // Go ahead and callback because the updater update is going to cause the process to bail.
-        hooks.updateUpdater();
+        hooks.updateUpdater(version, callback);
     }
 }
 
