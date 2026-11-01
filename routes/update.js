@@ -22,21 +22,23 @@ var getVersions = function(req, res, next) {
 	  }
     });
 };
-/*
+// Update the engine in place from git (typically to 'master')
+// The development/bleeding-edge pathway; releases are installed as .fmp packages
 var updateEngine = function(req, res, next) {
     updater.updateEngine(req.params.version, function(err, data) {
 	  if(err) {
-	  	res.json({status : 'error', message : err});
+	  	res.json({status : 'error', message : err.message || String(err)});
 		} else {
 			var answer = {
 			    status : "success",
 			   	  data : {'task' : data}
 			};
-		res.json(answer);			
+		res.json(answer);
 		}
     });
 };
 
+/*
 var updateUpdater = function(req, res, next) {
     updater.updateUpdater(req.params.version, function(err, data) {
 	  if(err) {
@@ -183,7 +185,7 @@ var download = function(req, res, next) {
 module.exports = function(server) {
   server.get('/update/versions', getVersions);
   server.get('/tasks', getTasks);
-  //server.post('/update/engine', updateEngine);
+  server.post('/update/engine', updateEngine);
   //server.post('/update/updater', updateUpdater);
   //server.post('/update/firmware', updateFirmware);
   //server.post('/install/engine', installEngine);
