@@ -306,11 +306,26 @@ exports.factoryReset = function(callback) {
 	spawn('factory_reset');
 }
 
-// Initiate an updater self-update
-exports.updateUpdater = function(callback) {
+// Initiate an updater self-update from git to the specified ref (typically 'master')
+// The hook stages the new updater and then hands the swap + service restart to a
+// transient systemd unit, so this process dies shortly after the hook completes -
+// the task is passed as soon as staging succeeds and the restart is scheduled.
+exports.updateUpdater = function(version, callback) {
 	var updater = require('../updater');
+	callback = callback || function() {};
+	var key = updater.startTask();
 	updater.setState('updating');
-	spawn('update_updater');
+	callback(null, key);
+	executeStreaming('update_updater', [version, config.updater.get('updater_git_repos')], function(err) {
+		if(err) {
+			updater.failTask(key);
+			log.error("Did not update the updater to " + version + " successfully: " + err.message);
+		} else {
+			updater.passTask(key);
+			log.info("Updater update to " + version + " staged successfully - restarting now.");
+		}
+		updater.setState('idle');
+	});
 }
 
 // Set the system time to the provided string

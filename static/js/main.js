@@ -1093,6 +1093,26 @@ $(document).ready(function() {
         });
     }
 
+    // Report a FAILED updater self-update (a successful one restarts the service,
+    // so success is handled by the disconnect handler instead)
+    if(updaterSelfUpdateTask && status.state === 'idle') {
+      var selfUpdateTask = updaterSelfUpdateTask;
+      fetch('/tasks')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if(data.data.tasks[selfUpdateTask] === 'failed') {
+            updaterSelfUpdateTask = null;
+            updaterSelfUpdateInProgress = false;
+            resetUpdaterMasterButton();
+            $('#report-title').removeClass('fa-spinner fa-spin fa-check').addClass('fa-exclamation-triangle');
+            $('#report-message').html(' UPDATE FAILED: The updater update did not complete - see the console below for details.');
+          }
+        })
+        .catch(function(err) {
+          console.error('Could not fetch task result:', err);
+        });
+    }
+
     // Check for reboot notification
     checkForRebootNotification(status);
 
@@ -1131,6 +1151,25 @@ $(document).ready(function() {
 
   // Show the disconnected dialog when we lose the websocket connection to the updater
   updater.on('disconnect', function(state) {
+    // A disconnect during an updater self-update is the expected restart - poll
+    // until the new updater answers, then reload the page onto it. The completion
+    // note is carried across the reload in sessionStorage.
+    if(updaterSelfUpdateInProgress) {
+      setState('updating');
+      $('#report-message').html(' UPDATE PROGRESS: Updater is restarting ...');
+      var poll = setInterval(function() {
+        fetch('/status')
+          .then(function(res) {
+            if(res.ok) {
+              clearInterval(poll);
+              sessionStorage.setItem('updaterSelfUpdateComplete', '1');
+              window.location.reload();
+            }
+          })
+          .catch(function() { /* still restarting - keep polling */ });
+      }, 2000);
+      return;
+    }
     setState('disconnected');
     showModal({
       title : 'Updater Disconnected',
@@ -1202,10 +1241,67 @@ $(document).ready(function() {
     });
   });
 
-  // TODO Obsolete?
+  // Update the updater itself to the tip of master on GitHub (development builds)
+  // The updater restarts partway through, so completion is detected by the
+  // disconnect handler (poll for the new updater, then reload). The task id is
+  // kept so a staging failure (which never restarts) can be reported instead.
+  var updaterSelfUpdateInProgress = false;
+  var updaterSelfUpdateTask = null;
+
+  function resetUpdaterMasterButton() {
+    $('#btn-update-updater-latest').removeClass('disabled');
+    $('#updater-master-button-icon').removeClass('fa-cog fa-spin').addClass('fa-github');
+    $('#updater-master-button-text').text(' Update Updater to Latest Master (Development)');
+  }
+
+  // Show the completion note carried across the self-update reload
+  if(sessionStorage.getItem('updaterSelfUpdateComplete')) {
+    sessionStorage.removeItem('updaterSelfUpdateComplete');
+    $('#report-title').removeClass('fa-spinner fa-spin fa-exclamation-triangle').addClass('fa-check');
+    $('#report-message').html(' UPDATE COMPLETE: The updater restarted on the latest master.');
+    $('#report-progress').css('display', 'block');
+  }
+
   $("#btn-update-updater-latest").click( function(evt) {
     evt.preventDefault();
-    updater.updateUpdater('master');
+    if($('#btn-update-updater-latest').hasClass('disabled')) { return; }
+    showModal({
+      title : 'Update the Updater to Latest Master?',
+      message : 'This will update the FabMo <em>Updater</em> (this page) to the latest <em>development</em> code from GitHub (the master branch), which may be newer than the official releases and has not necessarily been fully tested. It requires an internet connection, and the updater will restart - this page will disconnect briefly and then reload. Continue?',
+      icon : 'fa-github',
+      okText : 'Update the Updater',
+      cancelText : 'Cancel',
+      ok : function() {
+        // Close the modal without a full page reload (dismissModal reloads,
+        // which would wipe the progress display and the in-flight request)
+        $('#btn-modal-ok').off('click');
+        $('#btn-modal-cancel').off('click');
+        modalShown = false;
+        $('#modal').hide();
+
+        clearConsole();
+        updaterSelfUpdateInProgress = true;
+        $('#btn-update-updater-latest').addClass('disabled');
+        $('#updater-master-button-icon').removeClass('fa-github').addClass('fa-cog fa-spin');
+        $('#updater-master-button-text').text(' Updating the updater ...');
+        $('#report-title').removeClass('fa-check fa-exclamation-triangle').addClass('fa-spinner fa-spin');
+        $('#report-message').html(' UPDATE PROGRESS: Updating the updater to latest master from GitHub ...');
+        $('#report-progress').css('display', 'block');
+        updater.updateUpdater('master', function(err, data) {
+          if(err) {
+            updaterSelfUpdateInProgress = false;
+            resetUpdaterMasterButton();
+            $('#report-title').removeClass('fa-spinner fa-spin').addClass('fa-exclamation-triangle');
+            $('#report-message').html(' UPDATE FAILED: ' + (err.message || err));
+            return;
+          }
+          updaterSelfUpdateTask = data.task;
+        });
+      },
+      cancel : function() {
+        dismissModal();
+      }
+    });
   });
 
   // TODO Obsolete?
