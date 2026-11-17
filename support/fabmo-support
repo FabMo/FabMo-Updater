@@ -207,6 +207,8 @@ cmd_start() {
         *",$SUPPORT_TAG,"*) ;;
         *) teardown; die "that key is not a customer-machine support key; session refused" ;;
     esac
+    # stay on the pinned, checksummed build even if the tailnet asks nodes to self-update
+    ts set --auto-update=false >/dev/null 2>&1
     firewall_up open || { teardown; die "could not open the firewall for the session"; }
     if [ $ssh = 1 ]; then
         ts set --ssh=true >/dev/null 2>&1 || { teardown; die "could not enable system access"; }

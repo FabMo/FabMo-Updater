@@ -54,9 +54,24 @@ boundary: the updater can install packages as root at either level.
 ## Tailnet side
 
 Machines join tagged `tag:customer-machine` with a single-use, ephemeral,
-pre-approved key. The policy lets the support group reach that tag on tcp 80
-and 81, lets the engineers group use SSH as `pi`, and gives machines no
-access to anything.
+pre-approved key. A key made without the tag is refused by the script.
+
+The policy gives machines no access to anything, and needs:
+
+```json
+"acls": [
+  { "action": "accept", "src": ["group:support"],   "dst": ["tag:customer-machine:80,81"] },
+  { "action": "accept", "src": ["group:engineers"], "dst": ["tag:customer-machine:22"] }
+],
+"ssh": [
+  { "action": "check", "src": ["group:engineers"], "dst": ["tag:customer-machine"], "users": ["pi"] }
+]
+```
+
+Tailscale SSH needs BOTH the port-22 access rule and the `ssh` rule; with
+only the `ssh` rule the connection times out. Port 22 in the policy does not
+open SSH on a `dashboard` session: Tailscale SSH is off on the machine and
+the machine's own firewall drops port 22 on the tunnel.
 
 ## Not here yet
 

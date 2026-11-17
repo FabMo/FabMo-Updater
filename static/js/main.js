@@ -517,6 +517,16 @@ function initTerminal() {
   fetch('/terminal/status')
     .then(function(r) { return r.json(); })
     .then(function(info) {
+      if (!info.available && info.reason === 'support') {
+        // remote-support session without system access (routes/terminal.js)
+        var p = document.createElement('p');
+        p.style.cssText = 'color:#e6d369; padding:10px; font-family:monospace;';
+        p.textContent = info.message;
+        container.innerHTML = '';
+        container.appendChild(p);
+        terminalInitialized = false;   // ask again next time the tab is opened
+        return;
+      }
       if (!info.available) {
         container.innerHTML =
           '<p style="color:#e6d369; padding:10px; font-family:monospace;">' +
