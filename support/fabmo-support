@@ -33,6 +33,10 @@ TS_URL=https://pkgs.tailscale.com/stable
 # otherwise whoever can reach the start request could attach the machine to a
 # network of their own. Deliberately a constant here, not a setting.
 SUPPORT_TAILNET=tail6132dd.ts.net
+# ...and the tag the key must put it under. An untagged key would make the
+# machine a device of whoever made the key, with that person's access
+# instead of the locked-down rules for customer machines.
+SUPPORT_TAG=tag:customer-machine
 
 # outside /opt/fabmo on purpose: engine updates delete that tree wholesale
 CACHE=/opt/fabmo-support
@@ -113,9 +117,14 @@ table $TABLE {
 NFT
 }
 
-# the tailnet we actually ended up on, e.g. tail6132dd.ts.net
-joined_tailnet() {
-    ts status --json 2>/dev/null | python3 -c 'import json,sys; print((json.load(sys.stdin).get("CurrentTailnet") or {}).get("MagicDNSSuffix",""))' 2>/dev/null
+# prints "<tailnet> <tags,comma,separated>" for the network we ended up on,
+# e.g. "tail6132dd.ts.net tag:customer-machine"
+joined_as() {
+    ts status --json 2>/dev/null | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+print((d.get("CurrentTailnet") or {}).get("MagicDNSSuffix", "-") or "-",
+      ",".join((d.get("Self") or {}).get("Tags") or []) or "-")' 2>/dev/null
 }
 
 daemon_up() {
@@ -188,11 +197,16 @@ cmd_start() {
         teardown
         die "could not join the support network${why:+ ($why)}"
     fi
-    local net; net=$(joined_tailnet)
+    local net tags
+    read -r net tags <<<"$(joined_as)"
     if [ "$net" != "$SUPPORT_TAILNET" ]; then
         teardown
         die "that key is not for the ShopBot support network; session refused"
     fi
+    case ",$tags," in
+        *",$SUPPORT_TAG,"*) ;;
+        *) teardown; die "that key is not a customer-machine support key; session refused" ;;
+    esac
     firewall_up open || { teardown; die "could not open the firewall for the session"; }
     if [ $ssh = 1 ]; then
         ts set --ssh=true >/dev/null 2>&1 || { teardown; die "could not enable system access"; }

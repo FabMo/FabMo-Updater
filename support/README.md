@@ -23,7 +23,7 @@ It lives in the updater so that support can get in when the engine is down.
 3. Arms a timer that ends the session (default 120 min, max 480).
 4. Starts `tailscaled` as a transient unit with its state in memory and log
    upload off, and joins using the single-use key it was given.
-5. Checks the machine landed on `SUPPORT_TAILNET`. If not, it leaves at once.
+5. Checks the machine landed on `SUPPORT_TAILNET` under `SUPPORT_TAG`. If not, it leaves at once.
 6. Only then opens tcp 80 and 81 on the tunnel, and enables Tailscale SSH if
    the `system` level was asked for.
 
