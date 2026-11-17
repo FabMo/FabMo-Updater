@@ -7,6 +7,7 @@
  *   POST /support/request  {level, minutes}  -> {code, ...}  (the normal way in)
  *   POST /support/cancel
  *   POST /support/start    {key, level: "dashboard"|"system", minutes}  (key in hand)
+ *   POST /support/elevate  (dashboard session -> full system access; local side only)
  *   POST /support/stop
  *   GET  /support/whois/<tunnel address> -> {user, device}
  */
@@ -64,6 +65,18 @@ var cancel = function(req, res, next) {
     });
 };
 
+// Raise the running session to full system access. Only the customer's side
+// may do this: a tech must never be able to widen their own access.
+var elevate = function(req, res, next) {
+    if (support.isTunnelAddress(remoteAddress(req))) {
+        log.warn('Refused a support/elevate request that came in over the support tunnel');
+        return answer(res, new Error('Full access can only be granted from the machine\'s own network.'));
+    }
+    support.elevate(function(err, data) {
+        answer(res, err, data);
+    });
+};
+
 // Anyone may end a session, from either side.
 var stop = function(req, res, next) {
     support.stop(function(err, data) {
@@ -83,6 +96,7 @@ module.exports = function(server) {
     server.post('/support/request', request);
     server.post('/support/cancel', cancel);
     server.post('/support/start', start);
+    server.post('/support/elevate', elevate);
     server.post('/support/stop', stop);
     server.get('/support/whois/:address', whois);
 };

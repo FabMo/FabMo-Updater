@@ -284,6 +284,12 @@ exports.start = function(options, callback) {
     });
 };
 
+// Raise the running session to full system access. No new key or code.
+exports.elevate = function(callback) {
+    log.info('Granting full system access for the remote-support session');
+    run(['elevate'], STOP_TIMEOUT_MS, callback);
+};
+
 exports.stop = function(callback) {
     log.info('Ending the remote-support session');
     run(['stop'], STOP_TIMEOUT_MS, callback);

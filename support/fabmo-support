@@ -8,6 +8,7 @@
 #
 #   fabmo-support start --key-file FILE [--minutes N] [--ssh]
 #   fabmo-support stop
+#   fabmo-support elevate      (dashboard session -> full system access)
 #   fabmo-support status
 #
 # Outside a session nothing is running, nothing is listening, and the machine
@@ -225,6 +226,26 @@ JSON
 
 cmd_stop() { need_root; teardown; echo '{"active": false}'; }
 
+# Raise a running dashboard session to full system access (SSH and the web
+# terminal) without a new key. One way: it lasts until the session ends.
+cmd_elevate() {
+    need_root
+    [ -e $SESSION ] && daemon_active || die "no support session is running"
+    ts set --ssh=true >/dev/null 2>&1 || die "could not enable system access"
+    python3 - "$SESSION" <<'PY' || die "could not record the new access level"
+import json, os, sys
+path = sys.argv[1]
+with open(path) as f:
+    session = json.load(f)
+session["level"] = "system"
+tmp = path + ".tmp"
+with open(tmp, "w") as f:
+    f.write(json.dumps(session) + "\n")
+os.replace(tmp, path)
+PY
+    cat $SESSION
+}
+
 cmd_status() {
     if [ -e $SESSION ] && daemon_active; then cat $SESSION; else echo '{"active": false}'; fi
 }
@@ -238,7 +259,8 @@ cmd_whois() {
 case "${1:-}" in
     start)  shift; cmd_start "$@" ;;
     stop)   cmd_stop ;;
+    elevate) cmd_elevate ;;
     status) cmd_status ;;
     whois)  [ -n "${2:-}" ] || die "usage: fabmo-support whois ADDRESS"; cmd_whois "$2" ;;
-    *) die "usage: fabmo-support start --key-file FILE [--minutes N] [--ssh] | stop | status | whois ADDRESS" ;;
+    *) die "usage: fabmo-support start --key-file FILE [--minutes N] [--ssh] | stop | elevate | status | whois ADDRESS" ;;
 esac

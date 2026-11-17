@@ -48,6 +48,11 @@ disappears from the tailnet's machine list.
 - `system` - the same plus Tailscale SSH (as allowed by the tailnet policy)
   and the web terminal.
 
+A session normally starts at `dashboard`. The customer can raise it to
+`system` while it is running (`fabmo-support elevate`, `POST
+/support/elevate`) without a new key or code; it stays raised until the
+session ends. Only the customer's side may do this.
+
 The levels describe what the tech is offered. They are not a hard privilege
 boundary: the updater can install packages as root at either level.
 
