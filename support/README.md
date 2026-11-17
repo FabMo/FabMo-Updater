@@ -92,5 +92,4 @@ key arrives.
 
 ## Not here yet
 
-The production broker address, the at-the-machine confirmation for motion,
-and SSH logins in the audit log.
+The at-the-machine confirmation for motion, and SSH logins in the audit log.

@@ -36,7 +36,7 @@ var busy = false;
 // the script still refuses a key that is not for the ShopBot support network
 // and the customer-machine tag.
 // ---------------------------------------------------------------------------
-var BROKER_URL = '';   // set when the production broker has an address
+var BROKER_URL = 'https://labs.shopbottools.com/support-broker';
 var BROKER_URL_FILE = '/opt/fabmo-support/broker-url';   // development override
 var PENDING_FILE = path.join(RUN_DIR, 'pending.json');
 var POLL_MS = 3000;
@@ -57,7 +57,8 @@ function brokerUrl() {
 function brokerCall(method, urlPath, body, secret, callback) {
     var target;
     try {
-        target = new URL(urlPath, brokerUrl());
+        // the broker may sit under a path (.../support-broker), so join, do not resolve
+        target = new URL(brokerUrl().replace(/\/+$/, '') + urlPath);
     } catch (e) {
         return callback(new Error('Remote support by code is not set up on this machine yet.'));
     }
