@@ -104,6 +104,20 @@ exports.stop = function(callback) {
     run(['stop'], STOP_TIMEOUT_MS, callback);
 };
 
+// Who is behind a tunnel address: callback(err, {user, device})
+exports.whois = function(address, callback) {
+    var a = String(address || '').replace(/^::ffff:/, '');
+    if (!exports.isTunnelAddress(a)) {
+        return callback(new Error('Not a support-network address'));
+    }
+    run(['whois', a], STOP_TIMEOUT_MS, function(err, data) {
+        if (err) { return callback(err); }
+        var user = (data.UserProfile && (data.UserProfile.DisplayName || data.UserProfile.LoginName)) || '';
+        var device = (data.Node && (data.Node.ComputedName || data.Node.Name || '')) || '';
+        callback(null, { user: user, device: String(device).split('.')[0] });
+    });
+};
+
 // True when a request came in over the support tunnel rather than from the
 // customer's own network (Tailscale's address ranges).
 exports.isTunnelAddress = function(address) {

@@ -6,6 +6,7 @@
  *   GET  /support/status   -> {active, level, address, name, started, expires}
  *   POST /support/start    {key, level: "dashboard"|"system", minutes}
  *   POST /support/stop
+ *   GET  /support/whois/<tunnel address> -> {user, device}
  */
 var log = require('../log').logger('routes');
 var support = require('../support');
@@ -49,8 +50,16 @@ var stop = function(req, res, next) {
     });
 };
 
+// Used by the engine to put a name to a tunnel address in its audit log
+var whois = function(req, res, next) {
+    support.whois(req.params.address, function(err, data) {
+        answer(res, err, data);
+    });
+};
+
 module.exports = function(server) {
     server.get('/support/status', getStatus);
     server.post('/support/start', start);
     server.post('/support/stop', stop);
+    server.get('/support/whois/:address', whois);
 };
