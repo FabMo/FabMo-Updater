@@ -31,7 +31,40 @@
       </form>
     </div>
   </div>
+<!-- Remote support (js/remote-support.js): reachable without signing in, so
+     that a customer whose engine will not start, and who has never used the
+     updater, can still let a technician in. The session routes it calls need
+     no sign-in either. -->
+<style>
+  #support-block { max-width: 360px; margin: 28px auto 0; padding-top: 18px; border-top: 1px solid rgba(128,128,128,.4); text-align: center; }
+  #support-block .hide { display: none; }
+  #support-block h1 { display: none; }
+  #support-block button { font: inherit; font-weight: 600; padding: 10px 14px; margin: 6px 4px 0; border: 0; border-radius: 5px; color: #fff; background: #555; cursor: pointer; }
+  #support-block button:disabled { opacity: .5; cursor: default; }
+  #support-block .btn-green { background: #2a6f6f; }
+  #support-block .btn-blue { background: #2f5f9e; }
+  #support-block .btn-red { background: #b3261e; }
+  #support-block p { margin: 8px 0; }
+</style>
+<div id="support-block">
+  <h1>Remote Support</h1>
+  <button id="btn-support-request" class="btn-green">Get a code for remote support</button>
+  <div id="support-waiting" class="hide">
+    <div id="support-code" style="display:inline-block; font:700 30px/1.1 Menlo,Consolas,monospace; letter-spacing:.14em; padding:10px 16px; border:1px solid #888; border-radius:6px; user-select:all;"></div>
+    <p id="support-wait-text"></p>
+    <button id="btn-support-cancel" class="btn">Cancel</button>
+  </div>
+  <div id="support-open" class="hide">
+    <p id="support-open-text" style="font-weight:bold;"></p>
+    <button id="btn-support-elevate" class="btn-blue">Grant Full Access</button>
+    <span id="support-elevated" class="hide" style="font-weight:bold; margin-right:12px;">Full access granted</span>
+    <button id="btn-support-stop" class="btn-red">End session</button>
+  </div>
+  <p id="support-msg" style="color:#b3261e;"></p>
+</div>
+
   <script src="js/libs/jquery.min.js"></script>
   <script src="login/js/auth.js"></script>
+  <script src="js/remote-support.js"></script>
 </body>
 </html>
