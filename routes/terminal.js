@@ -9,6 +9,7 @@ var path = require('path');
 var childProcess = require('child_process');
 var log = require('../log').logger('terminal');
 var authentication = require('../authentication');
+var support = require('../support');
 
 // Resolve paths to xterm assets in node_modules
 var XTERM_CSS = path.join(__dirname, '..', 'node_modules', 'xterm', 'css', 'xterm.css');
@@ -39,6 +40,14 @@ try {
 } catch(e) {
     log.warn('node-pty not available: ' + e.message);
     log.warn('Interactive terminal will be disabled.');
+}
+
+// A support tech connected over the remote-support tunnel only gets a
+// terminal when the customer granted full system access for this session
+// (see support.js). Local connections are unaffected.
+var SUPPORT_REFUSAL = 'The terminal is not available in this support session. The customer has to grant full system access.';
+function blockedForSupport(address) {
+    return support.isTunnelAddress(address) && support.currentLevel() !== 'system';
 }
 
 function isSafeUsername(username) {
@@ -110,6 +119,11 @@ module.exports = function(server) {
 
     // REST endpoint so the client can check if the terminal backend is available
     server.get('/terminal/status', function(req, res, next) {
+        var remote = (req.connection && req.connection.remoteAddress) || '';
+        if (blockedForSupport(remote)) {
+            res.json({ available: false, reason: 'support', message: SUPPORT_REFUSAL });
+            return next();
+        }
         res.json({ available: !!pty });
         return next();
     });
@@ -128,6 +142,14 @@ module.exports = function(server) {
 
         // Start (or restart) a PTY session
         socket.on('terminal:start', function(data) {
+            // No dropping the connection here: that takes the page's other
+            // sockets down with it and the browser reconnects in a loop.
+            var remote = (socket.handshake && socket.handshake.address) || '';
+            if (blockedForSupport(remote)) {
+                log.warn('Refused a terminal to ' + remote + ': the support session is dashboard-only');
+                socket.emit('terminal:error', SUPPORT_REFUSAL);
+                return;
+            }
             // Kill a previous session if one exists
             if (term) {
                 try { term.kill(); } catch(e) { /* ignore */ }
