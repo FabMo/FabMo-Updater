@@ -11,6 +11,7 @@ network while a session is running.
 | `support/fabmo-support` | The shell script that does everything: `start`, `stop`, `status`, `whois`. Holds all the safety rules. |
 | `support.js` | Thin wrapper the updater uses to run the script. |
 | `routes/support.js` | `GET /support/status`, `POST /support/start`, `POST /support/stop`. |
+| `static/js/remote-support.js` | The controls on the updater's own page (top of Software Updates), for when the engine is not running. |
 | `routes/terminal.js` | Refuses the web terminal to a tunnel connection unless the session is at the `system` level. |
 
 It lives in the updater so that support can get in when the engine is down.
