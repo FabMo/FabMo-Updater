@@ -40,6 +40,8 @@ disappears from the tailnet's machine list.
   request carrying a key for someone else's tailnet must not work.
 - A session can be started only from the machine's own network, never from
   the tunnel side. Anyone may stop one.
+- The same actions (and Grant Full Access) are refused when a browser sends
+  them from a page on another site.
 - The key reaches the script in a root-only file, never on a command line.
 
 ## Levels

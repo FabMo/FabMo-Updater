@@ -18,6 +18,22 @@ function remoteAddress(req) {
     return (req.connection && req.connection.remoteAddress) || '';
 }
 
+// The customer-only actions: refuse them from the support tunnel and from web
+// pages on other sites. Answers the request and returns true if refused.
+function refusedAsNotLocal(req, res, message) {
+    if (support.isTunnelAddress(remoteAddress(req))) {
+        log.warn('Refused ' + req.url + ' from the support tunnel');
+        answer(res, new Error(message));
+        return true;
+    }
+    if (support.fromAnotherSite(req)) {
+        log.warn('Refused ' + req.url + ' sent by a page on another site (' + req.headers.origin + ')');
+        answer(res, new Error('That request did not come from this machine\'s own pages.'));
+        return true;
+    }
+    return false;
+}
+
 function answer(res, err, data) {
     if (err) {
         res.json({ status: 'error', message: err.message });
@@ -36,10 +52,7 @@ var getStatus = function(req, res, next) {
 // Only the customer's side may open (or widen) a session. Someone already
 // connected over the tunnel must not be able to start one or raise its level.
 var start = function(req, res, next) {
-    if (support.isTunnelAddress(remoteAddress(req))) {
-        log.warn('Refused a support/start request that came in over the support tunnel');
-        return answer(res, new Error('A support session can only be started from the machine\'s own network.'));
-    }
+    if (refusedAsNotLocal(req, res, 'A support session can only be started from the machine\'s own network.')) { return; }
     var body = req.body && typeof req.body === 'object' ? req.body : req.params || {};
     support.start({ key: body.key, level: body.level, minutes: body.minutes }, function(err, data) {
         answer(res, err, data);
@@ -49,10 +62,7 @@ var start = function(req, res, next) {
 // Ask for a code to read to the technician. Same rule as start: only from
 // the customer's side.
 var request = function(req, res, next) {
-    if (support.isTunnelAddress(remoteAddress(req))) {
-        log.warn('Refused a support/request that came in over the support tunnel');
-        return answer(res, new Error('A support session can only be started from the machine\'s own network.'));
-    }
+    if (refusedAsNotLocal(req, res, 'A support session can only be started from the machine\'s own network.')) { return; }
     var body = req.body && typeof req.body === 'object' ? req.body : req.params || {};
     support.request({ level: body.level, minutes: body.minutes, version: body.version }, function(err, data) {
         answer(res, err, data);
@@ -68,10 +78,7 @@ var cancel = function(req, res, next) {
 // Raise the running session to full system access. Only the customer's side
 // may do this: a tech must never be able to widen their own access.
 var elevate = function(req, res, next) {
-    if (support.isTunnelAddress(remoteAddress(req))) {
-        log.warn('Refused a support/elevate request that came in over the support tunnel');
-        return answer(res, new Error('Full access can only be granted from the machine\'s own network.'));
-    }
+    if (refusedAsNotLocal(req, res, 'Full access can only be granted from the machine\'s own network.')) { return; }
     support.elevate(function(err, data) {
         answer(res, err, data);
     });

@@ -309,6 +309,22 @@ exports.whois = function(address, callback) {
     });
 };
 
+// True when a browser sent this request from a page on some other site.
+// Opening a session and widening it are the customer's decisions; a web page
+// they happen to have open must not be able to make them. Our own pages are
+// on this machine's host (the port may differ: the engine's startup page is
+// one port down). No Origin header means not a cross-site browser request.
+exports.fromAnotherSite = function(req) {
+    var origin = req && req.headers && req.headers.origin;
+    if (!origin) { return false; }
+    var mine = String((req.headers.host || '').replace(/:\d+$/, '')).toLowerCase().replace(/^\[|\]$/g, '');
+    try {
+        return new URL(origin).hostname.toLowerCase().replace(/^\[|\]$/g, '') !== mine;
+    } catch (e) {
+        return true;   // "null" (a sandboxed or local page) or anything unreadable
+    }
+};
+
 // True when a request came in over the support tunnel rather than from the
 // customer's own network (Tailscale's address ranges).
 exports.isTunnelAddress = function(address) {
