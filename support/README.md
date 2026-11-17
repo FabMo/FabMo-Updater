@@ -73,8 +73,24 @@ only the `ssh` rule the connection times out. Port 22 in the policy does not
 open SSH on a `dashboard` session: Tailscale SSH is off on the machine and
 the machine's own firewall drops port 22 on the tunnel.
 
+## Getting the key: the broker
+
+`POST /support/request` asks the ShopBot support broker (separate project,
+fabmo-support-broker) for a short code and shows it to the customer. The
+updater then waits; when a signed-in tech enters the code on the broker's
+support page, the broker hands over the key and the updater runs `start`.
+`POST /support/cancel` gives the code up. `POST /support/start` with a key in
+hand still works.
+
+Each step is written to `/run/fabmo-support/pending.json` (no secrets in it)
+so the engine can tell the dashboard without polling.
+
+The broker's address is `BROKER_URL` in `support.js`; the file
+`/opt/fabmo-support/broker-url` overrides it for development. The address is
+not a security boundary - the tailnet and tag checks above apply to whatever
+key arrives.
+
 ## Not here yet
 
-The broker that turns a customer's short code into a key, the tech-side
-support page, the dashboard button and banner, the audit log, and the
-at-the-machine confirmation for motion.
+The production broker address, the at-the-machine confirmation for motion,
+and SSH logins in the audit log.
