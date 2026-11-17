@@ -9,6 +9,7 @@ var path = require('path');
 var childProcess = require('child_process');
 var log = require('../log').logger('terminal');
 var authentication = require('../authentication');
+var support = require('../support');
 
 // Resolve paths to xterm assets in node_modules
 var XTERM_CSS = path.join(__dirname, '..', 'node_modules', 'xterm', 'css', 'xterm.css');
@@ -123,6 +124,17 @@ module.exports = function(server) {
 
     terminalNs.on('connection', function(socket) {
         log.info('Terminal client connected: ' + socket.id);
+
+        // A support tech connected over the remote-support tunnel only gets a
+        // terminal when the customer granted full system access for this
+        // session (see support.js). Local connections are unaffected.
+        var remote = (socket.handshake && socket.handshake.address) || '';
+        if (support.isTunnelAddress(remote) && support.currentLevel() !== 'system') {
+            log.warn('Refused a terminal to ' + remote + ': the support session is dashboard-only');
+            socket.emit('terminal:error', 'The terminal is not available in this support session. The customer has to grant full system access.');
+            socket.disconnect(true);
+            return;
+        }
 
         var term = null;
 

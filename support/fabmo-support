@@ -1,0 +1,228 @@
+#!/bin/bash
+#
+# fabmo-support - start / stop / report a remote-support session.
+#
+# A session joins this machine to the ShopBot support network (a Tailscale
+# tailnet) as a throwaway node so a support tech can reach the dashboard (80)
+# and the updater (81). See support/README.md.
+#
+#   fabmo-support start --key-file FILE [--minutes N] [--ssh]
+#   fabmo-support stop
+#   fabmo-support status
+#
+# Outside a session nothing is running, nothing is listening, and the machine
+# has no identity on the support network. Tailscale itself is only downloaded
+# the first time a session is started (a session needs the internet anyway).
+#
+# Safety properties, all enforced HERE and not by the tailnet's own policy:
+#   - firewall: only tcp 80/81 in on the tunnel, nothing forwarded through it
+#   - no DNS or route changes (the machine's networking is left alone)
+#   - the session ends by itself after N minutes, and on any reboot
+#   - --ssh (full system access) is off unless asked for
+#   - node state is held in memory only: no identity survives the session
+#
+set -u
+
+TS_VERSION=1.104.7
+TS_SHA256_arm64=d6bed2720310b328b861f943d7b4016c5358a9bad60575eb51e8143b79068484
+TS_SHA256_arm=1c753fef45d497491081db37552b7a2a42c7932292743bf6936cb1a42b6bceb0
+TS_URL=https://pkgs.tailscale.com/stable
+
+# The ONLY support network this machine will stay joined to. A key for any
+# other tailnet is refused after the join and before anything is let in -
+# otherwise whoever can reach the start request could attach the machine to a
+# network of their own. Deliberately a constant here, not a setting.
+SUPPORT_TAILNET=tail6132dd.ts.net
+
+# outside /opt/fabmo on purpose: engine updates delete that tree wholesale
+CACHE=/opt/fabmo-support
+TS_DIR=$CACHE/tailscale-$TS_VERSION
+TS=$TS_DIR/tailscale
+TSD=$TS_DIR/tailscaled
+
+RUN=/run/fabmo-support
+SESSION=$RUN/session.json
+SOCKET=/run/tailscale/tailscaled.sock
+TABLE="inet fabmo_support"
+IFACE=tailscale0
+PORTS="80, 81"
+DAEMON=fabmo-support-tailscaled
+TIMER=fabmo-support-expire
+DEFAULT_MINUTES=120
+MAX_MINUTES=480
+
+die() { echo "$*" >&2; exit 1; }
+need_root() { [ "$(id -u)" = 0 ] || die "must run as root"; }
+
+# name on the support network; stock units are already called fabmo-xxxxxx
+node_name() { local h; h=$(hostname); case "$h" in fabmo-*) echo "$h" ;; *) echo "fabmo-$h" ;; esac; }
+
+ts() { "$TS" --socket=$SOCKET "$@"; }
+
+daemon_active() { systemctl is-active --quiet $DAEMON.service; }
+
+# Fetch the pinned Tailscale build if this machine does not have it yet.
+ensure_tailscale() {
+    [ -x "$TS" ] && [ -x "$TSD" ] && return 0
+    local arch sum tmp tgz
+    case "$(uname -m)" in
+        aarch64) arch=arm64; sum=$TS_SHA256_arm64 ;;
+        armv7l|armv6l) arch=arm; sum=$TS_SHA256_arm ;;
+        *) echo "unsupported machine type $(uname -m)" >&2; return 1 ;;
+    esac
+    tgz=tailscale_${TS_VERSION}_${arch}.tgz
+    tmp=$(mktemp -d "$CACHE/dl.XXXXXX") || return 1
+    if ! curl -fsSL --max-time 300 -o "$tmp/$tgz" "$TS_URL/$tgz"; then
+        rm -rf "$tmp"; echo "could not download the support software (is the machine online?)" >&2; return 1
+    fi
+    if ! echo "$sum  $tmp/$tgz" | sha256sum -c --status -; then
+        rm -rf "$tmp"; echo "the support software download failed its integrity check" >&2; return 1
+    fi
+    tar -xzf "$tmp/$tgz" -C "$tmp" || { rm -rf "$tmp"; return 1; }
+    mkdir -p "$TS_DIR"
+    install -m 755 "$tmp/tailscale_${TS_VERSION}_${arch}/tailscale" "$TS" &&
+    install -m 755 "$tmp/tailscale_${TS_VERSION}_${arch}/tailscaled" "$TSD"
+    local rc=$?
+    rm -rf "$tmp"
+    return $rc
+}
+
+# $1 = "closed": nothing at all comes in on the tunnel (used while joining)
+#      "open":   the dashboard and updater ports are let in
+firewall_up() {
+    local allow=""
+    [ "$1" = open ] && allow="tcp dport { $PORTS } accept"
+    nft delete table $TABLE 2>/dev/null
+    nft -f - <<NFT
+table $TABLE {
+    chain input {
+        type filter hook input priority filter; policy accept;
+        iifname != "$IFACE" return
+        ct state established,related accept
+        $allow
+        icmp type echo-request accept
+        icmpv6 type echo-request accept
+        counter drop
+    }
+    chain forward {
+        type filter hook forward priority filter; policy accept;
+        iifname "$IFACE" counter drop
+        oifname "$IFACE" counter drop
+    }
+}
+NFT
+}
+
+# the tailnet we actually ended up on, e.g. tail6132dd.ts.net
+joined_tailnet() {
+    ts status --json 2>/dev/null | python3 -c 'import json,sys; print((json.load(sys.stdin).get("CurrentTailnet") or {}).get("MagicDNSSuffix",""))' 2>/dev/null
+}
+
+daemon_up() {
+    systemctl reset-failed $DAEMON.service >/dev/null 2>&1
+    # --state=mem: no identity on disk, and the node registers as ephemeral
+    # --no-logs-no-support: do not upload this machine's logs to Tailscale
+    # TS_LOGS_DIR: its local log buffer goes to /run too, so nothing (not even
+    #   a log ID) is left on disk between sessions
+    systemd-run --quiet --unit=$DAEMON --service-type=notify \
+        --description="Tailscale (FabMo remote support session)" \
+        --property=RuntimeDirectory=tailscale --property=RuntimeDirectoryMode=0755 \
+        --property=ExecStopPost="$TSD --cleanup" \
+        --setenv=TS_LOGS_DIR=$RUN/ts \
+        "$TSD" --state=mem: --statedir=$RUN/ts --socket=$SOCKET --port=41641 --no-logs-no-support
+}
+
+teardown() {
+    # every step is safe to repeat and safe when nothing is running
+    if daemon_active; then
+        timeout 10 "$TS" --socket=$SOCKET logout >/dev/null 2>&1   # leave the support network now
+        systemctl stop $DAEMON.service
+    fi
+    systemctl reset-failed $DAEMON.service >/dev/null 2>&1
+    nft delete table $TABLE 2>/dev/null
+    systemctl stop $TIMER.timer >/dev/null 2>&1
+    rm -rf $SESSION $RUN/ts $RUN/up.err
+}
+
+cmd_start() {
+    need_root
+    local key="" minutes=$DEFAULT_MINUTES ssh=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --key-file) key="${2:-}"; shift 2 ;;
+            --minutes)  minutes="${2:-}"; shift 2 ;;
+            --ssh)      ssh=1; shift ;;
+            *) die "unknown option $1" ;;
+        esac
+    done
+    [ -r "$key" ] || die "--key-file is required and must be readable"
+    [[ "$minutes" =~ ^[0-9]+$ ]] && [ "$minutes" -ge 1 ] && [ "$minutes" -le $MAX_MINUTES ] \
+        || die "--minutes must be 1..$MAX_MINUTES"
+    command -v nft >/dev/null || die "nft is not available on this machine"
+    if [ -e $SESSION ]; then
+        daemon_active && die "a support session is already running"
+        teardown    # a stale record from a session that died
+    fi
+
+    mkdir -p $RUN $RUN/ts $CACHE
+    chmod 700 $RUN
+    ensure_tailscale || die "the support software could not be installed"
+
+    # firewall first, fully closed: the tunnel never exists without it
+    firewall_up closed || die "could not install the firewall rules; not starting"
+
+    # the expiry is armed before we join, so a start that half-fails still ends
+    systemctl stop $TIMER.timer >/dev/null 2>&1
+    systemctl reset-failed $TIMER.service >/dev/null 2>&1
+    systemd-run --quiet --unit=$TIMER --on-active="${minutes}m" \
+        "$(readlink -f "$0")" stop || { teardown; die "could not arm the expiry timer"; }
+
+    daemon_up || { teardown; die "the support software did not start"; }
+
+    # Join with SSH off and the firewall closed: nothing can reach this
+    # machine until we have checked WHICH network the key put it on.
+    if ! ts up --auth-key="file:$key" --hostname="$(node_name)" \
+            --accept-dns=false --accept-routes=false --netfilter-mode=off \
+            --timeout=45s >/dev/null 2>$RUN/up.err; then
+        local why; why=$(tail -1 $RUN/up.err 2>/dev/null)
+        teardown
+        die "could not join the support network${why:+ ($why)}"
+    fi
+    local net; net=$(joined_tailnet)
+    if [ "$net" != "$SUPPORT_TAILNET" ]; then
+        teardown
+        die "that key is not for the ShopBot support network; session refused"
+    fi
+    firewall_up open || { teardown; die "could not open the firewall for the session"; }
+    if [ $ssh = 1 ]; then
+        ts set --ssh=true >/dev/null 2>&1 || { teardown; die "could not enable system access"; }
+    fi
+
+    local ip now
+    ip=$(ts ip -4 2>/dev/null | head -1)
+    now=$(date +%s)
+    cat > $SESSION <<JSON
+{"active": true, "level": "$([ $ssh = 1 ] && echo system || echo dashboard)", "address": "$ip", "name": "$(node_name)", "started": $now, "expires": $((now + minutes * 60))}
+JSON
+    cat $SESSION
+}
+
+cmd_stop() { need_root; teardown; echo '{"active": false}'; }
+
+cmd_status() {
+    if [ -e $SESSION ] && daemon_active; then cat $SESSION; else echo '{"active": false}'; fi
+}
+
+# who is at this tailnet address (used for the audit log / "connected" banner)
+cmd_whois() {
+    daemon_active || die "no session"
+    ts whois --json "$1"
+}
+
+case "${1:-}" in
+    start)  shift; cmd_start "$@" ;;
+    stop)   cmd_stop ;;
+    status) cmd_status ;;
+    whois)  [ -n "${2:-}" ] || die "usage: fabmo-support whois ADDRESS"; cmd_whois "$2" ;;
+    *) die "usage: fabmo-support start --key-file FILE [--minutes N] [--ssh] | stop | status | whois ADDRESS" ;;
+esac

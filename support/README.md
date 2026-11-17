@@ -1,0 +1,65 @@
+# Remote support sessions
+
+Lets a customer open a time-limited connection so a ShopBot support tech can
+reach the machine. Built on Tailscale; the machine is only on the support
+network while a session is running.
+
+## Pieces
+
+| File | What |
+|------|------|
+| `support/fabmo-support` | The shell script that does everything: `start`, `stop`, `status`, `whois`. Holds all the safety rules. |
+| `support.js` | Thin wrapper the updater uses to run the script. |
+| `routes/support.js` | `GET /support/status`, `POST /support/start`, `POST /support/stop`. |
+| `routes/terminal.js` | Refuses the web terminal to a tunnel connection unless the session is at the `system` level. |
+
+It lives in the updater so that support can get in when the engine is down.
+
+## What a session does
+
+1. Downloads the pinned Tailscale build on first use (checksum verified) into
+   `/opt/fabmo-support/` - outside `/opt/fabmo`, which engine updates delete.
+2. Puts up a firewall on the tunnel interface that lets nothing in.
+3. Arms a timer that ends the session (default 120 min, max 480).
+4. Starts `tailscaled` as a transient unit with its state in memory and log
+   upload off, and joins using the single-use key it was given.
+5. Checks the machine landed on `SUPPORT_TAILNET`. If not, it leaves at once.
+6. Only then opens tcp 80 and 81 on the tunnel, and enables Tailscale SSH if
+   the `system` level was asked for.
+
+`stop` (or the timer, or a reboot) logs out, stops the daemon, removes the
+firewall table and the session record. The node is ephemeral, so it also
+disappears from the tailnet's machine list.
+
+## Rules that must stay true
+
+- Nothing runs and nothing is installed as a service outside a session.
+- DNS and routes are never accepted from the tailnet; nothing is forwarded.
+- The tailnet is pinned in the script. Do not make it a setting: a start
+  request carrying a key for someone else's tailnet must not work.
+- A session can be started only from the machine's own network, never from
+  the tunnel side. Anyone may stop one.
+- The key reaches the script in a root-only file, never on a command line.
+
+## Levels
+
+- `dashboard` - ports 80 and 81 only; no SSH; the updater's web terminal is
+  refused to tunnel connections.
+- `system` - the same plus Tailscale SSH (as allowed by the tailnet policy)
+  and the web terminal.
+
+The levels describe what the tech is offered. They are not a hard privilege
+boundary: the updater can install packages as root at either level.
+
+## Tailnet side
+
+Machines join tagged `tag:customer-machine` with a single-use, ephemeral,
+pre-approved key. The policy lets the support group reach that tag on tcp 80
+and 81, lets the engineers group use SSH as `pi`, and gives machines no
+access to anything.
+
+## Not here yet
+
+The broker that turns a customer's short code into a key, the tech-side
+support page, the dashboard button and banner, the audit log, and the
+at-the-machine confirmation for motion.
